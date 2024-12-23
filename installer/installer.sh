@@ -442,7 +442,7 @@ install_node() {
         read -p "Enter the fee your node requires for the transaction or service: " NODE_FEE
             if (( $(echo "$NODE_FEE > 0" | bc -l) )); then
                 text_color $GREEN "The fee your node requires is: $NODE_FEE"
-                break  # Izaći iz petlje ako je uslov ispunjen
+                break  
             else
                 text_color $RED "The fee must be greater than 0. Please enter a valid fee."
             fi
