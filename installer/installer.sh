@@ -420,6 +420,7 @@ install_node() {
 
     # Function to configure a blockchain
     configure_blockchain() {
+
         local blockchain=$1
         local blockchain_id=$2
 
@@ -437,6 +438,16 @@ install_node() {
 
         validate_operator_fees $blockchain
 
+        # ASK part
+        read -p "Enter the fee your node requires for the transaction or service: " NODE_FEE
+            if (( $(echo "$NODE_FEE > 0" | bc -l) )); then
+                text_color $GREEN "The fee your node requires is: $NODE_FEE"
+                break  # Izaći iz petlje ako je uslov ispunjen
+            else
+                text_color $RED "The fee must be greater than 0. Please enter a valid fee."
+            fi
+        done
+
         local RPC_ENDPOINT=""
         if [ "$blockchain" == "gnosis" ] || [ "$blockchain" == "base" ]; then
             read -p "Enter your $blockchain RPC endpoint: " RPC_ENDPOINT
@@ -451,7 +462,8 @@ install_node() {
                 "evmManagementWalletPublicKey": "$EVM_MANAGEMENT_WALLET",
                 "sharesTokenName": "$SHARES_TOKEN_NAME",
                 "sharesTokenSymbol": "$SHARES_TOKEN_SYMBOL",
-                "operatorFee": $OPERATOR_FEE
+                "operatorFee": $OPERATOR_FEE,
+                "nodeFee": $NODE_FEE
             }
         }
 EOF
@@ -464,6 +476,8 @@ EOF
         jq "$jq_filter" $CONFIG_DIR/.origintrail_noderc > $CONFIG_DIR/origintrail_noderc_tmp
         mv $CONFIG_DIR/origintrail_noderc_tmp $CONFIG_DIR/.origintrail_noderc
     }
+
+
 
     # Configure selected blockchains
     for blockchain in "${selected_blockchains[@]}"; do
