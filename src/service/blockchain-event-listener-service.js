@@ -23,6 +23,7 @@ class BlockchainEventListenerService {
         this.logger = ctx.logger;
         this.blockchainModuleManager = ctx.blockchainModuleManager;
         this.repositoryModuleManager = ctx.repositoryModuleManager;
+        this.networkModuleManager = ctx.networkModuleManager;
         this.tripleStoreService = ctx.tripleStoreService;
         this.pendingStorageService = ctx.pendingStorageService;
         this.ualService = ctx.ualService;
@@ -446,7 +447,13 @@ class BlockchainEventListenerService {
                 };
             }),
         );
+
         await this.repositoryModuleManager.createManyPeerRecords(peerRecords);
+        await Promise.all(
+            peerRecords.map((pr) =>
+                this.networkModuleManager.addRoutingTablePeer(pr.peerId, pr.blockchainId),
+            ),
+        );
     }
 
     async handleNodeRemovedEvents(blockEvents) {
@@ -462,6 +469,7 @@ class BlockchainEventListenerService {
                 this.logger.trace(`Removing peer id: ${nodeId} from sharding table.`);
 
                 await this.repositoryModuleManager.removePeerRecord(event.blockchainId, nodeId);
+                this.networkModuleManager.removeRoutingTablePeer(nodeId);
             }),
         );
     }

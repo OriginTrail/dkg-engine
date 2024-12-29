@@ -1,10 +1,11 @@
 import appRootPath from 'app-root-path';
 import libp2p from 'libp2p';
-import KadDHT from 'libp2p-kad-dht';
+import ShardDHT from 'shard-dht';
 import { join } from 'path';
 import Bootstrap, { tag } from 'libp2p-bootstrap';
 import { NOISE } from 'libp2p-noise';
 import MPLEX from 'libp2p-mplex';
+import { Multiaddr } from 'multiaddr';
 import TCP from 'libp2p-tcp';
 import pipe from 'it-pipe';
 import map from 'it-map';
@@ -31,14 +32,11 @@ const devEnvironment =
     process.env.NODE_ENV === NODE_ENVIRONMENTS.TEST;
 
 const initializationObject = {
-    addresses: {
-        listen: ['/ip4/0.0.0.0/tcp/9000'],
-    },
     modules: {
         transport: [TCP],
         streamMuxer: [MPLEX],
         connEncryption: [NOISE],
-        dht: KadDHT,
+        dht: ShardDHT,
     },
 };
 
@@ -81,6 +79,9 @@ class Libp2pService {
                     list: this.config.bootstrap,
                 },
             };
+            initializationObject.config.dht.bootstrap = this.config.bootstrap.map((b) =>
+                new Multiaddr(b).getPeerId(),
+            );
         }
         initializationObject.addresses = {
             listen: [`/ip4/0.0.0.0/tcp/${this.config.port}`],
@@ -208,6 +209,18 @@ class Libp2pService {
 
     getPeerId() {
         return this.node.peerId;
+    }
+
+    async addRoutingTablePeer(peerIdString, blockchainId) {
+        return this.node._dht.add(createFromB58String(peerIdString), blockchainId);
+    }
+
+    removeRoutingTablePeer(peerIdString, blockchainId) {
+        return this.node._dht.remove(createFromB58String(peerIdString), blockchainId);
+    }
+
+    hasRoutingTablePeer(peerIdString) {
+        return this.node._dht.has(createFromB58String(peerIdString));
     }
 
     handleMessage(protocol, handler) {

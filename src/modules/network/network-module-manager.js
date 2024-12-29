@@ -29,6 +29,27 @@ class NetworkModuleManager extends BaseModuleManager {
         }
     }
 
+    async addRoutingTablePeer(peerIdString, blockchainId) {
+        if (this.initialized) {
+            return this.getImplementation().module.addRoutingTablePeer(peerIdString, blockchainId);
+        }
+    }
+
+    removeRoutingTablePeer(peerIdString, blockchainId) {
+        if (this.initialized) {
+            return this.getImplementation().module.removeRoutingTablePeer(
+                peerIdString,
+                blockchainId,
+            );
+        }
+    }
+
+    hasRoutingTablePeer(peerIdString) {
+        if (this.initialized) {
+            return this.getImplementation().module.hasRoutingTablePeer(peerIdString);
+        }
+    }
+
     async sendMessage(
         protocol,
         remotePeerId,

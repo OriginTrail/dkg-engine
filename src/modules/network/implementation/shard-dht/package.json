@@ -1,0 +1,34 @@
+{
+    "name": "shard-dht",
+    "version": "0.1.0",
+    "description": "Origintrail shard DHT",
+    "main": "src/index.js",
+    "files": [
+        "src"
+    ],
+    "license": "MIT",
+    "engines": {
+        "node": ">=14.0.0"
+    },
+    "dependencies": {
+        "debug": "^4.3.1",
+        "err-code": "^3.0.0",
+        "it-first": "^1.0.4",
+        "it-length": "^1.0.3",
+        "heap": "~0.2.6",
+        "it-length-prefixed": "^5.0.3",
+        "it-pipe": "^1.1.0",
+        "libp2p-crypto": "^0.19.5",
+        "libp2p-interfaces": "^1.0.0",
+        "libp2p-record": "^0.10.4",
+        "multiaddr": "^10.0.0",
+        "multiformats": "^9.4.5",
+        "p-map": "^4.0.0",
+        "p-queue": "^6.6.2",
+        "p-timeout": "^4.1.0",
+        "peer-id": "^0.15.3",
+        "uint8arrays": "^3.1.0",
+        "protobufjs": "^6.10.2",
+        "streaming-iterables": "^6.0.0"
+    }
+}
