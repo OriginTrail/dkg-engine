@@ -9,6 +9,18 @@ class OperationIdService {
         this.eventEmitter = ctx.eventEmitter;
 
         this.memoryCachedHandlersData = {};
+        this.locks = new Map(); // Simple lock map
+    }
+
+    async acquireLock(operationId) {
+        while (this.locks.get(operationId)) {
+            await new Promise(resolve => setTimeout(resolve, 10)); // Wait for the lock to be released
+        }
+        this.locks.set(operationId, true);
+    }
+
+    releaseLock(operationId) {
+        this.locks.delete(operationId);
     }
 
     generateId() {
@@ -105,12 +117,17 @@ class OperationIdService {
     }
 
     async cacheOperationIdDataToMemory(operationId, data) {
-        this.logger.debug(`Caching data for operation id: ${operationId} in memory`);
-
-        this.memoryCachedHandlersData[operationId] = { data, timestamp: Date.now() };
+        await this.acquireLock(operationId);
+        try {
+            this.logger.debug(`Caching data for operation id: ${operationId} in memory`);
+            this.memoryCachedHandlersData[operationId] = { data, timestamp: Date.now() };
+        } finally {
+            this.releaseLock(operationId);
+        }
     }
 
     async cacheOperationIdDataToFile(operationId, data) {
+        this.logger.debug(`Caching data forasync cacheOperationIdDataToFile(operationId, data) {
         this.logger.debug(`Caching data for operation id: ${operationId} in file`);
         const operationIdCachePath = this.fileService.getOperationIdCachePath();
 
@@ -122,9 +139,14 @@ class OperationIdService {
     }
 
     async getCachedOperationIdData(operationId) {
-        if (this.memoryCachedHandlersData[operationId]) {
-            this.logger.debug(`Reading operation id: ${operationId} cached data from memory`);
-            return this.memoryCachedHandlersData[operationId].data;
+        await this.acquireLock(operationId);
+        try {
+            if (this.memoryCachedHandlersData[operationId]) {
+                this.logger.debug(`Reading operation id: ${operationId} cached data from memory`);
+                return this.memoryCachedHandlersData[operationId].data;
+            }
+        } finally {
+            this.releaseLock(operationId);
         }
 
         this.logger.debug(
@@ -139,10 +161,15 @@ class OperationIdService {
     }
 
     async removeOperationIdCache(operationId) {
-        this.logger.debug(`Removing operation id: ${operationId} cached data`);
-        const operationIdCachePath = this.fileService.getOperationIdDocumentPath(operationId);
-        await this.fileService.removeFile(operationIdCachePath);
-        this.removeOperationIdMemoryCache(operationId);
+        await this.acquireLock(operationId);
+        try {
+            this.logger.debug(`Removing operation id: ${operationId} cached data`);
+            const operationIdCachePath = this.fileService.getOperationIdDocumentPath(operationId);
+            await this.fileService.removeFile(operationIdCachePath);
+            this.removeOperationIdMemoryCache(operationId);
+        } finally {
+            this.releaseLock(operationId);
+        }
     }
 
     removeOperationIdMemoryCache(operationId) {
@@ -156,8 +183,13 @@ class OperationIdService {
         for (const operationId in this.memoryCachedHandlersData) {
             const { data, timestamp } = this.memoryCachedHandlersData[operationId];
             if (timestamp + expiredTimeout < now) {
-                delete this.memoryCachedHandlersData[operationId];
-                deleted += Buffer.from(JSON.stringify(data)).byteLength;
+                await this.acquireLock(operationId);
+                try {
+                    delete this.memoryCachedHandlersData[operationId];
+                    deleted += Buffer.from(JSON.stringify(data)).byteLength;
+                } finally {
+                    this.releaseLock(operationId);
+                }
             }
         }
         return deleted;
