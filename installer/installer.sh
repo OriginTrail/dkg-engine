@@ -83,7 +83,7 @@ install_aliases() {
 
 install_directory() {
     ARCHIVE_REPOSITORY_URL="github.com/OriginTrail/ot-node/archive"
-    BRANCH="v8/release/testnet"
+    BRANCH="v6/release/testnet"
     BRANCH_DIR="/root/ot-node-8-release-testnet"
 
     perform_step wget https://$ARCHIVE_REPOSITORY_URL/$BRANCH.zip "Downloading node files"
