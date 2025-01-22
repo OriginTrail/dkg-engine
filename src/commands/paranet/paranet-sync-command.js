@@ -11,10 +11,6 @@ import {
     PARANET_SYNC_RETRY_DELAY_MS,
     OPERATION_STATUS,
     PARANET_NODES_ACCESS_POLICIES,
-    PARANET_SYNC_SOURCES,
-    TRIPLE_STORE_REPOSITORIES,
-    LOCAL_INSERT_FOR_CURATED_PARANET_MAX_ATTEMPTS,
-    LOCAL_INSERT_FOR_CURATED_PARANET_RETRY_DELAY,
 } from '../../constants/constants.js';
 
 class ParanetSyncCommand extends Command {
@@ -31,6 +27,7 @@ class ParanetSyncCommand extends Command {
         this.errorType = ERROR_TYPE.PARANET.PARANET_SYNC_ERROR;
     }
 
+    // TODO: Fix logs? Use word 'Knowledge Collection' or 'Collection' instead of 'Asset'.
     async execute(command) {
         const { blockchain, operationId, paranetUAL, paranetId, paranetMetadata } = command.data;
 
@@ -38,260 +35,190 @@ class ParanetSyncCommand extends Command {
             PARANET_NODES_ACCESS_POLICIES[paranetMetadata.nodesAccessPolicy];
 
         this.logger.info(
-            `Paranet sync: Starting paranet sync for paranet: ${paranetUAL} (${paranetId}), operation ID: ${operationId}`,
+            `Paranet sync: Starting paranet sync for paranet: ${paranetUAL} (${paranetId}), operation ID: ${operationId}, access policy ${paranetNodesAccessPolicy}`,
         );
 
-        // Fetch counts from blockchain and database
-        const contractKaCount = (
+        const countContract = (
             await this.blockchainModuleManager.getParanetKnowledgeCollectionCount(
                 blockchain,
                 paranetId,
             )
         ).toNumber();
+        const countDatabase = await this.repositoryModuleManager.getParanetKcCount(paranetUAL);
 
-        const syncedAssetsCount =
-            await this.repositoryModuleManager.getParanetSyncedAssetRecordsCountByDataSource(
-                paranetUAL,
-                PARANET_SYNC_SOURCES.SYNC,
-            );
-        const localStoredAssetsCount =
-            await this.repositoryModuleManager.getParanetSyncedAssetRecordsCountByDataSource(
-                paranetUAL,
-                PARANET_SYNC_SOURCES.LOCAL_STORE,
-            );
-
-        const totalMissedAssetsCount =
-            await this.repositoryModuleManager.getCountOfMissedAssetsOfParanet(paranetUAL);
-        const missedAssetsCount =
-            await this.repositoryModuleManager.getFilteredCountOfMissedAssetsOfParanet(
-                paranetUAL,
-                PARANET_SYNC_RETRIES_LIMIT,
-                PARANET_SYNC_RETRY_DELAY_MS,
-            );
-
-        const paranetRepository = this.paranetService.getParanetRepositoryName(paranetUAL);
-
-        this.logger.info(
-            `Paranet sync: Paranet: ${paranetUAL} (${paranetId}) Total count of Paranet KAs in the contract: ${contractKaCount}; Synced KAs count: ${syncedAssetsCount}; Local Stored KAs count: ${localStoredAssetsCount}; Total count of missed KAs: ${totalMissedAssetsCount}`,
+        const missingUALs = (
+            await this.blockchainModuleManager.getParanetKnowledgeCollectionLocatorsWithPagination(
+                blockchain,
+                paranetId,
+                countDatabase,
+                countContract,
+            )
+        ).map(({ knowledgeCollectionStorageContract, knowledgeCollectionTokenId }) =>
+            this.ualService.deriveUAL(
+                blockchain,
+                knowledgeCollectionStorageContract,
+                knowledgeCollectionTokenId,
+            ),
         );
 
-        // First, attempt to sync missed KAs if any exist
-        if (missedAssetsCount > 0) {
-            this.logger.info(
-                `Paranet sync: Attempting to sync ${missedAssetsCount} missed assets for paranet: ${paranetUAL} (${paranetId}), operation ID: ${operationId}!`,
-            );
+        await this.repositoryModuleManager.createParanetKcRecords(
+            paranetUAL,
+            blockchain,
+            missingUALs,
+        );
 
-            await this.operationIdService.updateOperationIdStatus(
-                operationId,
-                blockchain,
-                OPERATION_ID_STATUS.PARANET.PARANET_SYNC_MISSED_KAS_SYNC_START,
-            );
+        const countSynced = await this.repositoryModuleManager.getParanetKcSyncedCount(paranetUAL);
+        const countUnsynced = await this.repositoryModuleManager.getParanetKcUnsyncedCount(
+            paranetUAL,
+        );
 
-            const [successulMissedSyncsCount, failedMissedSyncsCount] = await this.syncMissedKAs(
-                paranetUAL,
-                paranetId,
-                paranetNodesAccessPolicy,
-                paranetRepository,
-                operationId,
-            );
+        this.logger.info(
+            `Paranet sync: Paranet: ${paranetUAL} (${paranetId}) Total count of Paranet KAs in the contract: ${countContract}; Synced KAs count: ${countSynced};  Total count of missed KAs: ${countUnsynced}`,
+        );
 
-            this.logger.info(
-                `Paranet sync: Successful missed assets syncs: ${successulMissedSyncsCount}; ` +
-                    `Failed missed assets syncs: ${failedMissedSyncsCount}  for paranet: ${paranetUAL} ` +
-                    `(${paranetId}), operation ID: ${operationId}!`,
-            );
-
-            await this.operationIdService.updateOperationIdStatusWithValues(
-                operationId,
-                blockchain,
-                OPERATION_ID_STATUS.PARANET.PARANET_SYNC_MISSED_KAS_SYNC_END,
-                successulMissedSyncsCount,
-                failedMissedSyncsCount,
-            );
-        }
-
-        // Then, check for new KAs on the blockchain
-        if (syncedAssetsCount + localStoredAssetsCount + totalMissedAssetsCount < contractKaCount) {
-            this.logger.info(
-                `Paranet sync: Syncing ${
-                    contractKaCount -
-                    (syncedAssetsCount + localStoredAssetsCount + totalMissedAssetsCount)
-                } new assets for paranet: ${paranetUAL} (${paranetId}), operation ID: ${operationId}`,
-            );
-
-            await this.operationIdService.updateOperationIdStatus(
-                operationId,
-                blockchain,
-                OPERATION_ID_STATUS.PARANET.PARANET_SYNC_NEW_KAS_SYNC_START,
-            );
-
-            const [successulNewSyncsCount, failedNewSyncsCount] = await this.syncNewKAs(
-                blockchain,
-                syncedAssetsCount + missedAssetsCount,
-                contractKaCount,
-                paranetUAL,
-                paranetId,
-                paranetNodesAccessPolicy,
-                paranetRepository,
-                operationId,
-            );
-
-            this.logger.info(
-                `Paranet sync: Successful new assets syncs: ${successulNewSyncsCount}; ` +
-                    `Failed new assets syncs: ${failedNewSyncsCount}  for paranet: ${paranetUAL} ` +
-                    `(${paranetId}), operation ID: ${operationId}!`,
-            );
-
-            await this.operationIdService.updateOperationIdStatusWithValues(
-                operationId,
-                blockchain,
-                OPERATION_ID_STATUS.PARANET.PARANET_SYNC_NEW_KAS_SYNC_END,
-                successulNewSyncsCount,
-                failedNewSyncsCount,
-            );
-
-            await this.operationIdService.updateOperationIdStatusWithValues(
-                operationId,
-                blockchain,
-                OPERATION_ID_STATUS.COMPLETED,
-                successulNewSyncsCount,
-                failedNewSyncsCount,
-            );
-        } else {
+        if (countUnsynced === 0) {
             this.logger.info(
                 `Paranet sync: No new assets to sync for paranet: ${paranetUAL} (${paranetId}), operation ID: ${operationId}!`,
             );
+            return Command.repeat();
         }
+        // #region Sync batch;
+        const syncBatch = await this.repositoryModuleManager.getParanetKcSyncBatch(
+            paranetUAL,
+            PARANET_SYNC_RETRIES_LIMIT,
+            PARANET_SYNC_RETRY_DELAY_MS,
+            PARANET_SYNC_KA_COUNT,
+        );
+
+        this.logger.info(
+            `Paranet sync: Attempting to sync ${syncBatch.length} missed assets for paranet: ${paranetUAL} (${paranetId}), operation ID: ${operationId}!`,
+        );
+
+        await this.operationIdService.updateOperationIdStatus(
+            operationId,
+            blockchain,
+            OPERATION_ID_STATUS.PARANET.PARANET_SYNC_MISSED_KAS_SYNC_START,
+        );
+
+        const syncResults = await Promise.all(
+            syncBatch.map(({ ual }) =>
+                this.syncKc(paranetUAL, ual, paranetId, paranetNodesAccessPolicy, operationId),
+            ),
+        );
+
+        const countSyncSuccessful = syncResults.filter((err) => !err).length;
+        const countSyncFailed = syncResults.length - countSyncSuccessful;
+
+        this.logger.info(
+            `Paranet sync: Successful missed assets syncs: ${countSyncSuccessful}; ` +
+                `Failed missed assets syncs: ${countSyncFailed}  for paranet: ${paranetUAL} ` +
+                `(${paranetId}), operation ID: ${operationId}!`,
+        );
+        // #endregion
+
+        await this.operationIdService.updateOperationIdStatusWithValues(
+            operationId,
+            blockchain,
+            OPERATION_ID_STATUS.PARANET.PARANET_SYNC_MISSED_KAS_SYNC_END,
+            countSyncSuccessful,
+            countSyncFailed,
+        );
 
         return Command.repeat();
     }
 
-    async syncAssetState(
-        ual,
-        blockchain,
-        contract,
-        tokenId,
-        assertionIds,
-        stateIndex,
-        paranetId,
-        latestState,
+    /** **NOTE:** Throws errors! */
+    async syncKcState(
         paranetUAL,
+        ual,
+        stateIndex,
+        assertionId,
+        paranetId,
         paranetNodesAccessPolicy,
-        paranetRepository,
     ) {
-        const assertionId = assertionIds[stateIndex];
+        const { blockchain, contract, knowledgeCollectionId } = this.ualService.resolveUAL(ual);
 
-        this.logger.debug(
-            `Paranet sync: Fetching state: ${assertionId} index: ${stateIndex + 1} of ${
-                assertionIds.length
-            } for asset with ual: ${ual}.`,
+        const getOperationId = await this.operationIdService.generateOperationId(
+            OPERATION_ID_STATUS.GET.GET_START,
         );
 
-        try {
-            const getOperationId = await this.operationIdService.generateOperationId(
-                OPERATION_ID_STATUS.GET.GET_START,
-            );
-            this.operationIdService.updateOperationIdStatus(
-                getOperationId,
+        // #region GET (LOCAL)
+        this.operationIdService.updateOperationIdStatus(
+            getOperationId,
+            blockchain,
+            OPERATION_ID_STATUS.GET.GET_INIT_START,
+        );
+        this.repositoryModuleManager.createOperationRecord(
+            this.getService.getOperationName(),
+            getOperationId,
+            OPERATION_STATUS.IN_PROGRESS,
+        );
+        this.logger.debug(
+            `Paranet sync: Get for ${ual} with operation id ${getOperationId} initiated.`,
+        );
+
+        const maxAttempts = PARANET_SYNC_PARAMETERS.GET_RESULT_POLLING_MAX_ATTEMPTS;
+        const pollingInterval = PARANET_SYNC_PARAMETERS.GET_RESULT_POLLING_INTERVAL_MILLIS;
+
+        let attempt = 0;
+        let getResult;
+
+        await this.commandExecutor.add({
+            name: 'getFindShardCommand',
+            sequence: [],
+            delay: 0,
+            data: {
+                operationId: getOperationId,
+                id: ual,
                 blockchain,
-                OPERATION_ID_STATUS.GET.GET_INIT_START,
+                contract,
+                knowledgeCollectionId,
+                state: assertionId,
+                paranetId,
+                paranetUAL,
+                paranetNodesAccessPolicy,
+                paranetSync: true,
+            },
+            transactional: false,
+        });
+
+        attempt = 0;
+        do {
+            await setTimeout(pollingInterval);
+            getResult = await this.operationIdService.getOperationIdRecord(getOperationId);
+            attempt += 1;
+        } while (
+            attempt < maxAttempts &&
+            getResult?.status !== OPERATION_ID_STATUS.FAILED &&
+            getResult?.status !== OPERATION_ID_STATUS.COMPLETED
+        );
+        // #endregion NETWORK END
+
+        if (getResult?.status !== OPERATION_ID_STATUS.COMPLETED) {
+            throw new Error(
+                `Unable to sync Knowledge Collection Id: ${knowledgeCollectionId}, for contract: ${contract}, state index: ${stateIndex}, blockchain: ${blockchain}, GET result: ${JSON.stringify(
+                    getResult,
+                )}`,
             );
-            this.repositoryModuleManager.createOperationRecord(
-                this.getService.getOperationName(),
-                getOperationId,
-                OPERATION_STATUS.IN_PROGRESS,
-            );
-            this.logger.debug(
-                `Paranet sync: Get for ${ual} with operation id ${getOperationId} initiated.`,
-            );
-            if (paranetNodesAccessPolicy === 'OPEN') {
-                await this.commandExecutor.add({
-                    name: 'networkGetCommand',
-                    sequence: [],
-                    delay: 0,
-                    data: {
-                        operationId: getOperationId,
-                        id: ual,
-                        blockchain,
-                        contract,
-                        tokenId,
-                        state: assertionId,
-                        assertionId,
-                        paranetId,
-                        paranetUAL,
-                    },
-                    transactional: false,
-                });
-            } else if (paranetNodesAccessPolicy === 'CURATED') {
-                await this.commandExecutor.add({
-                    name: 'curatedParanetNetworkGetCommand',
-                    sequence: [],
-                    delay: 0,
-                    data: {
-                        operationId: getOperationId,
-                        id: ual,
-                        blockchain,
-                        contract,
-                        tokenId,
-                        state: assertionId,
-                        assertionId,
-                        paranetId,
-                        paranetUAL,
-                    },
-                    transactional: false,
-                });
-            }
+        }
 
-            await this.operationIdService.updateOperationIdStatus(
-                getOperationId,
-                blockchain,
-                OPERATION_ID_STATUS.GET.GET_INIT_END,
-            );
+        const data = await this.operationIdService.getCachedOperationIdData(getOperationId);
+        this.logger.debug(
+            `Paranet sync: ${
+                data.assertion.public.length + (data.assertion?.private?.length || 0)
+            } nquads found for asset with ual: ${ual}, state index: ${stateIndex}, assertionId: ${assertionId}`,
+        );
 
-            let attempt = 0;
-            let getResult;
-            do {
-                await setTimeout(PARANET_SYNC_PARAMETERS.GET_RESULT_POLLING_INTERVAL_MILLIS);
-                getResult = await this.operationIdService.getOperationIdRecord(getOperationId);
-                attempt += 1;
-            } while (
-                attempt < PARANET_SYNC_PARAMETERS.GET_RESULT_POLLING_MAX_ATTEMPTS &&
-                getResult?.status !== OPERATION_ID_STATUS.FAILED &&
-                getResult?.status !== OPERATION_ID_STATUS.COMPLETED
-            );
+        const paranetRepository = this.paranetService.getParanetRepositoryName(paranetUAL);
+        await this.tripleStoreService.insertKnowledgeCollection(
+            paranetRepository,
+            ual,
+            data.assertion,
+        );
+        // TODO: Curated paranets, paranetNodesAccessPolicy
 
-            if (getResult?.status !== OPERATION_ID_STATUS.COMPLETED) {
-                this.logger.warn(
-                    `Paranet sync: Unable to sync tokenId: ${tokenId}, for contract: ${contract} state index: ${stateIndex} blockchain: ${blockchain}, GET result: ${JSON.stringify(
-                        getResult,
-                    )}`,
-                );
-
-                await this.repositoryModuleManager.createMissedParanetAssetRecord({
-                    blockchainId: blockchain,
-                    ual,
-                    paranetUal: paranetUAL,
-                });
-
-                return false;
-            }
-
-            const data = await this.operationIdService.getCachedOperationIdData(getOperationId);
-            this.logger.debug(
-                `Paranet sync: ${data.assertion.length} nquads found for asset with ual: ${ual}, state index: ${stateIndex}, assertionId: ${assertionId}`,
-            );
-
-            let repository;
-            if (latestState) {
-                repository = paranetRepository;
-            } else if (paranetNodesAccessPolicy === 'OPEN') {
-                repository = TRIPLE_STORE_REPOSITORIES.PUBLIC_HISTORY;
-            } else if (paranetNodesAccessPolicy === 'CURATED') {
-                repository = TRIPLE_STORE_REPOSITORIES.PRIVATE_HISTORY;
-            } else {
-                throw new Error('Unsupported access policy');
-            }
-
+        /*
+            this doesnt work for v8
             await this.tripleStoreService.localStoreAsset(
                 repository,
                 assertionId,
@@ -316,243 +243,65 @@ class ParanetSyncCommand extends Command {
                 paranetNodesAccessPolicy === 'CURATED'
                     ? data.syncedAssetRecord?.privateAssertionId
                     : null;
-
-            await this.repositoryModuleManager.incrementParanetKaCount(paranetId, blockchain);
-            await this.repositoryModuleManager.createParanetSyncedAssetRecord(
-                blockchain,
-                ual,
-                paranetUAL,
-                assertionId,
-                privateAssertionId,
-                data.syncedAssetRecord?.sender,
-                data.syncedAssetRecord?.transactionHash,
-                PARANET_SYNC_SOURCES.SYNC,
-            );
-
-            return true;
-        } catch (error) {
-            this.logger.warn(
-                `Paranet sync: Unable to sync tokenId: ${tokenId}, for contract: ${contract} state index: ${stateIndex} blockchain: ${blockchain}, error: ${error}`,
-            );
-
-            await this.repositoryModuleManager.createMissedParanetAssetRecord({
-                blockchainId: blockchain,
-                ual,
-                paranetUal: paranetUAL,
-            });
-
-            return false;
-        }
+            */
     }
 
-    async syncAsset(
-        ual,
-        blockchain,
-        contract,
-        tokenId,
-        paranetUAL,
-        paranetId,
-        paranetNodesAccessPolicy,
-        paranetRepository,
-        operationId,
-        removeMissingAssetRecord = false,
-    ) {
+    /**
+     * Syncs all states ("merkle roots") of a Knowledge Collection in a paranet.
+     *
+     * @param {string} paranetUAL Universal Asset Locator of the paranet
+     * @param {string} ual Universal Asset Locator of the Knowledge Collection
+     * @param {string} paranetId Id of paranet, stored on-chain. Provided in command options.
+     * @param {'OPEN'|'CURATED'} paranetNodesAccessPolicy Node access policy, enum string indicating paranet type.
+     * @param {string} operationId Local database id of sync operation. Needed for logging.
+     *
+     * @returns {Promise<null|Error>} Returns `null` if sync of all states was successful, otherwise `Error` which broke the operation.
+     */
+    async syncKc(paranetUAL, ual, paranetId, paranetNodesAccessPolicy, operationId) {
         try {
             this.logger.info(
                 `Paranet sync: Syncing asset: ${ual} for paranet: ${paranetId}, operation ID: ${operationId}`,
             );
 
-            const assertionIds =
+            const { blockchain, contract, knowledgeCollectionId } = this.ualService.resolveUAL(ual);
+            const merkleRoots =
                 await this.blockchainModuleManager.getKnowledgeCollectionMerkleRoots(
                     blockchain,
                     contract,
-                    tokenId,
+                    knowledgeCollectionId,
                 );
 
-            let isSuccessful = true;
-            for (let stateIndex = 0; stateIndex < assertionIds.length; stateIndex += 1) {
-                isSuccessful =
-                    isSuccessful &&
-                    (await this.syncAssetState(
-                        ual,
-                        blockchain,
-                        contract,
-                        tokenId,
-                        assertionIds,
-                        stateIndex,
-                        paranetId,
-                        stateIndex === assertionIds.length - 1,
-                        paranetUAL,
-                        paranetNodesAccessPolicy,
-                        paranetRepository,
-                    ));
+            for (let stateIndex = 0; stateIndex < merkleRoots.length; stateIndex += 1) {
+                this.logger.debug(
+                    `Paranet sync: Fetching state: ${merkleRoots[stateIndex].merkleRoot} index: ${
+                        stateIndex + 1
+                    } of ${merkleRoots.length} for asset with ual: ${ual}.`,
+                );
+
+                await this.syncKcState(
+                    paranetUAL,
+                    ual,
+                    stateIndex,
+                    merkleRoots[stateIndex].merkleRoot,
+                    paranetId,
+                    paranetNodesAccessPolicy,
+                );
             }
 
-            if (isSuccessful && removeMissingAssetRecord) {
-                await this.repositoryModuleManager.removeMissedParanetAssetRecordsByUAL(ual);
-            }
-
-            return isSuccessful;
+            await this.repositoryModuleManager.paranetKcMarkAsSynced(paranetUAL, ual);
+            return null;
         } catch (error) {
             this.logger.warn(
                 `Paranet sync: Failed to sync asset: ${ual} for paranet: ${paranetId}, error: ${error}`,
             );
-            await this.repositoryModuleManager.createMissedParanetAssetRecord({
-                blockchain,
+
+            await this.repositoryModuleManager.paranetKcIncrementRetries(
+                paranetUAL,
                 ual,
-                paranetUAL,
-            });
-
-            return false;
-        }
-    }
-
-    async syncMissedKAs(
-        paranetUAL,
-        paranetId,
-        paranetNodesAccessPolicy,
-        paranetRepository,
-        operationId,
-    ) {
-        const missedParanetAssets =
-            await this.repositoryModuleManager.getMissedParanetAssetsRecordsWithRetryCount(
-                paranetUAL,
-                PARANET_SYNC_RETRIES_LIMIT,
-                PARANET_SYNC_RETRY_DELAY_MS,
+                `${error}`,
             );
-
-        const results = [];
-
-        // Loop through missedParanetAssets in batches
-        for (let i = 0; i < missedParanetAssets.length; i += PARANET_SYNC_KA_COUNT) {
-            // Get the current batch
-            const batch = missedParanetAssets.slice(i, i + PARANET_SYNC_KA_COUNT);
-
-            // Map the batch to an array of promises
-            const promises = batch.map((missedParanetAsset) => {
-                const {
-                    blockchain: knowledgeAssetBlockchain,
-                    contract: knowledgeAssetStorageContract,
-                    tokenId: knowledgeAssetTokenId,
-                } = this.ualService.resolveUAL(missedParanetAsset.ual);
-
-                return this.syncAsset(
-                    missedParanetAsset.ual,
-                    knowledgeAssetBlockchain,
-                    knowledgeAssetStorageContract,
-                    knowledgeAssetTokenId,
-                    paranetUAL,
-                    paranetId,
-                    paranetNodesAccessPolicy,
-                    paranetRepository,
-                    operationId,
-                    true, // removeMissingAssetRecord
-                );
-            });
-
-            // Await the promises in the current batch
-            const batchResults = await Promise.all(promises);
-
-            // Accumulate the results
-            results.push(...batchResults);
+            return error;
         }
-
-        const successfulCount = results.filter(Boolean).length;
-
-        return [successfulCount, results.length - successfulCount];
-    }
-
-    async syncNewKAs(
-        blockchain,
-        startIndex,
-        contractKaCount,
-        paranetUAL,
-        paranetId,
-        paranetNodesAccessPolicy,
-        paranetRepository,
-        operationId,
-    ) {
-        let i = Number(startIndex);
-
-        const results = [];
-        while (i <= contractKaCount) {
-            const nextKaArray =
-                await this.blockchainModuleManager.getParanetKnowledgeCollectionsWithPagination(
-                    blockchain,
-                    paranetId,
-                    i,
-                    PARANET_SYNC_KA_COUNT,
-                );
-
-            if (nextKaArray.length === 0) {
-                break;
-            }
-
-            i += nextKaArray.length;
-
-            const filteredKAs = [];
-            // NOTE: This could also be processed in parallel if needed
-            for (const knowledgeAssetId of nextKaArray) {
-                const { knowledgeAssetStorageContract, tokenId: knowledgeAssetTokenId } =
-                    await this.blockchainModuleManager.getParanetKnowledgeCollectionLocator(
-                        blockchain,
-                        knowledgeAssetId,
-                    );
-
-                const ual = this.ualService.deriveUAL(
-                    blockchain,
-                    knowledgeAssetStorageContract,
-                    knowledgeAssetTokenId,
-                );
-
-                const isAlreadySynced =
-                    await this.repositoryModuleManager.paranetSyncedAssetRecordExists(ual);
-
-                // Skip already synced KAs
-                if (isAlreadySynced) {
-                    continue;
-                }
-
-                const isMissedAsset =
-                    await this.repositoryModuleManager.missedParanetAssetRecordExists(ual);
-
-                // Skip missed KAs as they are synced in the other function
-                if (isMissedAsset) {
-                    continue;
-                }
-
-                filteredKAs.push([
-                    ual,
-                    blockchain,
-                    knowledgeAssetStorageContract,
-                    knowledgeAssetTokenId,
-                ]);
-            }
-
-            if (filteredKAs.length > 0) {
-                const promises = filteredKAs.map(
-                    ([syncKAUal, syncKABlockchain, syncKAContract, syncKATokenId]) =>
-                        this.syncAsset(
-                            syncKAUal,
-                            syncKABlockchain,
-                            syncKAContract,
-                            syncKATokenId,
-                            paranetUAL,
-                            paranetId,
-                            paranetNodesAccessPolicy,
-                            paranetRepository,
-                            operationId,
-                            false, // removeMissingAssetRecord
-                        ),
-                );
-
-                const batchResults = await Promise.all(promises);
-                results.push(...batchResults);
-            }
-        }
-
-        const successfulCount = results.filter(Boolean).length;
-        return [successfulCount, results.length - successfulCount];
     }
 
     /**

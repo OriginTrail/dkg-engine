@@ -1,6 +1,10 @@
 import ValidateAssetCommand from '../../../common/validate-asset-command.js';
 import Command from '../../../command.js';
-import { OPERATION_ID_STATUS, ERROR_TYPE } from '../../../../constants/constants.js';
+import {
+    OPERATION_ID_STATUS,
+    ERROR_TYPE,
+    PARANET_ACCESS_POLICY,
+} from '../../../../constants/constants.js';
 
 class GetValidateAssetCommand extends ValidateAssetCommand {
     constructor(ctx) {
@@ -31,6 +35,7 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
             ual,
             isOperationV0,
             isV6Contract,
+            paranetUAL,
         } = command.data;
         await this.operationIdService.updateOperationIdStatus(
             operationId,
@@ -48,6 +53,63 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
                 this.errorType,
             );
             return Command.empty();
+        }
+
+        if (paranetUAL) {
+            const {
+                blockchain: paranetBlockchain,
+                contract: paranetContract,
+                knowledgeCollectionId: paranetKnowledgeCollectionId,
+            } = this.ualService.resolveUAL(paranetUAL);
+
+            const isParanetUAL = this.ualService.isUAL(paranetUAL);
+
+            if (!isParanetUAL) {
+                await this.handleError(
+                    operationId,
+                    paranetBlockchain,
+                    `Get for operation id: ${operationId}, Paranet UAL: ${paranetUAL}: is not a UAL.`,
+                    this.errorType,
+                );
+                return Command.empty();
+            }
+
+            const paranetId = this.paranetService.constructParanetId(
+                paranetContract,
+                paranetKnowledgeCollectionId,
+            );
+
+            const paranetExists = await this.blockchainModuleManager.paranetExists(
+                paranetBlockchain,
+                paranetId,
+            );
+
+            if (!paranetExists) {
+                await this.handleError(
+                    operationId,
+                    paranetBlockchain,
+                    `Get for operation id: ${operationId}, Paranet UAL: ${paranetUAL}. Paranet does not exist.`,
+                    this.errorType,
+                );
+                return Command.empty();
+            }
+
+            const paranetNodesAccessPolicy =
+                await this.blockchainModuleManager.getNodesAccessPolicy(
+                    paranetBlockchain,
+                    paranetId,
+                );
+
+            // Curated paranets are currently not supported
+            if (paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.CURATED) {
+                await this.handleError(
+                    operationId,
+                    paranetBlockchain,
+                    `Get for operation id: ${operationId}, Paranet UAL: ${paranetUAL}. Curated paranets are currently not supported.`,
+                    this.errorType,
+                );
+                return Command.empty();
+            }
         }
 
         this.operationIdService.emitChangeEvent(

@@ -587,6 +587,15 @@ class TripleStoreService {
             this.buildQuery(query, namedGraphs, labels),
         );
     }
+
+    getRepositorySparqlEndpoint(repository) {
+        const implementationName = this.repositoryImplementations[repository];
+        const endpoint =
+            this.tripleStoreModuleManager.getImplementation(implementationName).module.repositories[
+                repository
+            ].sparqlEndpoint;
+        return endpoint;
+    }
 }
 
 export default TripleStoreService;

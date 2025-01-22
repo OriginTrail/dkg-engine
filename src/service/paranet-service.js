@@ -42,7 +42,7 @@ class ParanetService {
     getParanetRepositoryName(paranetUAL) {
         if (this.ualService.isUAL(paranetUAL)) {
             // Replace : and / with -
-            return paranetUAL.replace(/[/:]/g, '-').toLowerCase();
+            return `paranet-${paranetUAL.replace(/[/:]/g, '-').toLowerCase()}`;
         }
         throw new Error(
             `Unable to get Paranet repository name. Paranet id doesn't have UAL format: ${paranetUAL}`,

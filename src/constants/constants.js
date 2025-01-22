@@ -273,9 +273,10 @@ export const ABIs = {
     ShardingTable: require('dkg-evm-module/abi/ShardingTable.json'),
     ShardingTableStorage: require('dkg-evm-module/abi/ShardingTableStorage.json'),
     ParanetsRegistry: require('dkg-evm-module/abi/ParanetsRegistry.json'),
-    ParanetKnowledgeAssetsRegistry: require('dkg-evm-module/abi/ParanetKnowledgeAssetsRegistry.json'),
+    ParanetKnowledgeCollectionsRegistry: require('dkg-evm-module/abi/ParanetKnowledgeCollectionsRegistry.json'),
     AskStorage: require('dkg-evm-module/abi/AskStorage.json'),
     Chronos: require('dkg-evm-module/abi/Chronos.json'),
+    Paranet: require('dkg-evm-module/abi/Paranet.json'),
 };
 
 export const CONTRACT_FUNCTION_PRIORITY = {};

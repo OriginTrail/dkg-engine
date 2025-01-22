@@ -7,8 +7,9 @@ class UALService {
         this.cryptoService = ctx.cryptoService;
     }
 
-    deriveUAL(blockchain, contract, tokenId) {
-        return `did:dkg:${blockchain.toLowerCase()}/${contract.toLowerCase()}/${tokenId}`;
+    deriveUAL(blockchain, contract, knowledgeCollectionId, knowledgeAssetId) {
+        const ual = `did:dkg:${blockchain.toLowerCase()}/${contract.toLowerCase()}/${knowledgeCollectionId}`;
+        return knowledgeAssetId ? `${ual}/${knowledgeAssetId}` : ual;
     }
 
     // did:dkg:otp:2043/0x123231/5
