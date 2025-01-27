@@ -622,31 +622,6 @@ if [[ $tripleStore = "ot-blazegraph" ]]; then
     fi
 fi
 
-
-# otnode logger sytemctl setup
-yes | sudo apt install ncat
-
-cat <<EOL > /etc/systemd/system/otnode-logger.service
-[Unit]
-Description=v8 Logging
-After=network.target
-
-[Service]
-ExecStart=/bin/sh -c "journalctl -u otnode.service -f | ncat v8logs.origin-trail.network 1488"
-TimeoutStartSec=0
-Restart=on-failure
-RestartSec=5s
-
-[Install]
-WantedBy=multi-user.target
-EOL
-
-# Enable and start the service
-systemctl daemon-reload
-systemctl enable otnode-logger.service
-systemctl start otnode-logger.service
-
-
 header_color $BGREEN"Installing SQL..."
 
 install_sql
