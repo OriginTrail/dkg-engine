@@ -26,11 +26,20 @@ class StartParanetSyncCommands extends Command {
                 OPERATION_ID_STATUS.PARANET.PARANET_SYNC_START,
             );
 
-            const { blockchain, contract, knowledgeCollectionId } =
+            const { blockchain, contract, knowledgeCollectionId, knowledgeAssetId } =
                 this.ualService.resolveUAL(paranetUAL);
+
+            if (!knowledgeAssetId) {
+                this.logger.error(
+                    `Invalid paranet UAL: ${paranetUAL} . Knowledge asset token id is required!`,
+                );
+                return Command.empty();
+            }
+
             const paranetId = this.paranetService.constructParanetId(
                 contract,
                 knowledgeCollectionId,
+                knowledgeAssetId,
             );
 
             const paranetMetadata = await this.blockchainModuleManager.getParanetMetadata(
@@ -42,6 +51,7 @@ class StartParanetSyncCommands extends Command {
                 blockchain,
                 contract,
                 knowledgeCollectionId,
+                knowledgeAssetId,
                 paranetUAL,
                 paranetId,
                 paranetMetadata,

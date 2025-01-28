@@ -81,7 +81,7 @@
         "axios": "^1.6.0",
         "cors": "^2.8.5",
         "deep-extend": "^0.6.0",
-        "dkg-evm-module": "^8.0.1",
+        "dkg-evm-module": "github:OriginTrail/dkg-evm-module#paranet-from-KA",
         "dotenv": "^16.0.1",
         "ethers": "^5.7.2",
         "express": "^4.18.1",
