@@ -60,7 +60,19 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
                 blockchain: paranetBlockchain,
                 contract: paranetContract,
                 knowledgeCollectionId: paranetKnowledgeCollectionId,
+                knowledgeAssetId: paranetKnowledgeAssetId,
             } = this.ualService.resolveUAL(paranetUAL);
+
+            if (!paranetKnowledgeAssetId) {
+                await this.handleError(
+                    operationId,
+                    paranetBlockchain,
+                    `Invalid paranet UAL: ${paranetUAL} . Knowledge asset token id is required!`,
+                    this.errorType,
+                    true,
+                );
+                return Command.empty();
+            }
 
             const isParanetUAL = this.ualService.isUAL(paranetUAL);
 
@@ -77,6 +89,7 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
             const paranetId = this.paranetService.constructParanetId(
                 paranetContract,
                 paranetKnowledgeCollectionId,
+                paranetKnowledgeAssetId,
             );
 
             const paranetExists = await this.blockchainModuleManager.paranetExists(
