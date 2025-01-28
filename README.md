@@ -206,6 +206,7 @@ and paste the following content inside (save and close):
 NODE_ENV=development
 RPC_ENDPOINT_BC1=http://localhost:8545
 RPC_ENDPOINT_BC2=http://localhost:9545
+REPOSITORY_PASSWORD=
 ```
 
 Run the Triple Store.
