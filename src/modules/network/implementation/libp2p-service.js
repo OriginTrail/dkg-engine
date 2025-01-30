@@ -464,7 +464,12 @@ class Libp2pService {
             return { message, valid: false, busy: false };
         }
 
-        message.header = JSON.parse(stringifiedHeader);
+        try {
+            message.header = JSON.parse(stringifiedHeader);
+        } catch (error) {
+            // Return the same format as invalid request case
+            return { message, valid: false, busy: false };
+        }
 
         // validate request / response
         if (!(await isMessageValid(message.header, peerIdString))) {
@@ -481,10 +486,20 @@ class Libp2pService {
 
         let stringifiedData = '';
         // read data the data
-        for await (const chunk of source) {
-            stringifiedData += chunk;
+        
+        try {
+            for await (const chunk of source) {
+    
+                stringifiedData += chunk;
+    
+            }
+            message.data = JSON.parse(stringifiedData);
+            
+        } catch (error) {
+    
+            // If data parsing fails, return invalid message response
+            return { message, valid: false, busy: false };
         }
-        message.data = JSON.parse(stringifiedData);
 
         return { message, valid: true, busy: false };
     }
