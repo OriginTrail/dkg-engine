@@ -106,19 +106,19 @@ class ShardingTableService {
     }
 
     async dial(peerId) {
-        const { addresses } = await this.findPeerAddressAndProtocols(peerId);
-        if (addresses.length) {
-            try {
+        try {
+            const { addresses } = await this.findPeerAddressAndProtocols(peerId);
+            if (addresses.length) {
                 if (peerId !== this.networkModuleManager.getPeerId().toB58String()) {
                     this.logger.trace(`Dialing peer ${peerId}.`);
                     await this.networkModuleManager.dial(peerId);
                 }
                 await this.updatePeerRecordLastSeenAndLastDialed(peerId);
-            } catch (error) {
-                this.logger.trace(`Unable to dial peer ${peerId}. Error: ${error.message}`);
+            } else {
                 await this.updatePeerRecordLastDialed(peerId);
             }
-        } else {
+        } catch (error) {
+            this.logger.trace(`Unable to dial peer ${peerId}. Error: ${error.message}`);
             await this.updatePeerRecordLastDialed(peerId);
         }
     }
