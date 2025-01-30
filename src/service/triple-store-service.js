@@ -38,7 +38,7 @@ class TripleStoreService {
         knowledgeCollectionUAL,
         triples,
         retries = 5,
-        retryDelay = 0,
+        retryDelay = 50,
     ) {
         this.logger.info(
             `Inserting Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
