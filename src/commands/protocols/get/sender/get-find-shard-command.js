@@ -22,9 +22,9 @@ class GetFindShardCommand extends FindShardCommand {
     getOperationCommandSequence(nodePartOfShard, commandData) {
         const sequence = ['localGetCommand'];
         sequence.push(
-            commandData.paranetNodesAccessPolicy === 'OPEN'
-                ? 'networkGetCommand'
-                : 'curatedParanetNetworkGetCommand',
+            commandData.paranetNodesAccessPolicy === 'CURATED'
+                ? 'curatedParanetNetworkGetCommand'
+                : 'networkGetCommand',
         );
         return sequence;
     }

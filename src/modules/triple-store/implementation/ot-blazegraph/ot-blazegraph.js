@@ -61,6 +61,10 @@ class OtBlazegraph extends OtTripleStore {
         return decodedString;
     }
 
+    utfConverter(input) {
+        return Buffer.from(input, 'binary').toString('utf8');
+    }
+
     async _executeQuery(repository, query, mediaType) {
         const result = await this.queryEngine.query(
             query,
@@ -78,6 +82,8 @@ class OtBlazegraph extends OtTripleStore {
         if (this.hasUnicodeCodePoints(response)) {
             response = this.decodeUnicodeCodePoints(response);
         }
+
+        response = this.utfConverter(response);
 
         return response;
     }

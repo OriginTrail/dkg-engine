@@ -298,7 +298,7 @@ class OtTripleStore {
                     success = true;
                 } catch (error) {
                     attempts += 1;
-                    if (attempts < retries) {
+                    if (attempts <= retries) {
                         this.logger.warn(
                             `Insert failed for GRAPH <${uals[index]}/${visibility}>. Attempt ${attempts}/${retries}. Retrying in ${retryDelay}ms.`,
                         );
