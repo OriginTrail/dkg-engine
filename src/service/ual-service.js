@@ -96,7 +96,11 @@ class UALService {
                 if (!this.isContract(contract)) {
                     throw new Error(`Invalid contract format: ${contract}`);
                 }
-                return { blockchain: parts2[0] + parts2[1], contract, tokenId: Number(parts[1]) };
+                return {
+                    blockchain: parts2[0] + parts2[1],
+                    contract,
+                    knowledgeCollectionId: Number(parts[1]),
+                };
             }
             if (parts2.length === 2) {
                 let blockchainWithId;
@@ -110,7 +114,11 @@ class UALService {
                 if (!this.isContract(contract)) {
                     throw new Error(`Invalid contract format: ${contract}`);
                 }
-                return { blockchain: blockchainWithId, contract, tokenId: Number(parts[1]) };
+                return {
+                    blockchain: blockchainWithId,
+                    contract,
+                    knowledgeCollectionId: Number(parts[1]),
+                };
             }
         }
 
