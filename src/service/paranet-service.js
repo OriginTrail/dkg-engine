@@ -25,10 +25,10 @@ class ParanetService {
         }
     }
 
-    constructParanetId(contract, tokenId) {
+    constructParanetId(contract, knowledgeCollectionId, knowledgeAssetId) {
         return this.cryptoService.keccak256EncodePacked(
-            ['address', 'uint256'],
-            [contract, tokenId],
+            ['address', 'uint256', 'uint256'],
+            [contract, knowledgeCollectionId, knowledgeAssetId],
         );
     }
 
@@ -50,8 +50,9 @@ class ParanetService {
     }
 
     getParanetIdFromUAL(paranetUAL) {
-        const { contract, tokenId } = this.ualService.resolveUAL(paranetUAL);
-        return this.constructParanetId(contract, tokenId);
+        const { contract, knowledgeCollectionId, knowledgeAssetId } =
+            this.ualService.resolveUAL(paranetUAL);
+        return this.constructParanetId(contract, knowledgeCollectionId, knowledgeAssetId);
     }
 }
 
