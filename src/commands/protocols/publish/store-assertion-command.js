@@ -3,9 +3,6 @@ import {
     OPERATION_ID_STATUS,
     ERROR_TYPE,
     TRIPLE_STORE_REPOSITORIES,
-    NETWORK_MESSAGE_TYPES,
-    NETWORK_MESSAGE_TIMEOUT_MILLS,
-    NETWORK_PROTOCOLS,
 } from '../../../constants/constants.js';
 
 class StoreAssertionCommand extends Command {
@@ -53,19 +50,7 @@ class StoreAssertionCommand extends Command {
                     publisherPeerId,
                 );
             } else {
-                // command.sequence.push('findPublisherNodeCommand', 'networkFinalityCommand');
-                // Test sending message directly from here
-                const msg = { ual, publishOperationId, blockchain, operationId };
-                const response = await this.networkModuleManager.sendMessage(
-                    NETWORK_PROTOCOLS.FINALITY[0],
-                    publisherPeerId,
-                    NETWORK_MESSAGE_TYPES.REQUESTS.PROTOCOL_REQUEST,
-                    operationId,
-                    msg,
-                    NETWORK_MESSAGE_TIMEOUT_MILLS.FINALITY.REQUEST,
-                );
-
-                console.log(response);
+                command.sequence.push('findPublisherNodeCommand', 'networkFinalityCommand');
             }
         } catch (e) {
             await this.handleError(operationId, blockchain, e.message, this.errorType, true);
