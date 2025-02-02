@@ -2,7 +2,7 @@ import BaseController from '../base-http-api-controller.js';
 
 import { TRIPLE_STORE_REPOSITORIES, QUERY_TYPES } from '../../../constants/constants.js';
 
-class QueryController extends BaseController {
+class DirectQueryController extends BaseController {
     constructor(ctx) {
         super(ctx);
         this.fileService = ctx.fileService;
@@ -122,4 +122,4 @@ class QueryController extends BaseController {
     }
 }
 
-export default QueryController;
+export default DirectQueryController;
