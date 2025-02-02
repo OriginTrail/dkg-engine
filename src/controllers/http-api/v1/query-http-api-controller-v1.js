@@ -2,7 +2,7 @@ import BaseController from '../base-http-api-controller.js';
 
 import { OPERATION_ID_STATUS, TRIPLE_STORE_REPOSITORIES } from '../../../constants/constants.js';
 
-class QueryController extends BaseController {
+class DirectQueryController extends BaseController {
     constructor(ctx) {
         super(ctx);
         this.commandExecutor = ctx.commandExecutor;
@@ -55,4 +55,4 @@ class QueryController extends BaseController {
     }
 }
 
-export default QueryController;
+export default DirectQueryController;
