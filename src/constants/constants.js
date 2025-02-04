@@ -1014,6 +1014,11 @@ export const HTTP_API_ROUTES = {
             path: '/ask',
             options: {},
         },
+        'local-store': {
+            method: 'post',
+            path: '/local-store',
+            options: {},
+        },
     },
 };
 
