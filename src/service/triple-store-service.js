@@ -580,6 +580,15 @@ class TripleStoreService {
         );
     }
 
+    async ask(query, repository = TRIPLE_STORE_REPOSITORY.DKG) {
+        return this.tripleStoreModuleManager.ask(
+            this.repositoryImplementations[repository] ??
+                this.repositoryImplementations[TRIPLE_STORE_REPOSITORY.DKG],
+            repository,
+            query,
+        );
+    }
+
     async queryVoid(repository, query, namedGraphs = null, labels = null) {
         return this.tripleStoreModuleManager.queryVoid(
             this.repositoryImplementations[repository],
