@@ -69,7 +69,7 @@ class LocalStoreController extends BaseController {
 
             await Promise.all(validations);
         } catch (error) {
-            return this.returnResponse(res, 400, {
+            return this.returnResponse(res, 200, {
                 status: false,
                 error,
             });
@@ -85,7 +85,7 @@ class LocalStoreController extends BaseController {
                 status: true,
             });
         } catch (error) {
-            return this.returnResponse(res, 500, {
+            return this.returnResponse(res, 200, {
                 status: false,
                 error,
             });
