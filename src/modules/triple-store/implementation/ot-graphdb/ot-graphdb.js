@@ -129,6 +129,89 @@ class OtGraphdb extends OtTripleStore {
     getName() {
         return 'GraphDB';
     }
+
+    async queryVoid(repository, query) {
+        const endpoint = `${this.repositories[repository].url}/repositories/${repository}/statements`;
+
+        try {
+            await axios.post(endpoint, query, {
+                headers: {
+                    'Content-Type': 'application/sparql-update',
+                },
+            });
+
+            return true;
+        } catch (error) {
+            console.error(`SPARQL update failed: ${error.message}`);
+            throw error;
+        }
+    }
+
+    async ask(repository, query) {
+        const endpoint = `${this.repositories[repository].url}/repositories/${repository}`;
+
+        try {
+            const response = await axios.post(endpoint, query, {
+                headers: {
+                    'Content-Type': 'application/sparql-query',
+                    Accept: 'application/json',
+                },
+            });
+
+            return response.data.boolean; // true or false
+        } catch (error) {
+            console.error(`ASK query failed: ${error.message}`);
+            throw error;
+        }
+    }
+
+    async construct(repository, query, accept = 'application/n-triples') {
+        const endpoint = `${this.repositories[repository].url}/repositories/${repository}`;
+        try {
+            const response = await axios.post(endpoint, query, {
+                headers: {
+                    'Content-Type': 'application/sparql-query',
+                    Accept: accept,
+                },
+            });
+            return response.data;
+        } catch (error) {
+            console.error(`SPARQL query failed: ${error.message}`);
+            throw error;
+        }
+    }
+
+    async select(repository, query) {
+        // todo: add media type once bug is fixed
+        // no media type is passed because of comunica bug
+        // https://github.com/comunica/comunica/issues/1034
+        const result = await this._executeQuery(repository, query);
+        return result ?? [];
+    }
+
+    async _executeQuery(repository, query, mediaType, accept = 'application/sparql-results+json') {
+        const endpoint = `${this.repositories[repository].url}/repositories/${repository}`;
+        try {
+            const response = await axios.post(endpoint, query, {
+                headers: {
+                    'Content-Type': 'application/sparql-query',
+                    Accept: accept,
+                },
+            });
+            const result = [];
+            for (const elem of response.data.results.bindings) {
+                const obj = {};
+                Object.keys(elem).forEach((key) => {
+                    obj[key] = elem[key].value;
+                });
+                result.push(obj);
+            }
+            return result;
+        } catch (error) {
+            console.error(`SPARQL query failed: ${error.message}`);
+            throw error;
+        }
+    }
 }
 
 export default OtGraphdb;
