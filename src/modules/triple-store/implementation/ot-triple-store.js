@@ -1,5 +1,6 @@
 import { QueryEngine as Engine } from '@comunica/query-sparql';
 import { setTimeout } from 'timers/promises';
+import axios from 'axios';
 import {
     SCHEMA_CONTEXT,
     TRIPLE_STORE_CONNECT_MAX_RETRIES,
@@ -565,7 +566,11 @@ class OtTripleStore {
     }
 
     async queryVoid(repository, query) {
-        return this.queryEngine.queryVoid(query, this.repositories[repository].updateContext);
+        await axios.post(this.repositories[repository].sparqlEndpointUpdate, query, {
+            headers: {
+                'Content-Type': 'application/sparql-update',
+            },
+        });
     }
 
     async ask(repository, query) {
