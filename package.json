@@ -1,6 +1,6 @@
 {
     "name": "origintrail_node",
-    "version": "8.1.3+beta.9",
+    "version": "8.1.3+beta.10",
     "description": "OTNode V8",
     "main": "index.js",
     "type": "module",
@@ -64,7 +64,7 @@
         "slugify": "^1.6.5"
     },
     "dependencies": {
-        "@comunica/query-sparql": "^2.4.3",
+        "@comunica/query-sparql": "^4.0.2",
         "@ethersproject/bytes": "^5.7.0",
         "@ethersproject/hash": "^5.7.0",
         "@ethersproject/wallet": "^5.7.0",
