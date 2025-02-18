@@ -102,6 +102,10 @@ class ValidationService {
     async validateDatasetRoot(dataset, datasetRoot) {
         const calculatedDatasetRoot = await this.validationModuleManager.calculateRoot(dataset);
 
+        this.logger.error(`calculatedDatasetRoot ${calculatedDatasetRoot}`);
+        this.logger.error(`datasetRoot ${datasetRoot}`);
+        this.logger.error(`equals ${datasetRoot !== calculatedDatasetRoot}`);
+
         if (datasetRoot !== calculatedDatasetRoot) {
             throw new Error(
                 `Merkle Root validation failed. Received Merkle Root: ${datasetRoot}; Calculated Merkle Root: ${calculatedDatasetRoot}`,
@@ -115,7 +119,7 @@ class ValidationService {
         );
 
         if (privateAssertionTriple) {
-            const privateAssertionRoot = privateAssertionTriple.split(' ')[2].slice(1, -1);
+            const privateAssertionRoot = privateAssertionTriple.split(' ')[2].replace(/['"]/g, '');
 
             await this.validateDatasetRoot(privateAssertion, privateAssertionRoot);
         } else {
