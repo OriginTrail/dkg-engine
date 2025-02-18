@@ -102,10 +102,6 @@ class ValidationService {
     async validateDatasetRoot(dataset, datasetRoot) {
         const calculatedDatasetRoot = await this.validationModuleManager.calculateRoot(dataset);
 
-        this.logger.error(`calculatedDatasetRoot ${calculatedDatasetRoot}`);
-        this.logger.error(`datasetRoot ${datasetRoot}`);
-        this.logger.error(`equals ${datasetRoot !== calculatedDatasetRoot}`);
-
         if (datasetRoot !== calculatedDatasetRoot) {
             throw new Error(
                 `Merkle Root validation failed. Received Merkle Root: ${datasetRoot}; Calculated Merkle Root: ${calculatedDatasetRoot}`,
