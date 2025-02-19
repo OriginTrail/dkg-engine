@@ -115,7 +115,7 @@ class ValidationService {
         );
 
         if (privateAssertionTriple) {
-            const privateAssertionRoot = privateAssertionTriple.split(' ')[2].slice(1, -1);
+            const privateAssertionRoot = privateAssertionTriple.split(' ')[2].replace(/['"]/g, '');
 
             await this.validateDatasetRoot(privateAssertion, privateAssertionRoot);
         } else {
