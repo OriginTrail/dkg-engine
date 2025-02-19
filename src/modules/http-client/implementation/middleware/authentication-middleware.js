@@ -2,10 +2,6 @@ const parseIp = (req) => {
     let xForwardedFor;
     let socketRemoteAddress;
 
-    if (req.headers['x-forwarded-for']) {
-        xForwardedFor = req.headers['x-forwarded-for'].split(',').shift();
-    }
-
     if (req.socket) {
         socketRemoteAddress = req.socket.remoteAddress;
     }
