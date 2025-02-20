@@ -76,12 +76,20 @@ class GetController extends BaseController {
             );
 
             const commandSequence = [];
-            commandSequence.push('getValidateAssetCommand');
+            // TODO: If the request is invalid, return 400 (or some other bad request code)
+            // const isValidRequest = await this.validateAsset(
+            //     id,
+            //     paranetUAL,
+            //     false, // isOperationV0,
+            //     isV6Contract,
+            //     blockchain,
+            //     contract,
+            //     knowledgeCollectionId,
+            // );
 
             if (!tripleStoreMigrationAlreadyExecuted && isV6Contract) {
                 commandSequence.push('getAssertionMerkleRootCommand');
             }
-
             commandSequence.push('getFindShardCommand');
 
             await this.commandExecutor.add({
@@ -118,6 +126,71 @@ class GetController extends BaseController {
                 ERROR_TYPE.GET.GET_ROUTE_ERROR,
             );
         }
+    }
+
+    async validateAsset(
+        ual,
+        paranetUAL,
+        isOperationV0,
+        isV6Contract,
+        blockchain,
+        contract,
+        knowledgeCollectionId,
+    ) {
+        const isUAL = this.ualService.isUAL(ual);
+
+        if (!isUAL) {
+            return false;
+        }
+
+        if (paranetUAL) {
+            const isParanetUAL = this.ualService.isUAL(paranetUAL);
+
+            if (!isParanetUAL) {
+                return false;
+            }
+
+            const {
+                blockchain: paranetBlockchain,
+                contract: paranetContract,
+                knowledgeCollectionId: paranetKnowledgeCollectionId,
+                knowledgeAssetId: paranetKnowledgeAssetId,
+            } = this.ualService.resolveUAL(paranetUAL);
+
+            if (!paranetKnowledgeAssetId) {
+                return false;
+            }
+
+            const paranetId = this.paranetService.constructParanetId(
+                paranetContract,
+                paranetKnowledgeCollectionId,
+                paranetKnowledgeAssetId,
+            );
+
+            const paranetExists = await this.blockchainModuleManager.paranetExists(
+                paranetBlockchain,
+                paranetId,
+            );
+
+            if (!paranetExists) {
+                return false;
+            }
+        }
+
+        // TODO: Update to validate knowledge asset index
+        if (!isOperationV0 && !isV6Contract) {
+            const isValidUal = await this.validationService.validateUal(
+                blockchain,
+                contract,
+                knowledgeCollectionId,
+            );
+
+            if (!isValidUal) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
 
