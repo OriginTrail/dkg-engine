@@ -4,6 +4,7 @@ import {
     ERROR_TYPE,
     TRIPLES_VISIBILITY,
     V6_CONTENT_STORAGE_MAP,
+    TRIPLE_STORE_REPOSITORIES,
 } from '../../../constants/constants.js';
 import BaseController from '../base-http-api-controller.js';
 
@@ -55,6 +56,7 @@ class GetController extends BaseController {
         let knowledgeAssetId;
         try {
             const { paranetUAL, includeMetadata, contentType } = req.body;
+            // Why we resolve and than derive?
             let { id } = req.body;
             ({ blockchain, contract, knowledgeCollectionId, knowledgeAssetId } =
                 this.ualService.resolveUAL(id));
@@ -88,7 +90,21 @@ class GetController extends BaseController {
             // );
 
             if (!tripleStoreMigrationAlreadyExecuted && isV6Contract) {
-                commandSequence.push('getAssertionMerkleRootCommand');
+                this.logger.info(
+                    `Getting assertion id and operation id ${operationId} for ual: ${id}`,
+                );
+
+                let assertionId = await this.tripleStoreService.getLatestAssertionId(
+                    TRIPLE_STORE_REPOSITORIES.PUBLIC_CURRENT,
+                    id,
+                );
+
+                if (!assertionId) {
+                    assertionId = await this.tripleStoreService.getLatestAssertionId(
+                        TRIPLE_STORE_REPOSITORIES.PRIVATE_CURRENT,
+                        id,
+                    );
+                }
             }
             commandSequence.push('getFindShardCommand');
 
