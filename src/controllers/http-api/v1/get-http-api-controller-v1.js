@@ -77,7 +77,6 @@ class GetController extends BaseController {
                 ca.toLowerCase().includes(contract.toLowerCase()),
             );
 
-            const commandSequence = [];
             // TODO: If the request is invalid, return 400 (or some other bad request code)
             // const isValidRequest = await this.validateAsset(
             //     id,
@@ -106,7 +105,7 @@ class GetController extends BaseController {
                     );
                 }
             }
-            commandSequence.push('getFindShardCommand');
+            const commandSequence = ['localGetCommand', 'getFindShardCommand'];
 
             await this.commandExecutor.add({
                 name: commandSequence[0],
