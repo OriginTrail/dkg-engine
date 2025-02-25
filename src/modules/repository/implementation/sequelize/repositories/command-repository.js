@@ -54,6 +54,26 @@ class CommandRepository {
         });
     }
 
+    async removeFinalizedCommands(timestamp, limit, options) {
+        return await this.model.destroy({
+            where: {
+                status: {
+                    [Sequelize.Op.in]: [
+                        COMMAND_STATUS.COMPLETED,
+                        COMMAND_STATUS.FAILED,
+                        COMMAND_STATUS.EXPIRED,
+                        COMMAND_STATUS.UNKNOWN,
+                    ],
+                },
+                startedAt: { [Sequelize.Op.lte]: timestamp },
+            },
+            order: [['startedAt', 'asc']],
+            raw: true,
+            limit,
+            ...options,
+        });
+    }
+
     async findFinalizedCommands(timestamp, limit, options) {
         return this.model.findAll({
             where: {
