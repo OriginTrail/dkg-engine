@@ -21,6 +21,12 @@ class CommandsCleanerCommand extends CleanerCommand {
         return this.repositoryModuleManager.removeCommands(ids);
     }
 
+    async findAndDeleteRows(nowTimestamp) {
+        return this.repositoryModuleManager.removeFinalizedCommands(
+            nowTimestamp,
+            REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER, );
+    }
+
     /**
      * Builds default command
      * @param map
