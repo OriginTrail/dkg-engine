@@ -1,4 +1,3 @@
-import { REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER } from '../../constants/constants.js';
 import Command from '../command.js';
 
 class CleanerCommand extends Command {
@@ -16,25 +15,8 @@ class CleanerCommand extends Command {
         const nowTimestamp = Date.now();
 
         let rowsForRemoval = await this.findRowsForRemoval(nowTimestamp);
-
-        while (rowsForRemoval?.length >= REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER) {
-            const archiveName = this.getArchiveName(rowsForRemoval);
-
-            // eslint-disable-next-line no-await-in-loop
-            await this.archiveService.archiveData(
-                this.getArchiveFolderName(),
-                archiveName,
-                rowsForRemoval,
-            );
-
-            // remove from database;
-            const ids = rowsForRemoval.map((command) => command.id);
-            // eslint-disable-next-line no-await-in-loop
-            await this.deleteRows(ids);
-
-            // eslint-disable-next-line no-await-in-loop
-            rowsForRemoval = await this.findRowsForRemoval(nowTimestamp);
-        }
+        const ids = rowsForRemoval.map((command) => command.id);
+        await this.deleteRows(ids);
 
         return Command.repeat();
     }
