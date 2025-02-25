@@ -1,3 +1,4 @@
+import { now } from 'd3';
 import Command from '../command.js';
 
 class CleanerCommand extends Command {
@@ -14,9 +15,7 @@ class CleanerCommand extends Command {
     async execute() {
         const nowTimestamp = Date.now();
 
-        let rowsForRemoval = await this.findRowsForRemoval(nowTimestamp);
-        const ids = rowsForRemoval.map((command) => command.id);
-        await this.deleteRows(ids);
+        await this.findAndDeleteRows(nowTimestamp);
 
         return Command.repeat();
     }
@@ -27,6 +26,11 @@ class CleanerCommand extends Command {
             rowsForRemoval[rowsForRemoval.length - 1].createdAt,
         ).getTime();
         return `${firstTimestamp}-${lastTimestamp}.json`;
+    }
+
+    // eslint-disable-next-line no-unused-vars
+    async findAndDeleteRows(nowTimestamp) {
+        
     }
 
     // eslint-disable-next-line no-unused-vars
