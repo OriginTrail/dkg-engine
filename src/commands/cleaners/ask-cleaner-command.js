@@ -20,6 +20,14 @@ class AskCleanerCommand extends CleanerCommand {
         return ARCHIVE_ASK_FOLDER;
     }
 
+    async findAndDeleteRows(nowTimestamp) {
+        return this.repositoryModuleManager.findAndRemoveOperationRecords(
+            OPERATIONS.ASK,
+            nowTimestamp,
+            REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
+        );
+    }
+
     async deleteRows(ids) {
         return this.repositoryModuleManager.removeOperationRecords(OPERATIONS.ASK, ids);
     }
