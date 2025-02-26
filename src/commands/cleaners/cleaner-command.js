@@ -1,4 +1,4 @@
-import { now } from 'd3';
+import { REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER } from '../../constants/constants.js';
 import Command from '../command.js';
 
 class CleanerCommand extends Command {
@@ -13,9 +13,14 @@ class CleanerCommand extends Command {
      * @param command
      */
     async execute() {
-        const nowTimestamp = Date.now();
+        let deletedRowsCount;
 
-        await this.findAndDeleteRows(nowTimestamp);
+        /* eslint-disable no-await-in-loop */
+        do {
+            const nowTimestamp = Date.now();
+            deletedRowsCount = await this.findAndDeleteRows(nowTimestamp);
+        } while (deletedRowsCount === REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER);
+        /* eslint-enable no-await-in-loop */
 
         return Command.repeat();
     }
@@ -30,7 +35,7 @@ class CleanerCommand extends Command {
 
     // eslint-disable-next-line no-unused-vars
     async findAndDeleteRows(nowTimestamp) {
-        
+        throw Error('findAndDeleteRows not implemented');
     }
 
     // eslint-disable-next-line no-unused-vars

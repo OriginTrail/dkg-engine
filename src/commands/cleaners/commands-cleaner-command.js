@@ -24,7 +24,8 @@ class CommandsCleanerCommand extends CleanerCommand {
     async findAndDeleteRows(nowTimestamp) {
         return this.repositoryModuleManager.removeFinalizedCommands(
             nowTimestamp,
-            REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER, );
+            REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
+        );
     }
 
     /**
