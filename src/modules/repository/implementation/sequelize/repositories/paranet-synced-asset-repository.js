@@ -1,3 +1,4 @@
+// DEPRECATED
 class ParanetSyncedAssetRepository {
     constructor(models) {
         this.sequelize = models.sequelize;

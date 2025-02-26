@@ -7,8 +7,9 @@ class UALService {
         this.cryptoService = ctx.cryptoService;
     }
 
-    deriveUAL(blockchain, contract, tokenId) {
-        return `did:dkg:${blockchain.toLowerCase()}/${contract.toLowerCase()}/${tokenId}`;
+    deriveUAL(blockchain, contract, knowledgeCollectionId, knowledgeAssetId) {
+        const ual = `did:dkg:${blockchain.toLowerCase()}/${contract.toLowerCase()}/${knowledgeCollectionId}`;
+        return knowledgeAssetId ? `${ual}/${knowledgeAssetId}` : ual;
     }
 
     // did:dkg:otp:2043/0x123231/5
@@ -95,7 +96,11 @@ class UALService {
                 if (!this.isContract(contract)) {
                     throw new Error(`Invalid contract format: ${contract}`);
                 }
-                return { blockchain: parts2[0] + parts2[1], contract, tokenId: Number(parts[1]) };
+                return {
+                    blockchain: parts2[0] + parts2[1],
+                    contract,
+                    knowledgeCollectionId: Number(parts[1]),
+                };
             }
             if (parts2.length === 2) {
                 let blockchainWithId;
@@ -109,7 +114,11 @@ class UALService {
                 if (!this.isContract(contract)) {
                     throw new Error(`Invalid contract format: ${contract}`);
                 }
-                return { blockchain: blockchainWithId, contract, tokenId: Number(parts[1]) };
+                return {
+                    blockchain: blockchainWithId,
+                    contract,
+                    knowledgeCollectionId: Number(parts[1]),
+                };
             }
         }
 

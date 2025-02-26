@@ -11,7 +11,7 @@ class QueryController extends BaseController {
     }
 
     async handleRequest(req, res) {
-        const { query, type: queryType, repository } = req.body;
+        const { query, type: queryType, repository, paranetUAL } = req.body;
 
         const operationId = await this.operationIdService.generateOperationId(
             OPERATION_ID_STATUS.QUERY.QUERY_INIT_START,
@@ -48,6 +48,7 @@ class QueryController extends BaseController {
                         ? [repository, TRIPLE_STORE_REPOSITORIES.DKG]
                         : TRIPLE_STORE_REPOSITORIES.DKG,
                 operationId,
+                paranetUAL,
             },
             transactional: false,
         });

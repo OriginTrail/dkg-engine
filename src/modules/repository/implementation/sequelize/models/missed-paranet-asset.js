@@ -1,3 +1,5 @@
+// NOT USED ANYMORE
+
 export default (sequelize, DataTypes) => {
     const blockchain = sequelize.define(
         'missed_paranet_asset',

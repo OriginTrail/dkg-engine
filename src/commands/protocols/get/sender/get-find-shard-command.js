@@ -20,9 +20,12 @@ class GetFindShardCommand extends FindShardCommand {
 
     // eslint-disable-next-line no-unused-vars
     getOperationCommandSequence(nodePartOfShard, commandData) {
-        const sequence = [];
-        sequence.push('localGetCommand', 'networkGetCommand');
-
+        const sequence = ['localGetCommand'];
+        sequence.push(
+            commandData.paranetNodesAccessPolicy === 'CURATED'
+                ? 'curatedParanetNetworkGetCommand'
+                : 'networkGetCommand',
+        );
         return sequence;
     }
 

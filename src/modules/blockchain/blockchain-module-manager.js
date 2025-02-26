@@ -184,16 +184,21 @@ class BlockchainModuleManager extends BaseModuleManager {
         ]);
     }
 
-    async getParanetKnowledgeAssetsCount(blockchain, paranetId) {
-        return this.callImplementationFunction(blockchain, 'getParanetKnowledgeAssetsCount', [
+    async getParanetKnowledgeCollectionCount(blockchain, paranetId) {
+        return this.callImplementationFunction(blockchain, 'getParanetKnowledgeCollectionCount', [
             paranetId,
         ]);
     }
 
-    async getParanetKnowledgeAssetsWithPagination(blockchain, paranetId, offset, limit) {
+    async getParanetKnowledgeCollectionLocatorsWithPagination(
+        blockchain,
+        paranetId,
+        offset,
+        limit,
+    ) {
         return this.callImplementationFunction(
             blockchain,
-            'getParanetKnowledgeAssetsWithPagination',
+            'getParanetKnowledgeCollectionLocatorsWithPagination',
             [paranetId, offset, limit],
         );
     }
@@ -219,17 +224,11 @@ class BlockchainModuleManager extends BaseModuleManager {
     }
 
     async getParanetName(blockchain, paranetId) {
-        return this.callImplementationFunction(blockchain, 'getName', [paranetId]);
+        return this.callImplementationFunction(blockchain, 'getParanetName', [paranetId]);
     }
 
     async getDescription(blockchain, paranetId) {
         return this.callImplementationFunction(blockchain, 'getDescription', [paranetId]);
-    }
-
-    async getParanetKnowledgeAssetLocator(blockchain, knowledgeAssetId) {
-        return this.callImplementationFunction(blockchain, 'getParanetKnowledgeAssetLocator', [
-            knowledgeAssetId,
-        ]);
     }
 
     async paranetExists(blockchain, paranetId) {

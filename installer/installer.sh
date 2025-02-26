@@ -84,7 +84,7 @@ install_aliases() {
 install_directory() {
     ARCHIVE_REPOSITORY_URL="github.com/OriginTrail/ot-node/archive"
     BRANCH="v6/release/testnet"
-    BRANCH_DIR="/root/ot-node-8-release-testnet"
+    BRANCH_DIR="/root/ot-node-6-release-testnet"
 
     perform_step wget https://$ARCHIVE_REPOSITORY_URL/$BRANCH.zip "Downloading node files"
     perform_step unzip *.zip "Unzipping node files"
@@ -386,11 +386,23 @@ install_node() {
             "config": {
                 "repositories": {
                     "dkg": {
-                        "url": $tripleStoreUrl,
-                        "name": "dkg",
-                        "username": "admin",
-                        "password": ""
-                    }
+                  "url": $tripleStoreUrl,
+                  "name": "dkg",
+                  "username": "admin",
+                  "password": ""
+                },
+                "privateCurrent": {
+                  "url": $tripleStoreUrl,
+                  "name": "private-current",
+                  "username": "admin",
+                  "password": ""
+                },
+                "publicCurrent": {
+                  "url": $tripleStoreUrl,
+                  "name": "public-current",
+                  "username": "admin",
+                  "password": ""
+                }
                 }
             }
         } + .' $CONFIG_DIR/.origintrail_noderc > $CONFIG_DIR/origintrail_noderc_tmp) "Adding triple store config to node config file"

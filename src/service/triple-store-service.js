@@ -38,7 +38,7 @@ class TripleStoreService {
         knowledgeCollectionUAL,
         triples,
         retries = 5,
-        retryDelay = 0,
+        retryDelay = 50,
     ) {
         this.logger.info(
             `Inserting Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
@@ -580,12 +580,30 @@ class TripleStoreService {
         );
     }
 
+    async ask(query, repository = TRIPLE_STORE_REPOSITORY.DKG) {
+        return this.tripleStoreModuleManager.ask(
+            this.repositoryImplementations[repository] ??
+                this.repositoryImplementations[TRIPLE_STORE_REPOSITORY.DKG],
+            repository,
+            query,
+        );
+    }
+
     async queryVoid(repository, query, namedGraphs = null, labels = null) {
         return this.tripleStoreModuleManager.queryVoid(
             this.repositoryImplementations[repository],
             repository,
             this.buildQuery(query, namedGraphs, labels),
         );
+    }
+
+    getRepositorySparqlEndpoint(repository) {
+        const implementationName = this.repositoryImplementations[repository];
+        const endpoint =
+            this.tripleStoreModuleManager.getImplementation(implementationName).module.repositories[
+                repository
+            ].sparqlEndpoint;
+        return endpoint;
     }
 }
 
