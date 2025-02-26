@@ -270,23 +270,47 @@ class OtTripleStore {
         return this.ask(repository, query);
     }
 
-    async createKnowledgeCollectionNamedGraphs(repository, uals, assetsNQuads, visibility) {
-        const query = `
-            PREFIX schema: <${SCHEMA_CONTEXT}>
-            INSERT DATA {
-                ${uals
-                    .map(
-                        (ual, index) => `
+    async createKnowledgeCollectionNamedGraphs(
+        repository,
+        uals,
+        assetsNQuads,
+        visibility,
+        retries = 5,
+        retryDelay = 10,
+    ) {
+        const queries = uals.map(
+            (ual, index) => `
+                PREFIX schema: <${SCHEMA_CONTEXT}>
+                INSERT DATA {
                     GRAPH <${ual}/${visibility}> {
                         ${assetsNQuads[index].join('\n')}
                     }
-                `,
-                    )
-                    .join('\n')}
-            }
-        `;
+                }
+            `,
+        );
+        for (const [index, query] of queries.entries()) {
+            let attempts = 0;
+            let success = false;
 
-        await this.queryVoid(repository, query);
+            while (attempts < retries && !success) {
+                try {
+                    await this.queryVoid(repository, query);
+                    success = true;
+                } catch (error) {
+                    attempts += 1;
+                    if (attempts <= retries) {
+                        this.logger.warn(
+                            `Insert failed for GRAPH <${uals[index]}/${visibility}>. Attempt ${attempts}/${retries}. Retrying in ${retryDelay}ms.`,
+                        );
+                        await setTimeout(retryDelay);
+                    } else {
+                        throw new Error(
+                            `Failed to insert into GRAPH <${uals[index]}/${visibility}> after ${retries} attempts.`,
+                        );
+                    }
+                }
+            }
+        }
     }
 
     async deleteKnowledgeCollectionNamedGraphs(repository, uals) {

@@ -1036,21 +1036,19 @@ class Web3Service {
         return blockTimestamp;
     }
 
-    async getParanetKnowledgeAssetsCount(paranetId) {
+    async getParanetKnowledgeCollectionCount(paranetId) {
         return this.callContractFunction(
             this.contracts.ParanetsRegistry,
-            'getKnowledgeAssetsCount',
+            'getKnowledgeCollectionsCount',
             [paranetId],
-            CONTRACTS.PARANETS_REGISTRY,
         );
     }
 
-    async getParanetKnowledgeAssetsWithPagination(paranetId, offset, limit) {
+    async getParanetKnowledgeCollectionLocatorsWithPagination(paranetId, offset, limit) {
         return this.callContractFunction(
-            this.contracts.ParanetsRegistry,
-            'getKnowledgeAssetsWithPagination',
+            this.contracts.Paranet,
+            'getKnowledgeCollectionLocatorsWithPagination',
             [paranetId, offset, limit],
-            CONTRACTS.PARANETS_REGISTRY,
         );
     }
 
@@ -1079,17 +1077,6 @@ class Web3Service {
             [paranetId],
             CONTRACTS.PARANETS_REGISTRY,
         );
-    }
-
-    async getParanetKnowledgeAssetLocator(knowledgeAssetId) {
-        const [knowledgeAssetStorageContract, kaTokenId] = await this.callContractFunction(
-            this.contracts.ParanetKnowledgeAssetsRegistry,
-            'getKnowledgeAssetLocator',
-            [knowledgeAssetId],
-        );
-        const tokenId = kaTokenId.toNumber();
-        const knowledgeAssetLocator = { knowledgeAssetStorageContract, tokenId };
-        return knowledgeAssetLocator;
     }
 
     async paranetExists(paranetId) {

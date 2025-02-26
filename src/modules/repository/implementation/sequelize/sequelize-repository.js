@@ -9,14 +9,15 @@ import BlockchainRepository from './repositories/blockchain-repository.js';
 import CommandRepository from './repositories/command-repository.js';
 import EventRepository from './repositories/event-repository.js';
 import ParanetRepository from './repositories/paranet-repository.js';
+import ParanetKcRepository from './repositories/paranet-kc-repository.js';
 import OperationIdRepository from './repositories/operation-id-repository.js';
 import OperationRepository from './repositories/operation-repository.js';
 import OperationResponseRepository from './repositories/operation-response.js';
 import ShardRepository from './repositories/shard-repository.js';
 import TokenRepository from './repositories/token-repository.js';
 import UserRepository from './repositories/user-repository.js';
-import MissedParanetAssetRepository from './repositories/missed-paranet-asset-repository.js';
-import ParanetSyncedAssetRepository from './repositories/paranet-synced-asset-repository.js';
+// import MissedParanetAssetRepository from './repositories/missed-paranet-asset-repository.js';
+// import ParanetSyncedAssetRepository from './repositories/paranet-synced-asset-repository.js';
 import FinalityStatusRepository from './repositories/finality-status-repository.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -38,8 +39,9 @@ class SequelizeRepository {
             command: new CommandRepository(this.models),
             event: new EventRepository(this.models),
             paranet: new ParanetRepository(this.models),
-            paranet_synced_asset: new ParanetSyncedAssetRepository(this.models),
-            missed_paranet_asset: new MissedParanetAssetRepository(this.models),
+            // paranet_synced_asset: new ParanetSyncedAssetRepository(this.models),
+            // missed_paranet_asset: new MissedParanetAssetRepository(this.models),
+            paranet_kc: new ParanetKcRepository(this.models),
             operation_id: new OperationIdRepository(this.models),
             operation: new OperationRepository(this.models),
             operation_response: new OperationResponseRepository(this.models),

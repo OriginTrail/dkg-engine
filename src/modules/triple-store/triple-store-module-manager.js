@@ -282,6 +282,12 @@ class TripleStoreModuleManager extends BaseModuleManager {
         }
     }
 
+    async ask(implementationName, repository, query) {
+        if (this.getImplementation(implementationName)) {
+            return this.getImplementation(implementationName).module.ask(repository, query);
+        }
+    }
+
     getName() {
         return 'tripleStore';
     }

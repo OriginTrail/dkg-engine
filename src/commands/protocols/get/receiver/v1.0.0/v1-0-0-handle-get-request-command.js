@@ -112,7 +112,7 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
         let assertionPromise;
         let notMigrated = false;
 
-        if (!assertionId) {
+        if (!assertionId && isV6Contract) {
             assertionId = await this.tripleStoreService.getLatestAssertionId(
                 TRIPLE_STORE_REPOSITORIES.PUBLIC_CURRENT,
                 ual,

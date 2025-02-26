@@ -12,8 +12,8 @@ class StoreAssertionCommand extends Command {
         this.ualService = ctx.ualService;
         this.dataService = ctx.dataService;
         this.tripleStoreService = ctx.tripleStoreService;
-        this.networkModuleManager = ctx.networkModuleManager;
         this.repositoryModuleManager = ctx.repositoryModuleManager;
+        this.networkModuleManager = ctx.networkModuleManager;
 
         this.errorType = ERROR_TYPE.STORE_ASSERTION_ERROR;
     }

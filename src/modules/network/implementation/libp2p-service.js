@@ -486,17 +486,13 @@ class Libp2pService {
 
         let stringifiedData = '';
         // read data the data
-        
+
         try {
             for await (const chunk of source) {
-    
                 stringifiedData += chunk;
-    
             }
             message.data = JSON.parse(stringifiedData);
-            
         } catch (error) {
-    
             // If data parsing fails, return invalid message response
             return { message, valid: false, busy: false };
         }

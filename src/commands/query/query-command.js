@@ -18,7 +18,8 @@ class QueryCommand extends Command {
     }
 
     async execute(command) {
-        const { operationId, query, queryType, repository } = command.data;
+        const { operationId, queryType, paranetUAL } = command.data;
+        let { query, repository } = command.data;
 
         await this.operationIdService.updateOperationIdStatus(
             operationId,
@@ -28,25 +29,24 @@ class QueryCommand extends Command {
 
         let data;
 
+        if (paranetUAL) {
+            repository = this.paranetService.getParanetRepositoryName(paranetUAL);
+        }
+
         // TODO: Review federated query logic for V8
 
         // check if it's federated query
-        // const pattern = /SERVICE\s+<([^>]+)>/g;
-        // const matches = [];
-        // let match;
-        // // eslint-disable-next-line no-cond-assign
-        // while ((match = pattern.exec(query)) !== null) {
-        //     matches.push(match[1]);
-        // }
-        // if (matches.length > 0) {
-        //     for (const repositoryInOriginalQuery of matches) {
-        //         const federatedQueryRepositoryName = `http://localhost:9999/blazegraph/namespace/${this.paranetService.getParanetRepositoryName(
-        //             repositoryInOriginalQuery,
-        //         )}/sparql`;
-        //         this.validateRepositoryName(repositoryInOriginalQuery);
-        //         query = query.replace(repositoryInOriginalQuery, federatedQueryRepositoryName);
-        //     }
-        // }
+        const pattern = /SERVICE\s+<([^>]+)>/g;
+        const matches = query.match(pattern);
+        if (matches?.length > 0) {
+            for (const match of matches) {
+                const repositoryInOriginalQuery = match.split('<')[1].split('>')[0];
+                const repositoryName = this.validateRepositoryName(repositoryInOriginalQuery);
+                const federatedQueryRepositoryEndpoint =
+                    this.tripleStoreService.getRepositorySparqlEndpoint(repositoryName);
+                query = query.replace(repositoryInOriginalQuery, federatedQueryRepositoryEndpoint);
+            }
+        }
 
         try {
             switch (queryType) {

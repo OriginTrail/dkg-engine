@@ -1,5 +1,6 @@
 import { PARANET_SYNC_SOURCES } from '../../../../../constants/constants.js';
 
+// NOT USED ANYMORE
 export default (sequelize, DataTypes) => {
     const blockchain = sequelize.define(
         'paranet_synced_asset',

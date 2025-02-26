@@ -59,7 +59,7 @@ async function setAsk(rpcEndpoint, ask, walletPrivateKey, hubContractAddress, ga
 
     const gasPrice = await getGasPrice(gasPriceOracleLink, hubContractAddress, provider);
 
-    const tx = await profile.setAsk(identityId, askWei, {
+    const tx = await profile.updateAsk(identityId, askWei, {
         gasPrice: gasPrice ?? 8,
         gasLimit: 500_000,
     });
