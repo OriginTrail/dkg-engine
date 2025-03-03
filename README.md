@@ -217,6 +217,8 @@ To use default Triple Store (`blazegraph`), download the exec file and run it wi
 java -server -Xmx4g -jar blazegraph.jar
 ```
 
+Also, make sure MySQL is up and running on port 3306.
+
 Then, depending on the OS, use one of the scripts in order to run the local network with provided number of nodes (minimal amount of nodes should be 6):
 
 **MacOS**
