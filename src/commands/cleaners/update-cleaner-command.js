@@ -4,7 +4,6 @@ import {
     OPERATIONS,
     UPDATE_CLEANUP_TIME_DELAY,
     UPDATE_CLEANUP_TIME_MILLS,
-    ARCHIVE_UPDATE_FOLDER,
 } from '../../constants/constants.js';
 
 class UpdateCleanerCommand extends CleanerCommand {
@@ -14,10 +13,6 @@ class UpdateCleanerCommand extends CleanerCommand {
             nowTimestamp - UPDATE_CLEANUP_TIME_DELAY,
             REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
         );
-    }
-
-    getArchiveFolderName() {
-        return ARCHIVE_UPDATE_FOLDER;
     }
 
     async findAndDeleteRows(nowTimestamp) {

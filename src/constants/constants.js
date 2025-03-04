@@ -886,32 +886,11 @@ export const OPERATION_ID_FILES_FOR_REMOVAL_MAX_NUMBER = 100;
 
 export const REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER = 50_000;
 
-export const ARCHIVE_FOLDER = 'archive';
-
 export const MIGRATION_FOLDER = 'migrations';
-
-export const ARCHIVE_COMMANDS_FOLDER = 'commands';
 
 export const PUBLISHER_NODE_SIGNATURES_FOLDER = 'publisher';
 
 export const NETWORK_SIGNATURES_FOLDER = 'network';
-
-export const ARCHIVE_BLOCKCHAIN_EVENTS_FOLDER = 'blockchain_events';
-
-export const ARCHIVE_GET_FOLDER = 'get';
-export const ARCHIVE_GET_RESPONSES_FOLDER = 'get_responses';
-
-export const ARCHIVE_PUBLISH_FOLDER = 'publish';
-export const ARCHIVE_PUBLISH_RESPONSES_FOLDER = 'publish_responses';
-
-export const ARCHIVE_UPDATE_FOLDER = 'update';
-export const ARCHIVE_UPDATE_RESPONSES_FOLDER = 'update_responses';
-
-export const ARCHIVE_ASK_FOLDER = 'ask';
-export const ARCHIVE_ASK_RESPONSES_FOLDER = 'ask_responses';
-
-export const ARCHIVE_FINALITY_FOLDER = 'finality';
-export const ARCHIVE_FINALITY_RESPONSES_FOLDER = 'finality_responses';
 
 /**
  * How many commands will run in parallel

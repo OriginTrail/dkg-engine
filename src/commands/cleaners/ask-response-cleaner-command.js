@@ -4,7 +4,6 @@ import {
     OPERATIONS,
     ASK_RESPONSE_CLEANUP_TIME_DELAY,
     ASK_RESPONSE_CLEANUP_TIME_MILLS,
-    ARCHIVE_ASK_RESPONSES_FOLDER,
 } from '../../constants/constants.js';
 
 class AskResponseCleanerCommand extends CleanerCommand {
@@ -14,10 +13,6 @@ class AskResponseCleanerCommand extends CleanerCommand {
             REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
             OPERATIONS.ASK,
         );
-    }
-
-    getArchiveFolderName() {
-        return ARCHIVE_ASK_RESPONSES_FOLDER;
     }
 
     async findAndDeleteRows(nowTimestamp) {

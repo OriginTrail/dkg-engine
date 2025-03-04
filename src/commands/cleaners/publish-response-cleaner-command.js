@@ -4,7 +4,6 @@ import {
     OPERATIONS,
     PUBLISH_RESPONSE_CLEANUP_TIME_DELAY,
     PUBLISH_RESPONSE_CLEANUP_TIME_MILLS,
-    ARCHIVE_PUBLISH_RESPONSES_FOLDER,
 } from '../../constants/constants.js';
 
 class PublishResponseCleanerCommand extends CleanerCommand {
@@ -14,10 +13,6 @@ class PublishResponseCleanerCommand extends CleanerCommand {
             REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
             OPERATIONS.PUBLISH,
         );
-    }
-
-    getArchiveFolderName() {
-        return ARCHIVE_PUBLISH_RESPONSES_FOLDER;
     }
 
     async findAndDeleteRows(nowTimestamp) {

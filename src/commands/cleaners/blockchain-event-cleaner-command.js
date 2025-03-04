@@ -2,7 +2,6 @@ import {
     PROCESSED_BLOCKCHAIN_EVENTS_CLEANUP_TIME_MILLS,
     REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
     PROCESSED_BLOCKCHAIN_EVENTS_CLEANUP_TIME_DELAY,
-    ARCHIVE_BLOCKCHAIN_EVENTS_FOLDER,
 } from '../../constants/constants.js';
 import CleanerCommand from './cleaner-command.js';
 
@@ -12,10 +11,6 @@ class BlockchainEventCleanerCommand extends CleanerCommand {
             nowTimestamp - PROCESSED_BLOCKCHAIN_EVENTS_CLEANUP_TIME_DELAY,
             REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
         );
-    }
-
-    getArchiveFolderName() {
-        return ARCHIVE_BLOCKCHAIN_EVENTS_FOLDER;
     }
 
     async findAndDeleteRows(nowTimestamp) {
