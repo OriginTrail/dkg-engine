@@ -13,28 +13,13 @@ class CleanerCommand extends Command {
      * @param command
      */
     async execute() {
-        const nowTimestamp = Date.now();
+        let deletedRowsCount;
 
-        let rowsForRemoval = await this.findRowsForRemoval(nowTimestamp);
-
-        while (rowsForRemoval?.length >= REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER) {
-            const archiveName = this.getArchiveName(rowsForRemoval);
-
+        do {
+            const nowTimestamp = Date.now();
             // eslint-disable-next-line no-await-in-loop
-            await this.archiveService.archiveData(
-                this.getArchiveFolderName(),
-                archiveName,
-                rowsForRemoval,
-            );
-
-            // remove from database;
-            const ids = rowsForRemoval.map((command) => command.id);
-            // eslint-disable-next-line no-await-in-loop
-            await this.deleteRows(ids);
-
-            // eslint-disable-next-line no-await-in-loop
-            rowsForRemoval = await this.findRowsForRemoval(nowTimestamp);
-        }
+            deletedRowsCount = await this.findAndDeleteRows(nowTimestamp);
+        } while (deletedRowsCount === REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER);
 
         return Command.repeat();
     }
@@ -54,6 +39,11 @@ class CleanerCommand extends Command {
 
     getArchiveFolderName() {
         throw Error('getArchiveFolderName not implemented');
+    }
+
+    // eslint-disable-next-line no-unused-vars
+    async findAndDeleteRows(nowTimestamp) {
+        throw Error('findAndDeleteRows not implemented');
     }
 
     // eslint-disable-next-line no-unused-vars
