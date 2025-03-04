@@ -343,6 +343,14 @@ class RepositoryModuleManager extends BaseModuleManager {
         );
     }
 
+    async findAndRemoveProcessedEvents(timestamp, limit, options = {}) {
+        return this.getRepository('blockchain_event').findAndRemoveProcessedEvents(
+            timestamp,
+            limit,
+            options,
+        );
+    }
+
     async getLastCheckedBlock(blockchain, options = {}) {
         return this.getRepository('blockchain').getLastCheckedBlock(blockchain, options);
     }

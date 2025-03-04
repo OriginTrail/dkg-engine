@@ -18,6 +18,13 @@ class BlockchainEventCleanerCommand extends CleanerCommand {
         return ARCHIVE_BLOCKCHAIN_EVENTS_FOLDER;
     }
 
+    async findAndDeleteRows(nowTimestamp) {
+        return this.repositoryModuleManager.findAndRemoveProcessedEvents(
+            nowTimestamp - PROCESSED_BLOCKCHAIN_EVENTS_CLEANUP_TIME_DELAY,
+            REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
+        );
+    }
+
     async deleteRows(ids) {
         return this.repositoryModuleManager.removeEvents(ids);
     }
