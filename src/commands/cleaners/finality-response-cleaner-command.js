@@ -20,6 +20,14 @@ class FinalityResponseCleanerCommand extends CleanerCommand {
         return ARCHIVE_FINALITY_RESPONSES_FOLDER;
     }
 
+    async findAndDeleteRows(nowTimestamp) {
+        return this.repositoryModuleManager.findAndRemoveProcessedOperationResponse(
+            OPERATIONS.FINALITY,
+            nowTimestamp - FINALITY_RESPONSE_CLEANUP_TIME_DELAY,
+            REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
+        );
+    }
+
     async deleteRows(ids) {
         return this.repositoryModuleManager.removeOperationResponse(ids, OPERATIONS.FINALITY);
     }
