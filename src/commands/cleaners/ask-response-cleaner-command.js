@@ -20,6 +20,14 @@ class AskResponseCleanerCommand extends CleanerCommand {
         return ARCHIVE_ASK_RESPONSES_FOLDER;
     }
 
+    async findAndDeleteRows(nowTimestamp) {
+        return this.repositoryModuleManager.findAndRemoveProcessedOperationResponse(
+            OPERATIONS.ASK,
+            nowTimestamp - ASK_RESPONSE_CLEANUP_TIME_DELAY,
+            REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
+        );
+    }
+
     async deleteRows(ids) {
         return this.repositoryModuleManager.removeOperationResponse(ids, OPERATIONS.ASK);
     }
