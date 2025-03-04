@@ -24,6 +24,18 @@ class OperationRepository {
         );
     }
 
+    async findAndRemoveProcessedOperationRecords(operation, timestamp, limit, options) {
+        const operationModel = operation.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
+        return this.models[`${operationModel}`].destroy({
+            where: {
+                createdAt: { [Sequelize.Op.lte]: timestamp },
+            },
+            order: [['createdAt', 'asc']],
+            limit,
+            ...options,
+        });
+    }
+
     async removeOperationRecords(operation, ids, options) {
         const operationModel = operation.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
         return this.models[operationModel].destroy({

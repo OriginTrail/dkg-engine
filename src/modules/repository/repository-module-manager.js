@@ -126,6 +126,15 @@ class RepositoryModuleManager extends BaseModuleManager {
         );
     }
 
+    async findAndRemoveProcessedOperationRecords(operation, timestamp, limit, options = {}) {
+        return this.getRepository('operation').findAndRemoveProcessedOperationRecords(
+            operation,
+            timestamp,
+            limit,
+            options,
+        );
+    }
+
     async getOperationStatus(operation, operationId, options = {}) {
         return this.getRepository('operation').getOperationStatus(operation, operationId, options);
     }
