@@ -4,7 +4,6 @@ import {
     OPERATIONS,
     FINALITY_RESPONSE_CLEANUP_TIME_DELAY,
     FINALITY_RESPONSE_CLEANUP_TIME_MILLS,
-    ARCHIVE_FINALITY_RESPONSES_FOLDER,
 } from '../../constants/constants.js';
 
 class FinalityResponseCleanerCommand extends CleanerCommand {
@@ -14,10 +13,6 @@ class FinalityResponseCleanerCommand extends CleanerCommand {
             REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
             OPERATIONS.FINALITY,
         );
-    }
-
-    getArchiveFolderName() {
-        return ARCHIVE_FINALITY_RESPONSES_FOLDER;
     }
 
     async findAndDeleteRows(nowTimestamp) {

@@ -1,7 +1,6 @@
 import {
     FINALIZED_COMMAND_CLEANUP_TIME_MILLS,
     FINALIZED_COMMAND_CLEANUP_TIME_DELAY,
-    ARCHIVE_COMMANDS_FOLDER,
     REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
 } from '../../constants/constants.js';
 import CleanerCommand from './cleaner-command.js';
@@ -12,10 +11,6 @@ class CommandsCleanerCommand extends CleanerCommand {
             nowTimestamp,
             REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
         );
-    }
-
-    getArchiveFolderName() {
-        return ARCHIVE_COMMANDS_FOLDER;
     }
 
     async findAndDeleteRows(nowTimestamp) {

@@ -4,7 +4,6 @@ import {
     OPERATIONS,
     UPDATE_RESPONSE_CLEANUP_TIME_DELAY,
     UPDATE_RESPONSE_CLEANUP_TIME_MILLS,
-    ARCHIVE_UPDATE_RESPONSES_FOLDER,
 } from '../../constants/constants.js';
 
 class UpdateResponseCleanerCommand extends CleanerCommand {
@@ -14,10 +13,6 @@ class UpdateResponseCleanerCommand extends CleanerCommand {
             REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
             OPERATIONS.UPDATE,
         );
-    }
-
-    getArchiveFolderName() {
-        return ARCHIVE_UPDATE_RESPONSES_FOLDER;
     }
 
     async findAndDeleteRows(nowTimestamp) {

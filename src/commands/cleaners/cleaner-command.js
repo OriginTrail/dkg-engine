@@ -24,21 +24,9 @@ class CleanerCommand extends Command {
         return Command.repeat();
     }
 
-    getArchiveName(rowsForRemoval) {
-        const firstTimestamp = new Date(rowsForRemoval[0].createdAt).getTime();
-        const lastTimestamp = new Date(
-            rowsForRemoval[rowsForRemoval.length - 1].createdAt,
-        ).getTime();
-        return `${firstTimestamp}-${lastTimestamp}.json`;
-    }
-
     // eslint-disable-next-line no-unused-vars
     async findRowsForRemoval(nowTimestamp) {
         throw Error('findRowsForRemoval not implemented');
-    }
-
-    getArchiveFolderName() {
-        throw Error('getArchiveFolderName not implemented');
     }
 
     // eslint-disable-next-line no-unused-vars

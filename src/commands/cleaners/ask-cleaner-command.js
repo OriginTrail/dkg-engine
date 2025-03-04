@@ -4,7 +4,6 @@ import {
     OPERATIONS,
     ASK_CLEANUP_TIME_DELAY,
     ASK_CLEANUP_TIME_MILLS,
-    ARCHIVE_ASK_FOLDER,
 } from '../../constants/constants.js';
 
 class AskCleanerCommand extends CleanerCommand {
@@ -14,10 +13,6 @@ class AskCleanerCommand extends CleanerCommand {
             nowTimestamp - ASK_CLEANUP_TIME_DELAY,
             REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
         );
-    }
-
-    getArchiveFolderName() {
-        return ARCHIVE_ASK_FOLDER;
     }
 
     async findAndDeleteRows(nowTimestamp) {
