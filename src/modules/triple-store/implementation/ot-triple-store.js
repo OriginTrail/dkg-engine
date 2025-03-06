@@ -278,6 +278,7 @@ class OtTripleStore {
         retries = 5,
         retryDelay = 10,
     ) {
+        const createdGraphs = [];
         const queries = uals.map(
             (ual, index) => `
                 PREFIX schema: <${SCHEMA_CONTEXT}>
@@ -296,6 +297,7 @@ class OtTripleStore {
                 try {
                     await this.queryVoid(repository, query);
                     success = true;
+                    createdGraphs.push(`${uals[index]}/${visibility}`);
                 } catch (error) {
                     attempts += 1;
                     if (attempts <= retries) {
@@ -311,10 +313,13 @@ class OtTripleStore {
                 }
             }
         }
+        return createdGraphs;
     }
 
-    async deleteKnowledgeCollectionNamedGraphs(repository, uals) {
-        const query = `${uals.map((ual) => `DROP GRAPH <${ual}>`).join(';\n')};`;
+    async deleteKnowledgeCollectionNamedGraphs(repository, namedGraphs) {
+        if (!namedGraphs || namedGraphs.length === 0) return;
+
+        const query = `${namedGraphs.map((graph) => `DROP GRAPH <${graph}>`).join(';\n')};`;
 
         await this.queryVoid(repository, query);
     }

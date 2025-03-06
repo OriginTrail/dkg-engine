@@ -84,17 +84,22 @@ class TripleStoreService {
             (_, index) => `${knowledgeCollectionUAL}/${index + 1}`,
         );
 
+        const createdNamedGraphs = [];
+
         if (!existsInNamedGraphs) {
             promises.push(
-                this.tripleStoreModuleManager.createKnowledgeCollectionNamedGraphs(
-                    this.repositoryImplementations[repository],
-                    repository,
-                    publicKnowledgeAssetsUALs,
-                    publicKnowledgeAssetsTriplesGrouped,
-                    TRIPLES_VISIBILITY.PUBLIC,
-                ),
+                this.tripleStoreModuleManager
+                    .createKnowledgeCollectionNamedGraphs(
+                        this.repositoryImplementations[repository],
+                        repository,
+                        publicKnowledgeAssetsUALs,
+                        publicKnowledgeAssetsTriplesGrouped,
+                        TRIPLES_VISIBILITY.PUBLIC,
+                    )
+                    .then((createdGraphs) => {
+                        createdNamedGraphs.push(...createdGraphs);
+                    }),
             );
-
             if (triples.private?.length) {
                 const privateKnowledgeAssetsTriplesGrouped = kcTools.groupNquadsBySubject(
                     triples.private,
@@ -128,13 +133,17 @@ class TripleStoreService {
                     }
                 }
                 promises.push(
-                    this.tripleStoreModuleManager.createKnowledgeCollectionNamedGraphs(
-                        this.repositoryImplementations[repository],
-                        repository,
-                        privateKnowledgeAssetsUALs,
-                        privateKnowledgeAssetsTriplesGrouped,
-                        TRIPLES_VISIBILITY.PRIVATE,
-                    ),
+                    this.tripleStoreModuleManager
+                        .createKnowledgeCollectionNamedGraphs(
+                            this.repositoryImplementations[repository],
+                            repository,
+                            privateKnowledgeAssetsUALs,
+                            privateKnowledgeAssetsTriplesGrouped,
+                            TRIPLES_VISIBILITY.PRIVATE,
+                        )
+                        .then((createdGraphs) => {
+                            createdNamedGraphs.push(...createdGraphs);
+                        }),
                 );
             }
         }
@@ -155,11 +164,9 @@ class TripleStoreService {
 
         let attempts = 0;
         let success = false;
-
         while (attempts < retries && !success) {
             try {
                 await Promise.all(promises);
-
                 success = true;
 
                 this.logger.info(
@@ -187,15 +194,16 @@ class TripleStoreService {
                             `to the Triple Store's ${repository} repository. Rolling back data.`,
                     );
 
-                    if (!existsInNamedGraphs) {
+                    if (!existsInNamedGraphs && createdNamedGraphs.length > 0) {
                         this.logger.info(
                             `Rolling back Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
                                 `from the Triple Store's ${repository} repository Named Graphs.`,
                         );
+                        this.logger.info(`Named Graphs being deleted: ${createdNamedGraphs} `);
                         await this.tripleStoreModuleManager.deleteKnowledgeCollectionNamedGraphs(
                             this.repositoryImplementations[repository],
                             repository,
-                            publicKnowledgeAssetsUALs,
+                            createdNamedGraphs,
                         );
                     }
 
