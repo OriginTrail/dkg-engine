@@ -235,8 +235,6 @@ export const PERMANENT_COMMANDS = [
     'getResponseCleanerCommand',
     'publishCleanerCommand',
     'publishResponseCleanerCommand',
-    'updateCleanerCommand',
-    'updateResponseCleanerCommand',
     'startParanetSyncCommands',
     'pendingStorageCleanerCommand',
 ];

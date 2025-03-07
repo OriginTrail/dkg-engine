@@ -34,7 +34,7 @@ class UpdateCleanerCommand extends CleanerCommand {
      */
     default(map) {
         const command = {
-            name: 'publishCleanerCommand',
+            name: 'updateCleanerCommand',
             data: {},
             period: UPDATE_CLEANUP_TIME_MILLS,
             transactional: false,
