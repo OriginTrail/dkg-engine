@@ -22,6 +22,11 @@ process.env.NODE_ENV =
         process.exit(1);
     }
     try {
+        if (process.env.OTEL_ENABLED?.toLowerCase() === 'true') {
+            console.log('Starting OpenTelemetry Instrumentation...');
+            await import('./open-telemetry.js');
+        }
+
         const node = new OTNode(userConfig);
         await node.start();
     } catch (e) {
