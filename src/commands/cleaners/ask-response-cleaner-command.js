@@ -7,7 +7,7 @@ import {
 } from '../../constants/constants.js';
 
 class AskResponseCleanerCommand extends CleanerCommand {
-    async findAndDeleteRows(nowTimestamp) {
+    async deleteRows(nowTimestamp) {
         return this.repositoryModuleManager.findAndRemoveProcessedOperationResponse(
             OPERATIONS.ASK,
             nowTimestamp - ASK_RESPONSE_CLEANUP_TIME_DELAY,

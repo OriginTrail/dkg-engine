@@ -7,7 +7,7 @@ import {
 } from '../../constants/constants.js';
 
 class FinalityCleanerCommand extends CleanerCommand {
-    async findAndDeleteRows(nowTimestamp) {
+    async deleteRows(nowTimestamp) {
         return this.repositoryModuleManager.findAndRemoveProcessedOperationRecords(
             OPERATIONS.FINALITY,
             nowTimestamp - FINALITY_CLEANUP_TIME_DELAY,

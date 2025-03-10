@@ -7,7 +7,7 @@ import {
 } from '../../constants/constants.js';
 
 class PublishCleanerCommand extends CleanerCommand {
-    async findAndDeleteRows(nowTimestamp) {
+    async deleteRows(nowTimestamp) {
         return this.repositoryModuleManager.findAndRemoveProcessedOperationRecords(
             OPERATIONS.PUBLISH,
             nowTimestamp - PUBLISH_CLEANUP_TIME_DELAY,

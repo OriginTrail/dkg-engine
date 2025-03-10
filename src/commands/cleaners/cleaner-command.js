@@ -17,15 +17,15 @@ class CleanerCommand extends Command {
         do {
             const nowTimestamp = Date.now();
             // eslint-disable-next-line no-await-in-loop
-            deletedRowsCount = await this.findAndDeleteRows(nowTimestamp);
+            deletedRowsCount = await this.deleteRows(nowTimestamp);
         } while (deletedRowsCount === REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER);
 
         return Command.repeat();
     }
 
     // eslint-disable-next-line no-unused-vars
-    async findAndDeleteRows(nowTimestamp) {
-        throw Error('findAndDeleteRows not implemented');
+    async deleteRows(nowTimestamp) {
+        throw Error('deleteRows not implemented');
     }
 
     /**

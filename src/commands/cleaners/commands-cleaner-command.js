@@ -6,7 +6,7 @@ import {
 import CleanerCommand from './cleaner-command.js';
 
 class CommandsCleanerCommand extends CleanerCommand {
-    async findAndDeleteRows(nowTimestamp) {
+    async deleteRows(nowTimestamp) {
         return this.repositoryModuleManager.findAndRemoveFinalizedCommands(
             nowTimestamp - FINALIZED_COMMAND_CLEANUP_TIME_DELAY,
             REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
