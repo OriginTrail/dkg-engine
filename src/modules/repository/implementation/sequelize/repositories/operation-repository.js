@@ -26,9 +26,10 @@ class OperationRepository {
 
     async findAndRemoveProcessedOperationRecords(operation, timestamp, limit, options) {
         const operationModel = operation.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
+
         return this.models[`${operationModel}`].destroy({
             where: {
-                createdAt: { [Sequelize.Op.lte]: timestamp },
+                createdAt: { [Sequelize.Op.lte]: Date(timestamp) },
             },
             order: [['createdAt', 'asc']],
             limit,
