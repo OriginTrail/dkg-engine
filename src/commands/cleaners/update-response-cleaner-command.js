@@ -7,24 +7,12 @@ import {
 } from '../../constants/constants.js';
 
 class UpdateResponseCleanerCommand extends CleanerCommand {
-    async findRowsForRemoval(nowTimestamp) {
-        return this.repositoryModuleManager.findProcessedOperationResponse(
-            nowTimestamp - UPDATE_RESPONSE_CLEANUP_TIME_DELAY,
-            REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
-            OPERATIONS.UPDATE,
-        );
-    }
-
     async findAndDeleteRows(nowTimestamp) {
         return this.repositoryModuleManager.findAndRemoveProcessedOperationResponse(
             OPERATIONS.UPDATE,
             nowTimestamp - UPDATE_RESPONSE_CLEANUP_TIME_DELAY,
             REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
         );
-    }
-
-    async deleteRows(ids) {
-        return this.repositoryModuleManager.removeOperationResponse(ids, OPERATIONS.UPDATE);
     }
 
     /**

@@ -24,18 +24,8 @@ class CleanerCommand extends Command {
     }
 
     // eslint-disable-next-line no-unused-vars
-    async findRowsForRemoval(nowTimestamp) {
-        throw Error('findRowsForRemoval not implemented');
-    }
-
-    // eslint-disable-next-line no-unused-vars
     async findAndDeleteRows(nowTimestamp) {
         throw Error('findAndDeleteRows not implemented');
-    }
-
-    // eslint-disable-next-line no-unused-vars
-    async deleteRows(ids) {
-        throw Error('deleteRows not implemented');
     }
 
     /**
