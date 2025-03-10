@@ -18,14 +18,6 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
         this.errorType = ERROR_TYPE.GET.GET_REQUEST_REMOTE_ERROR;
         this.operationStartEvent = OPERATION_ID_STATUS.GET.GET_REMOTE_START;
         this.operationEndEvent = OPERATION_ID_STATUS.GET.GET_REMOTE_END;
-        this.prepareMessageStartEvent = OPERATION_ID_STATUS.GET.GET_REMOTE_PREPARE_MESSAGE_START;
-        this.prepareMessageEndEvent = OPERATION_ID_STATUS.GET.GET_REMOTE_PREPARE_MESSAGE_END;
-        this.sendMessageResponseStartEvent = OPERATION_ID_STATUS.GET.GET_REMOTE_SEND_MESSAGE_START;
-        this.sendMessageResponseEndEvent = OPERATION_ID_STATUS.GET.GET_REMOTE_SEND_MESSAGE_END;
-        this.removeCachedSessionStartEvent =
-            OPERATION_ID_STATUS.GET.GET_REMOTE_REMOVE_CACHED_SESSION_START;
-        this.removeCachedSessionEndEvent =
-            OPERATION_ID_STATUS.GET.GET_REMOTE_REMOVE_CACHED_SESSION_END;
     }
 
     async prepareMessage(commandData) {
@@ -103,11 +95,6 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
         // }
 
         const promises = [];
-        this.operationIdService.emitChangeEvent(
-            OPERATION_ID_STATUS.GET.GET_REMOTE_GET_ASSERTION_START,
-            operationId,
-            blockchain,
-        );
 
         let assertionPromise;
         let notMigrated = false;
@@ -159,12 +146,6 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
                     }
                 }
 
-                this.operationIdService.emitChangeEvent(
-                    OPERATION_ID_STATUS.GET.GET_REMOTE_GET_ASSERTION_END,
-                    operationId,
-                    blockchain,
-                );
-
                 return typeof result === 'string'
                     ? result.split('\n').filter((res) => res.length > 0)
                     : result;
@@ -195,41 +176,23 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
                 };
             }
 
-            assertionPromise = this.tripleStoreService
-                .getAssertion(
-                    blockchain,
-                    contract,
-                    knowledgeCollectionId,
-                    knowledgeAssetId,
-                    TRIPLES_VISIBILITY.PUBLIC,
-                )
-                .then((result) => {
-                    this.operationIdService.emitChangeEvent(
-                        OPERATION_ID_STATUS.GET.GET_REMOTE_GET_ASSERTION_END,
-                        operationId,
-                        blockchain,
-                    );
-                    return result;
-                });
+            assertionPromise = this.tripleStoreService.getAssertion(
+                blockchain,
+                contract,
+                knowledgeCollectionId,
+                knowledgeAssetId,
+                TRIPLES_VISIBILITY.PUBLIC,
+            );
         }
         promises.push(assertionPromise);
 
         if (includeMetadata) {
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.GET.GET_REMOTE_GET_ASSERTION_METADATA_START,
-                operationId,
+            const metadataPromise = this.tripleStoreService.getAssertionMetadata(
                 blockchain,
+                contract,
+                knowledgeCollectionId,
+                knowledgeAssetId,
             );
-            const metadataPromise = this.tripleStoreService
-                .getAssertionMetadata(blockchain, contract, knowledgeCollectionId, knowledgeAssetId)
-                .then((result) => {
-                    this.operationIdService.emitChangeEvent(
-                        OPERATION_ID_STATUS.GET.GET_REMOTE_GET_ASSERTION_METADATA_END,
-                        operationId,
-                        blockchain,
-                    );
-                    return result;
-                });
             promises.push(metadataPromise);
         }
 
