@@ -316,11 +316,13 @@ class OtTripleStore {
         return createdGraphs;
     }
 
-    async deleteKnowledgeCollectionNamedGraphs(repository, namedGraphs) {
+    async deleteKnowledgeCollectionNamedGraphs(repository, namedGraphs, knowledgeCollectionUAL) {
         if (!namedGraphs || namedGraphs.length === 0) return;
 
         const query = `${namedGraphs.map((graph) => `DROP GRAPH <${graph}>`).join(';\n')};`;
 
+        // await this.deleteKnowledgeCollectionMetadata(repository, knowledgeCollectionUAL);
+        console.log(knowledgeCollectionUAL);
         await this.queryVoid(repository, query);
     }
 
@@ -462,16 +464,28 @@ class OtTripleStore {
     }
 
     async deleteKnowledgeCollectionMetadata(repository, ual) {
+        // const query = `
+        //     DELETE
+        //     WHERE {
+        //         GRAPH <${BASE_NAMED_GRAPHS.METADATA}> {
+        //             ?ual ?p ?o .
+        //             FILTER(STRSTARTS(STR(?ual), "${ual}/"))
+        //         }
+        //     }
+        // `;
         const query = `
-            DELETE
-            WHERE {
-                GRAPH <${BASE_NAMED_GRAPHS.METADATA}> {
-                    ?ual ?p ?o .
-                    FILTER(STRSTARTS(STR(?ual), "${ual}/"))
-                }
+        DELETE {
+            GRAPH <${BASE_NAMED_GRAPHS.METADATA}> {
+                ?ual ?p ?o .
             }
-        `;
-
+        }
+        WHERE {
+            GRAPH <${BASE_NAMED_GRAPHS.METADATA}> {
+                ?ual ?p ?o .
+                FILTER(STRSTARTS(STR(?ual), "${ual}/"))
+            }
+        }`;
+        console.log('delete query', query);
         await this.queryVoid(repository, query);
     }
 
@@ -570,6 +584,7 @@ class OtTripleStore {
     }
 
     async queryVoid(repository, query) {
+        console.log('Update Endpoint:', this.repositories[repository].updateContext);
         return this.queryEngine.queryVoid(query, this.repositories[repository].updateContext);
     }
 
