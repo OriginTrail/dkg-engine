@@ -105,7 +105,6 @@ class BlockchainEventRepository {
                 processed: true,
                 createdAt: { [Sequelize.Op.lte]: timestamp },
             },
-            order: [['createdAt', 'asc']],
             limit,
             ...options,
         });

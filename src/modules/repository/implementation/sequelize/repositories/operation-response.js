@@ -55,7 +55,6 @@ class OperationResponseRepository {
             where: {
                 createdAt: { [Sequelize.Op.lte]: timestamp },
             },
-            order: [['createdAt', 'asc']],
             limit,
             ...options,
         });
