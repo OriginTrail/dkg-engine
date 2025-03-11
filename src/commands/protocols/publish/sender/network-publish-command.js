@@ -1,5 +1,5 @@
 import NetworkProtocolCommand from '../../common/network-protocol-command.js';
-import { ERROR_TYPE, OPERATION_ID_STATUS } from '../../../../constants/constants.js';
+import { ERROR_TYPE } from '../../../../constants/constants.js';
 
 class NetworkPublishCommand extends NetworkProtocolCommand {
     constructor(ctx) {
@@ -9,8 +9,6 @@ class NetworkPublishCommand extends NetworkProtocolCommand {
         this.operationService = ctx.publishService;
 
         this.errorType = ERROR_TYPE.PUBLISH.PUBLISH_NETWORK_START_ERROR;
-        this.operationStartEvent = OPERATION_ID_STATUS.PUBLISH.PUBLISH_NETWORK_START;
-        this.operationEndEvent = OPERATION_ID_STATUS.PUBLISH.PUBLISH_NETWORK_END;
     }
 
     /**

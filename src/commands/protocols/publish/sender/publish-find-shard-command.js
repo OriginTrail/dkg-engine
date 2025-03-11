@@ -8,14 +8,6 @@ class PublishFindShardCommand extends FindShardCommand {
         this.errorType = ERROR_TYPE.FIND_SHARD.PUBLISH_FIND_SHARD_ERROR;
         this.operationStartEvent = OPERATION_ID_STATUS.PUBLISH.PUBLISH_FIND_NODES_START;
         this.operationEndEvent = OPERATION_ID_STATUS.PUBLISH.PUBLISH_FIND_NODES_END;
-        this.findShardNodesStartEvent =
-            OPERATION_ID_STATUS.PUBLISH.PUBLISH_FIND_NODES_FIND_SHARD_NODES_START;
-        this.findShardNodesEndEvent =
-            OPERATION_ID_STATUS.PUBLISH.PUBLISH_FIND_NODES_FIND_SHARD_NODES_END;
-        this.processFoundNodesStartEvent =
-            OPERATION_ID_STATUS.PUBLISH.PUBLISH_FIND_NODES_PROCESS_FOUND_NODES_START;
-        this.processFoundNodesEndEvent =
-            OPERATION_ID_STATUS.PUBLISH.PUBLISH_FIND_NODES_PROCESS_FOUND_NODES_END;
     }
 
     getOperationCommandSequence(nodePartOfShard, commandData) {

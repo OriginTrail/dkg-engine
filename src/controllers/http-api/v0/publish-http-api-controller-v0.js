@@ -56,47 +56,17 @@ class PublishController extends BaseController {
         );
 
         try {
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.PUBLISH.PUBLISH_CACHE_OPERATION_ID_DATA_TO_MEMORY_START,
-                operationId,
-                blockchain,
-            );
             await this.operationIdService.cacheOperationIdDataToMemory(operationId, {
                 dataset,
                 datasetRoot,
             });
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.PUBLISH.PUBLISH_CACHE_OPERATION_ID_DATA_TO_MEMORY_END,
-                operationId,
-                blockchain,
-            );
 
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.PUBLISH.PUBLISH_CACHE_OPERATION_ID_DATA_TO_FILE_START,
-                operationId,
-                blockchain,
-            );
             await this.operationIdService.cacheOperationIdDataToFile(operationId, {
                 dataset,
                 datasetRoot,
             });
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.PUBLISH.PUBLISH_CACHE_OPERATION_ID_DATA_TO_FILE_END,
-                operationId,
-                blockchain,
-            );
 
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.PUBLISH.PUBLISH_CACHE_DATASET_START,
-                operationId,
-                blockchain,
-            );
             await this.pendingStorageService.cacheDataset(operationId, datasetRoot, dataset);
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.PUBLISH.PUBLISH_CACHE_DATASET_END,
-                operationId,
-                blockchain,
-            );
 
             const commandSequence = ['publishFindShardCommand'];
 
