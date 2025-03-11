@@ -166,11 +166,6 @@ class TripleStoreService {
 
         let attempts = 0;
         let success = false;
-        promises.push(
-            new Promise((_, reject) => {
-                reject(new Error('Intentional Failure for Rollback Test'));
-            }),
-        );
 
         while (attempts < retries && !success) {
             try {
@@ -205,14 +200,22 @@ class TripleStoreService {
                     if (!existsInNamedGraphs) {
                         this.logger.info(
                             `Rolling back Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
-                                `from the Triple Store's ${repository} repository Named Graphs.` +
-                                `Named Graphs being deleted: ${allPossibleNamedGraphs} `,
+                                `from the Triple Store's ${repository} repository Named Graphs.`,
                         );
-
+                        this.logger.info(
+                            `Deleting knowledge collection named graphs for rolledback collection`,
+                        );
                         await this.tripleStoreModuleManager.deleteKnowledgeCollectionNamedGraphs(
                             this.repositoryImplementations[repository],
                             repository,
                             allPossibleNamedGraphs,
+                            knowledgeCollectionUAL,
+                        );
+
+                        this.logger.info(`Deleting metadata triples for rolledback collection`);
+                        await this.tripleStoreModuleManager.deleteKnowledgeCollectionMetadata(
+                            this.repositoryImplementations[repository],
+                            repository,
                             knowledgeCollectionUAL,
                         );
                     }
