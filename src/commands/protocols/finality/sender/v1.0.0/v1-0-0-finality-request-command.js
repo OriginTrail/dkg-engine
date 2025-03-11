@@ -14,15 +14,6 @@ class FinalityRequestCommand extends ProtocolRequestCommand {
         this.operationIdService = ctx.operationIdService;
 
         this.errorType = ERROR_TYPE.FINALITY.FINALITY_REQUEST_ERROR;
-        this.operationStartEvent = OPERATION_ID_STATUS.FINALITY.FINALITY_REQUEST_START;
-        this.operationEndEvent = OPERATION_ID_STATUS.FINALITY.FINALITY_REQUEST_END;
-        this.prepareMessageStartEvent =
-            OPERATION_ID_STATUS.FINALITY.FINALITY_REQUEST_PREPARE_MESSAGE_START;
-        this.prepareMessageEndEvent =
-            OPERATION_ID_STATUS.FINALITY.FINALITY_REQUEST_PREPARE_MESSAGE_END;
-        this.sendMessageStartEvent =
-            OPERATION_ID_STATUS.FINALITY.FINALITY_REQUEST_SEND_MESSAGE_START;
-        this.sendMessageEndEvent = OPERATION_ID_STATUS.FINALITY.FINALITY_REQUEST_SEND_MESSAGE_END;
     }
 
     async prepareMessage(command) {

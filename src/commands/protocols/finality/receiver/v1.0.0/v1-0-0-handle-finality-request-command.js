@@ -13,18 +13,6 @@ class HandleFinalityRequestCommand extends HandleProtocolMessageCommand {
         this.errorType = ERROR_TYPE.FINALITY.FINALITY_REQUEST_REMOTE_ERROR;
         this.operationStartEvent = OPERATION_ID_STATUS.FINALITY.FINALITY_REMOTE_START;
         this.operationEndEvent = OPERATION_ID_STATUS.FINALITY.FINALITY_REMOTE_END;
-        this.prepareMessageStartEvent =
-            OPERATION_ID_STATUS.FINALITY.FINALITY_REMOTE_PREPARE_MESSAGE_START;
-        this.prepareMessageEndEvent =
-            OPERATION_ID_STATUS.FINALITY.FINALITY_REMOTE_PREPARE_MESSAGE_END;
-        this.sendMessageResponseStartEvent =
-            OPERATION_ID_STATUS.FINALITY.FINALITY_REMOTE_SEND_MESSAGE_START;
-        this.sendMessageResponseEndEvent =
-            OPERATION_ID_STATUS.FINALITY.FINALITY_REMOTE_SEND_MESSAGE_END;
-        this.removeCachedSessionStartEvent =
-            OPERATION_ID_STATUS.FINALITY.FINALITY_REMOTE_REMOVE_CACHED_SESSION_START;
-        this.removeCachedSessionEndEvent =
-            OPERATION_ID_STATUS.FINALITY.FINALITY_REMOTE_REMOVE_CACHED_SESSION_END;
     }
 
     async prepareMessage(commandData) {
