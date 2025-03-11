@@ -1,5 +1,5 @@
 import NetworkProtocolCommand from '../../common/network-protocol-command.js';
-import { ERROR_TYPE, OPERATION_ID_STATUS } from '../../../../constants/constants.js';
+import { ERROR_TYPE } from '../../../../constants/constants.js';
 
 class NetworkAskCommand extends NetworkProtocolCommand {
     constructor(ctx) {
@@ -8,8 +8,6 @@ class NetworkAskCommand extends NetworkProtocolCommand {
         this.ualService = ctx.ualService;
 
         this.errorType = ERROR_TYPE.ASK.ASK_NETWORK_ERROR;
-        this.operationStartEvent = OPERATION_ID_STATUS.ASK.ASK_NETWORK_START;
-        this.operationEndEvent = OPERATION_ID_STATUS.ASK.ASK_NETWORK_END;
     }
 
     /**
