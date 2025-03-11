@@ -29,7 +29,7 @@ class OperationRepository {
 
         return this.models[`${operationModel}`].destroy({
             where: {
-                createdAt: { [Sequelize.Op.lte]: Date(timestamp) },
+                createdAt: { [Sequelize.Op.lte]: timestamp },
             },
             limit,
             ...options,
