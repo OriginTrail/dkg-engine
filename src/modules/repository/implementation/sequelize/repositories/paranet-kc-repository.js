@@ -73,15 +73,19 @@ class ParanetKcRepository {
     }
 
     async incrementRetries(paranetUal, ual, errorMessage = null, options = {}) {
-        const [affectedRows] = await this.model.increment('retries', {
-            by: 1,
-            where: {
-                ual,
-                paranetUal,
+        const [affectedRows] = await this.model.update(
+            {
+                retries: Sequelize.literal('retries + 1'),
                 errorMessage,
             },
-            ...options,
-        });
+            {
+                where: {
+                    ual,
+                    paranetUal,
+                },
+                ...options,
+            },
+        );
 
         return affectedRows;
     }

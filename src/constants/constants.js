@@ -1019,6 +1019,11 @@ export const HTTP_API_ROUTES = {
             path: '/direct-query',
             options: {},
         },
+        'local-store': {
+            method: 'post',
+            path: '/local-store',
+            options: {},
+        },
     },
 };
 
