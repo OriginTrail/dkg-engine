@@ -821,6 +821,11 @@ export const HTTP_API_ROUTES = {
             path: '/ask',
             options: {},
         },
+        'direct-query': {
+            method: 'post',
+            path: '/direct-query',
+            options: {},
+        },
         'local-store': {
             method: 'post',
             path: '/local-store',
