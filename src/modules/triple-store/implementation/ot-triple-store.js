@@ -461,19 +461,13 @@ class OtTripleStore {
         await this.queryVoid(repository, query);
     }
 
-    async deleteKnowledgeCollectionMetadata(repository, ual) {
-        const query = `
-        DELETE {
-            GRAPH <${BASE_NAMED_GRAPHS.METADATA}> {
-                ?ual ?p ?o .
-            }
-        }
-        WHERE {
-            GRAPH <${BASE_NAMED_GRAPHS.METADATA}> {
-                ?ual ?p ?o .
-                FILTER(STRSTARTS(STR(?ual), "${ual}/"))
-            }
-        }`;
+    async deleteKnowledgeCollectionMetadata(repository, uals) {
+        const cleanedUals = [...new Set(uals.map((ual) => ual.replace(/\/(public|private)$/, '')))];
+
+        const query = `${cleanedUals
+            .map((ual) => `DELETE WHERE { <${ual}> ?p ?o . }`)
+            .join(';\n')};`;
+
         await this.queryVoid(repository, query);
     }
 
