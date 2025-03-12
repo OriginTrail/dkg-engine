@@ -4,24 +4,15 @@ import {
     OPERATIONS,
     GET_CLEANUP_TIME_DELAY,
     GET_CLEANUP_TIME_MILLS,
-    ARCHIVE_GET_FOLDER,
 } from '../../constants/constants.js';
 
 class GetCleanerCommand extends CleanerCommand {
-    async findRowsForRemoval(nowTimestamp) {
-        return this.repositoryModuleManager.findProcessedOperations(
+    async deleteRows(nowTimestamp) {
+        return this.repositoryModuleManager.findAndRemoveProcessedOperationRecords(
             OPERATIONS.GET,
             nowTimestamp - GET_CLEANUP_TIME_DELAY,
             REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
         );
-    }
-
-    getArchiveFolderName() {
-        return ARCHIVE_GET_FOLDER;
-    }
-
-    async deleteRows(ids) {
-        return this.repositoryModuleManager.removeOperationRecords(OPERATIONS.GET, ids);
     }
 
     /**

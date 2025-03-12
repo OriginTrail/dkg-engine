@@ -4,24 +4,15 @@ import {
     OPERATIONS,
     FINALITY_CLEANUP_TIME_DELAY,
     FINALITY_CLEANUP_TIME_MILLS,
-    ARCHIVE_FINALITY_FOLDER,
 } from '../../constants/constants.js';
 
 class FinalityCleanerCommand extends CleanerCommand {
-    async findRowsForRemoval(nowTimestamp) {
-        return this.repositoryModuleManager.findProcessedOperations(
+    async deleteRows(nowTimestamp) {
+        return this.repositoryModuleManager.findAndRemoveProcessedOperationRecords(
             OPERATIONS.FINALITY,
             nowTimestamp - FINALITY_CLEANUP_TIME_DELAY,
             REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
         );
-    }
-
-    getArchiveFolderName() {
-        return ARCHIVE_FINALITY_FOLDER;
-    }
-
-    async deleteRows(ids) {
-        return this.repositoryModuleManager.removeOperationRecords(OPERATIONS.FINALITY, ids);
     }
 
     /**
