@@ -118,11 +118,6 @@ class LocalGetCommand extends Command {
         }
 
         const promises = [];
-        this.operationIdService.emitChangeEvent(
-            OPERATION_ID_STATUS.GET.GET_LOCAL_GET_ASSERTION_START,
-            operationId,
-            blockchain,
-        );
 
         let assertionPromise;
         let migrated = true;
@@ -169,12 +164,6 @@ class LocalGetCommand extends Command {
                     }
                 }
 
-                this.operationIdService.emitChangeEvent(
-                    OPERATION_ID_STATUS.GET.GET_LOCAL_GET_ASSERTION_END,
-                    operationId,
-                    blockchain,
-                );
-
                 return typeof result === 'string'
                     ? result.split('\n').filter((res) => res.length > 0)
                     : result;
@@ -205,42 +194,24 @@ class LocalGetCommand extends Command {
                 };
             }
 
-            assertionPromise = this.tripleStoreService
-                .getAssertion(
-                    blockchain,
-                    contract,
-                    knowledgeCollectionId,
-                    knowledgeAssetId,
-                    contentType,
-                )
-                .then((result) => {
-                    this.operationIdService.emitChangeEvent(
-                        OPERATION_ID_STATUS.GET.GET_LOCAL_GET_ASSERTION_END,
-                        operationId,
-                        blockchain,
-                    );
-                    return result;
-                });
+            assertionPromise = this.tripleStoreService.getAssertion(
+                blockchain,
+                contract,
+                knowledgeCollectionId,
+                knowledgeAssetId,
+                contentType,
+            );
         }
 
         promises.push(assertionPromise);
 
         if (includeMetadata) {
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.GET.GET_LOCAL_GET_ASSERTION_METADATA_START,
-                operationId,
+            const metadataPromise = this.tripleStoreService.getAssertionMetadata(
                 blockchain,
+                contract,
+                knowledgeCollectionId,
+                knowledgeAssetId,
             );
-            const metadataPromise = this.tripleStoreService
-                .getAssertionMetadata(blockchain, contract, knowledgeCollectionId, knowledgeAssetId)
-                .then((result) => {
-                    this.operationIdService.emitChangeEvent(
-                        OPERATION_ID_STATUS.GET.GET_LOCAL_GET_ASSERTION_METADATA_END,
-                        operationId,
-                        blockchain,
-                    );
-                    return result;
-                });
             promises.push(metadataPromise);
         }
 
