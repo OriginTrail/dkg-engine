@@ -40,6 +40,33 @@ class StepsUtils {
                 blockchain: {
                     implementation: {}
                 },
+                blockchainEvents: {
+                    enabled: true,
+                    implementation: {
+                        "ot-ethers": {
+                            enabled: true,
+                            package: "./blockchain-events/implementation/ot-ethers/ot-ethers.js",
+                            config: {
+                                blockchains: [
+                                    "hardhat1:31337",
+                                    "hardhat2:31337"
+                                ],
+                                rpcEndpoints: {
+                                    "hardhat1:31337": [
+                                        "http://localhost:8545"
+                                    ],
+                                    "hardhat2:31337": [
+                                        "http://localhost:9545"
+                                    ]
+                                },
+                                hubContractAddress: {
+                                    "hardhat1:31337": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                                    "hardhat2:31337": "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+                                }
+                            }
+                        }
+                    }
+                },
                 network: {
                     implementation: {
                         'libp2p-service': {
@@ -53,48 +80,75 @@ class StepsUtils {
                     },
                 },
                 repository: {
+                    enabled:true,
                     implementation: {
                         'sequelize-repository': {
+                            package:"./repository/implementation/sequelize/sequelize-repository.js",
                             config: {
                                 database: bootstrap
-                                    ? 'operationaldbbootstrap'
+                                    ? 'operationaldbootstrap'
                                     : `operationaldbnode${nodeIndex}`,
                             },
                         },
                     },
                 },
                 tripleStore: {
+                    enabled: true,
                     implementation: {
                         'ot-blazegraph': {
+                            enabled: true,
+                            package: "./triple-store/implementation/ot-blazegraph/ot-blazegraph.js",
                             config: {
                                 repositories: {
+                                    dkg: {
+                                        url: "http://localhost:9999",
+                                        name: "dkg-0",
+                                        username: "admin",
+                                        password: ""
+                                    },
                                     privateCurrent: {
                                         url: 'http://localhost:9999',
-                                        name: 'private-current',
-                                        username: 'admin',
-                                        password: '',
-                                    },
-                                    privateHistory: {
-                                        url: 'http://localhost:9999',
-                                        name: 'private-history',
+                                        name: 'private-current-0',
                                         username: 'admin',
                                         password: '',
                                     },
                                     publicCurrent: {
                                         url: 'http://localhost:9999',
-                                        name: 'public-current',
-                                        username: 'admin',
-                                        password: '',
-                                    },
-                                    publicHistory: {
-                                        url: 'http://localhost:9999',
-                                        name: 'public-history',
+                                        name: 'public-current-0',
                                         username: 'admin',
                                         password: '',
                                     },
                                 },
                             },
                         },
+                        "ot-fuseki": {
+                            "enabled": false,
+                            "package": "./triple-store/implementation/ot-fuseki/ot-fuseki.js",
+                            "config": {
+                                "repositories": {
+                                    "dkg": {
+                                        "url": "http://localhost:3030",
+                                        "name": "dkg-0",
+                                        "username": "admin",
+                                        "password": ""
+                                    }
+                                }
+                            }
+                        },
+                        "ot-graphdb": {
+                            "enabled": false,
+                            "package": "./triple-store/implementation/ot-graphdb/ot-graphdb.js",
+                            "config": {
+                                "repositories": {
+                                    "dkg": {
+                                        "url": "http://localhost:7200",
+                                        "name": "dkg-0",
+                                        "username": "admin",
+                                        "password": ""
+                                    }
+                                }
+                            }
+                        }
                     },
                 },
                 validation: {
@@ -120,9 +174,11 @@ class StepsUtils {
                 ipBasedAuthEnabled: false,
             },
             operationalDatabase: {
-                databaseName: bootstrap
-                    ? 'operationaldbbootstrap'
-                    : `operationaldbnode${nodeIndex}`,
+                config: {
+                    database: bootstrap
+                        ? 'operationaldbootstrap'
+                        : `operationaldbnode${nodeIndex}`,
+                }
             },
             rpcPort,
             appDataPath: bootstrap ? 'test-data-bootstrap' : `test-data${nodeIndex}`,
@@ -131,6 +187,7 @@ class StepsUtils {
             },
         };
 
+        let index=1;
         for (const blockchain of blockchains) {
             config.modules.blockchain.implementation[blockchain.blockchainId] = {
                 enabled: true,
@@ -146,10 +203,12 @@ class StepsUtils {
                     }],
                     evmManagementWalletPublicKey: blockchain.managementWallet.address,
                     evmManagementWalletPrivateKey: blockchain.managementWallet.privateKey,
+                    nodeName: "LocalNode"+index,
                     sharesTokenName,
                     sharesTokenSymbol,
                 },
             };
+            index++;
         }
         return config;
     }

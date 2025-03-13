@@ -9,6 +9,8 @@ const ParametersStorage = JSON.parse(
     (await readFile('node_modules/dkg-evm-module/abi/ParametersStorage.json')).toString(),
 );
 
+const ParametersStorageInterface = new ethers.utils.Interface(ParametersStorage);
+
 const hubContractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
 
 const testParametersStorageParams = {
@@ -50,6 +52,10 @@ const testParametersStorageParams = {
 let startBlockchainProcess;
 
 class LocalBlockchain {
+    constructor() {
+        this.ParametersStorageInterface = ParametersStorageInterface;
+    }
+
     async initialize(port, _console = console, version = '') {
         this.port = port;
         startBlockchainProcess = exec(`npm run start:local_blockchain${version} -- ${port}`);
@@ -90,9 +96,7 @@ class LocalBlockchain {
 
     async setParametersStorageParams(parametersStorageAddress, params) {
         for (const parameter of Object.keys(params)) {
-            const blockchainMethodName = `set${
-                parameter.charAt(0).toUpperCase() + parameter.slice(1)
-            }`;
+            const blockchainMethodName = `set${parameter.charAt(0).toUpperCase() + parameter.slice(1)}`;
             console.log(`Setting ${parameter} in parameters storage to: ${params[parameter]}`);
             const encodedData = this.ParametersStorageInterface.encodeFunctionData(
                 blockchainMethodName,
@@ -105,6 +109,8 @@ class LocalBlockchain {
 
     async setR0(r0) {
         console.log(`Setting R0 in parameters storage to: ${r0}`);
+        console.log("PARANET "+ this.ParametersStorageInterface);
+
         const encodedData = this.ParametersStorageInterface.encodeFunctionData('setR0', [r0]);
         const parametersStorageAddress = await this.hubContract.getContractAddress(
             'ParametersStorage',

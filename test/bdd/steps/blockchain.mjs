@@ -17,6 +17,8 @@ Given(/^the blockchains are set up$/, { timeout: 240_000 }, function blockchainS
         const blockchainConsole = new console.Console(
             fs.createWriteStream(`${this.state.scenarionLogDir}/blockchain-${blockchain.name.replace(':', '-')}.log`),
         );
+
+        console.log("BLOCKCHAIN LOG: "+ `${this.state.scenarionLogDir}/blockchain-${blockchain.name.replace(':', '-')}.log`);
         const localBlockchain = new LocalBlockchain();
         this.state.localBlockchains[blockchain.name] = localBlockchain;
 

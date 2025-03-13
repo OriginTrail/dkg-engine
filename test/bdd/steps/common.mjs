@@ -11,7 +11,7 @@ const stepsUtils = new StepsUtils();
 
 Given(
     /^I setup (\d+)[ additional]* node[s]*$/,
-    { timeout: 30000 },
+    { timeout: 60000 },
     function nodeSetup(nodeCount, done) {
         this.logger.log(`I setup ${nodeCount} node${nodeCount !== 1 ? 's' : ''}`);
 
@@ -48,6 +48,8 @@ Given(
             const logFileStream = fs.createWriteStream(
                 `${this.state.scenarionLogDir}/${nodeName}.log`,
             );
+
+            this.logger.log("CHECK "+ `${this.state.scenarionLogDir}/${nodeName}.log`);
             forkedNode.stdout.setEncoding('utf8');
             forkedNode.stdout.on('data', (data) => {
                 // Here is where the output goes
@@ -97,7 +99,7 @@ Given(
                 if (nodesStarted === nodeCount) {
                     done();
                 }
-            });
+            });       
         }
     },
 );
@@ -119,7 +121,7 @@ Given(
                 blockchainId,
                 operationalWallet: wallets[0],
                 managementWallet: wallets[Math.floor(wallets.length / 2)],
-                port: this.state.localBlockchains[blockchainId].port
+                port: blockchain.port
             })
         });
         const rpcPort = 8900;
@@ -135,27 +137,47 @@ Given(
             networkPort,
             sharesTokenName,
             sharesTokenSymbol,
-            true,
         );
         const forkedNode = stepsUtils.forkNode(nodeConfiguration);
+        const logFileStream = fs.createWriteStream(
+            `${this.state.scenarionLogDir}/${nodeName}.log`,
+        );
 
-        const logFileStream = fs.createWriteStream(`${this.state.scenarionLogDir}/${nodeName}.log`);
+        this.logger.log("BOOSTRAP NODE LOG "+ `${this.state.scenarionLogDir}/${nodeName}.log`);
         forkedNode.stdout.setEncoding('utf8');
         forkedNode.stdout.on('data', (data) => {
             // Here is where the output goes
             logFileStream.write(data);
         });
-        forkedNode.on('message', async (response) => {
+        // eslint-disable-next-line no-loop-func
+        forkedNode.on('message', (response) => {
             if (response.error) {
-                this.logger.debug(`Error while initializing bootstrap node: ${response.error}`);
+                assert.fail(`Error while initializing node${nodeIndex}: ${response.error}`);
             } else {
+                // todo if started
                 const client = new DkgClientHelper({
                     endpoint: 'http://localhost',
-                    port: 8900,
+                    port: rpcPort,
                     useSSL: false,
                     timeout: 25,
                     loglevel: 'trace',
+                    
                 });
+                let clientBlockchainOptions = {};
+                Object.keys(this.state.localBlockchains).forEach((blockchainId, index) => {
+                    const blockchain = this.state.localBlockchains[blockchainId];
+                    const wallets = blockchain.getWallets();
+                    clientBlockchainOptions[blockchainId] = {
+                        blockchain: {
+                            name: blockchainId,
+                            publicKey: wallets[index].address,
+                            privateKey: wallets[index].privateKey,
+                            rpc: `http://localhost:${blockchain.port}`,
+                            hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+                        },
+                    };
+                });
+
                 this.state.bootstraps.push({
                     client,
                     forkedNode,
@@ -165,9 +187,13 @@ Given(
                         config: nodeConfiguration,
                         logger: this.logger,
                     }),
+                    clientBlockchainOptions,
                 });
+
+
+                console.log("DSSD: "+client.info());
             }
-            done();
+            done(); 
         });
     },
 );
