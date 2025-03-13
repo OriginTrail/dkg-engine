@@ -99,6 +99,17 @@ class BlockchainEventRepository {
         });
     }
 
+    async findAndRemoveProcessedEvents(timestamp, limit, options) {
+        return this.model.destroy({
+            where: {
+                processed: true,
+                createdAt: { [Sequelize.Op.lte]: timestamp },
+            },
+            limit,
+            ...options,
+        });
+    }
+
     async findProcessedEvents(timestamp, limit, options) {
         return this.model.findAll({
             where: {

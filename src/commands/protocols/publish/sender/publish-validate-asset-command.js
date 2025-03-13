@@ -30,23 +30,8 @@ class PublishValidateAssetCommand extends ValidateAssetCommand {
             OPERATION_ID_STATUS.PUBLISH.PUBLISH_VALIDATE_ASSET_START,
         );
 
-        this.operationIdService.emitChangeEvent(
-            OPERATION_ID_STATUS.PUBLISH.PUBLISH_GET_CACHED_OPERATION_ID_DATA_START,
-            operationId,
-            blockchain,
-        );
         const cachedData = await this.operationIdService.getCachedOperationIdData(operationId);
-        this.operationIdService.emitChangeEvent(
-            OPERATION_ID_STATUS.PUBLISH.PUBLISH_GET_CACHED_OPERATION_ID_DATA_END,
-            operationId,
-            blockchain,
-        );
 
-        this.operationIdService.emitChangeEvent(
-            OPERATION_ID_STATUS.PUBLISH.PUBLISH_VALIDATE_DATASET_ROOT_START,
-            operationId,
-            blockchain,
-        );
         await this.validationService.validateDatasetRoot(cachedData.dataset.public, datasetRoot);
 
         if (cachedData.dataset?.private?.length)
@@ -54,12 +39,6 @@ class PublishValidateAssetCommand extends ValidateAssetCommand {
                 cachedData.dataset.public,
                 cachedData.dataset.private,
             );
-
-        this.operationIdService.emitChangeEvent(
-            OPERATION_ID_STATUS.PUBLISH.PUBLISH_VALIDATE_DATASET_ROOT_END,
-            operationId,
-            blockchain,
-        );
 
         await this.operationIdService.updateOperationIdStatus(
             operationId,

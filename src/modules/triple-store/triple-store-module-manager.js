@@ -129,11 +129,11 @@ class TripleStoreModuleManager extends BaseModuleManager {
         }
     }
 
-    async deleteKnowledgeCollectionNamedGraphs(implementationName, repository, uals) {
+    async deleteKnowledgeCollectionNamedGraphs(implementationName, repository, namedGraphs) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(
                 implementationName,
-            ).module.deleteKnowledgeCollectionNamedGraphs(repository, uals);
+            ).module.deleteKnowledgeCollectionNamedGraphs(repository, namedGraphs);
         }
     }
 

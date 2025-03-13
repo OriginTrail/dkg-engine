@@ -62,7 +62,7 @@ class OtBlazegraph extends OtTripleStore {
     }
 
     utfConverter(input) {
-        return Buffer.from(input, 'binary').toString('utf8');
+        return Buffer.from(input, 'utf8').toString();
     }
 
     async _executeQuery(repository, query, mediaType) {
