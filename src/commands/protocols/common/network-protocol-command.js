@@ -1,5 +1,5 @@
 import Command from '../../command.js';
-import { OPERATION_ID_STATUS, ERROR_TYPE } from '../../../constants/constants.js';
+import { ERROR_TYPE } from '../../../constants/constants.js';
 
 class NetworkProtocolCommand extends Command {
     constructor(ctx) {
@@ -8,8 +8,6 @@ class NetworkProtocolCommand extends Command {
         this.blockchainModuleManager = ctx.blockchainModuleManager;
 
         this.errorType = ERROR_TYPE.NETWORK_PROTOCOL_ERROR;
-        this.operationStartEvent = OPERATION_ID_STATUS.NETWORK_PROTOCOL_START;
-        this.operationEndEvent = OPERATION_ID_STATUS.NETWORK_PROTOCOL_END;
     }
 
     /**
@@ -17,10 +15,7 @@ class NetworkProtocolCommand extends Command {
      * @param command
      */
     async execute(command) {
-        const { blockchain, operationId, minimumNumberOfNodeReplications, batchSize } =
-            command.data;
-
-        this.operationIdService.emitChangeEvent(this.operationStartEvent, operationId, blockchain);
+        const { minimumNumberOfNodeReplications, batchSize } = command.data;
 
         const batchSizePar = this.operationService.getBatchSize(batchSize);
         const minAckResponses = this.operationService.getMinAckResponses(
@@ -43,8 +38,6 @@ class NetworkProtocolCommand extends Command {
             },
             transactional: false,
         });
-
-        this.operationIdService.emitChangeEvent(this.operationEndEvent, operationId, blockchain);
 
         return Command.empty();
     }

@@ -4,7 +4,6 @@ import {
     ERROR_TYPE,
     OPERATION_REQUEST_STATUS,
     OPERATION_STATUS,
-    OPERATION_ID_STATUS,
 } from '../../../../../constants/constants.js';
 
 class AskRequestCommand extends ProtocolRequestCommand {
@@ -14,12 +13,6 @@ class AskRequestCommand extends ProtocolRequestCommand {
         this.operationIdService = ctx.operationIdService;
 
         this.errorType = ERROR_TYPE.ASK.ASK_REQUEST_ERROR;
-        this.operationStartEvent = OPERATION_ID_STATUS.ASK.ASK_REQUEST_START;
-        this.operationEndEvent = OPERATION_ID_STATUS.ASK.ASK_REQUEST_END;
-        this.prepareMessageStartEvent = OPERATION_ID_STATUS.ASK.ASK_REQUEST_PREPARE_MESSAGE_START;
-        this.prepareMessageEndEvent = OPERATION_ID_STATUS.ASK.ASK_REQUEST_PREPARE_MESSAGE_END;
-        this.sendMessageStartEvent = OPERATION_ID_STATUS.ASK.ASK_REQUEST_SEND_MESSAGE_START;
-        this.sendMessageEndEvent = OPERATION_ID_STATUS.ASK.ASK_REQUEST_SEND_MESSAGE_END;
     }
 
     async shouldSendMessage(command) {

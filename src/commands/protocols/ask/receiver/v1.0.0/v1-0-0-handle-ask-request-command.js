@@ -16,14 +16,6 @@ class HandleAskRequestCommand extends HandleProtocolMessageCommand {
         this.errorType = ERROR_TYPE.ASK.ASK_REQUEST_REMOTE_ERROR;
         this.operationStartEvent = OPERATION_ID_STATUS.ASK.ASK_REMOTE_START;
         this.operationEndEvent = OPERATION_ID_STATUS.ASK.ASK_REMOTE_END;
-        this.prepareMessageStartEvent = OPERATION_ID_STATUS.ASK.ASK_REMOTE_PREPARE_MESSAGE_START;
-        this.prepareMessageEndEvent = OPERATION_ID_STATUS.ASK.ASK_REMOTE_PREPARE_MESSAGE_END;
-        this.sendMessageResponseStartEvent = OPERATION_ID_STATUS.ASK.ASK_REMOTE_SEND_MESSAGE_START;
-        this.sendMessageResponseEndEvent = OPERATION_ID_STATUS.ASK.ASK_REMOTE_SEND_MESSAGE_END;
-        this.removeCachedSessionStartEvent =
-            OPERATION_ID_STATUS.ASK.ASK_REMOTE_REMOVE_CACHED_SESSION_START;
-        this.removeCachedSessionEndEvent =
-            OPERATION_ID_STATUS.ASK.ASK_REMOTE_REMOVE_CACHED_SESSION_END;
     }
 
     async prepareMessage(commandData) {

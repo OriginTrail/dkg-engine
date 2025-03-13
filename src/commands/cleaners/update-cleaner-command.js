@@ -4,24 +4,15 @@ import {
     OPERATIONS,
     UPDATE_CLEANUP_TIME_DELAY,
     UPDATE_CLEANUP_TIME_MILLS,
-    ARCHIVE_UPDATE_FOLDER,
 } from '../../constants/constants.js';
 
 class UpdateCleanerCommand extends CleanerCommand {
-    async findRowsForRemoval(nowTimestamp) {
-        return this.repositoryModuleManager.findProcessedOperations(
+    async deleteRows(nowTimestamp) {
+        return this.repositoryModuleManager.findAndRemoveProcessedOperationRecords(
             OPERATIONS.UPDATE,
             nowTimestamp - UPDATE_CLEANUP_TIME_DELAY,
             REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
         );
-    }
-
-    getArchiveFolderName() {
-        return ARCHIVE_UPDATE_FOLDER;
-    }
-
-    async deleteRows(ids) {
-        return this.repositoryModuleManager.removeOperationRecords(OPERATIONS.UPDATE, ids);
     }
 
     /**
@@ -31,7 +22,7 @@ class UpdateCleanerCommand extends CleanerCommand {
      */
     default(map) {
         const command = {
-            name: 'publishCleanerCommand',
+            name: 'updateCleanerCommand',
             data: {},
             period: UPDATE_CLEANUP_TIME_MILLS,
             transactional: false,

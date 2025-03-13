@@ -125,23 +125,12 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
             }
         }
 
-        this.operationIdService.emitChangeEvent(
-            OPERATION_ID_STATUS.GET.GET_VALIDATE_UAL_START,
-            operationId,
-            blockchain,
-        );
         // TODO: Update to validate knowledge asset index
         if (!isOperationV0 && !isV6Contract) {
             const isValidUal = await this.validationService.validateUal(
                 blockchain,
                 contract,
                 knowledgeCollectionId,
-            );
-
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.GET.GET_VALIDATE_UAL_END,
-                operationId,
-                blockchain,
             );
 
             if (!isValidUal) {
