@@ -191,7 +191,7 @@ Given(
                 });
 
 
-                console.log("DSSD: "+client.info());
+             //   console.log("INFO: "+client.info());
             }
             done(); 
         });

@@ -15,6 +15,7 @@ class DkgClientHelper {
             visibility: 'public',
             epochsNum: 5,
             hashFunctionId: CONTENT_ASSET_HASH_FUNCTION_ID,
+            environment: 'development',
         };
 
         const options = { ...defaultOptions, ...userOptions };
