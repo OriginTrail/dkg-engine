@@ -68,6 +68,14 @@ class RepositoryModuleManager extends BaseModuleManager {
         return this.getRepository('command').findFinalizedCommands(timestamp, limit, options);
     }
 
+    async findAndRemoveFinalizedCommands(timestamp, limit, options = {}) {
+        return this.getRepository('command').findAndRemoveFinalizedCommands(
+            timestamp,
+            limit,
+            options,
+        );
+    }
+
     async findUnfinalizedCommandsByName(limit, options = {}) {
         return this.getRepository('command').findUnfinalizedCommandsByName(limit, options);
     }
@@ -126,6 +134,15 @@ class RepositoryModuleManager extends BaseModuleManager {
         );
     }
 
+    async findAndRemoveProcessedOperationRecords(operation, timestamp, limit, options = {}) {
+        return this.getRepository('operation').findAndRemoveProcessedOperationRecords(
+            operation,
+            timestamp,
+            limit,
+            options,
+        );
+    }
+
     async getOperationStatus(operation, operationId, options = {}) {
         return this.getRepository('operation').getOperationStatus(operation, operationId, options);
     }
@@ -162,6 +179,15 @@ class RepositoryModuleManager extends BaseModuleManager {
             timestamp,
             limit,
             operation,
+            options,
+        );
+    }
+
+    async findAndRemoveProcessedOperationResponse(operation, timestamp, limit, options = {}) {
+        return this.getRepository('operation_response').findAndRemoveProcessedOperationResponse(
+            operation,
+            timestamp,
+            limit,
             options,
         );
     }
@@ -319,6 +345,14 @@ class RepositoryModuleManager extends BaseModuleManager {
 
     async findProcessedEvents(timestamp, limit, options = {}) {
         return this.getRepository('blockchain_event').findProcessedEvents(
+            timestamp,
+            limit,
+            options,
+        );
+    }
+
+    async findAndRemoveProcessedEvents(timestamp, limit, options = {}) {
+        return this.getRepository('blockchain_event').findAndRemoveProcessedEvents(
             timestamp,
             limit,
             options,

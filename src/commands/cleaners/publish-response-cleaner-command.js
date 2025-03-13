@@ -4,24 +4,15 @@ import {
     OPERATIONS,
     PUBLISH_RESPONSE_CLEANUP_TIME_DELAY,
     PUBLISH_RESPONSE_CLEANUP_TIME_MILLS,
-    ARCHIVE_PUBLISH_RESPONSES_FOLDER,
 } from '../../constants/constants.js';
 
 class PublishResponseCleanerCommand extends CleanerCommand {
-    async findRowsForRemoval(nowTimestamp) {
-        return this.repositoryModuleManager.findProcessedOperationResponse(
+    async deleteRows(nowTimestamp) {
+        return this.repositoryModuleManager.findAndRemoveProcessedOperationResponse(
+            OPERATIONS.PUBLISH,
             nowTimestamp - PUBLISH_RESPONSE_CLEANUP_TIME_DELAY,
             REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
-            OPERATIONS.PUBLISH,
         );
-    }
-
-    getArchiveFolderName() {
-        return ARCHIVE_PUBLISH_RESPONSES_FOLDER;
-    }
-
-    async deleteRows(ids) {
-        return this.repositoryModuleManager.removeOperationResponse(ids, OPERATIONS.PUBLISH);
     }
 
     /**
