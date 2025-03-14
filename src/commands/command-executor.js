@@ -1,4 +1,5 @@
 import async from 'async';
+import { trace } from '@opentelemetry/api';
 import Command from './command.js';
 import {
     PERMANENT_COMMANDS,
@@ -16,21 +17,39 @@ class CommandExecutor {
     constructor(ctx) {
         this.logger = ctx.logger;
         this.commandResolver = ctx.commandResolver;
-
+        this.tracer = trace.getTracer('otnode');
         this.repositoryModuleManager = ctx.repositoryModuleManager;
         this.verboseLoggingEnabled = ctx.config.commandExecutorVerboseLoggingEnabled;
 
         this.queue = async.queue((command, callback = () => {}) => {
-            this._execute(command)
-                .then((result) => {
-                    callback(result);
-                })
-                .catch((error) => {
-                    this.logger.error(
-                        `Something went really wrong! OT-node shutting down... ${error}`,
-                    );
-                    process.exit(1);
-                });
+            this.tracer.startActiveSpan(
+                `command - ${command.name}`,
+                {
+                    attributes: {
+                        'command.name': command.name,
+                        'command.id': command.id,
+                        'command.ready_at': command.readyAt,
+                        'command.delay': command.delay,
+                        'command.period': command.period,
+                        'command.transactional': command.transactional,
+                        'command.operation.id': command.data?.operationId,
+                    },
+                },
+                (span) =>
+                    this._execute(command)
+                        .then((result) => {
+                            callback(result);
+                            span.end();
+                        })
+                        .catch((error) => {
+                            span.recordException(error);
+                            span.end();
+                            this.logger.error(
+                                `Something went really wrong! OT-node shutting down... ${error}`,
+                            );
+                            process.exit(1);
+                        }),
+            );
         }, COMMAND_QUEUE_PARALLELISM);
     }
 

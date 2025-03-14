@@ -80,7 +80,7 @@ startNode() {
   echo Starting node $1
   osascript -e "tell app \"Terminal\"
       do script \"cd $pathToOtNode
-  node index.js ./tools/local-network-setup/.node$1_origintrail_noderc.json\"
+  OTEL_SERVICE_NAME=otnode$1 node index.js ./tools/local-network-setup/.node$1_origintrail_noderc.json\"
   end tell"
 }
 
