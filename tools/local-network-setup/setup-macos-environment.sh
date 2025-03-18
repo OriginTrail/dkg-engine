@@ -55,6 +55,12 @@ then
     end tell"
   echo Waiting for hardhat to start and contracts deployment
 
+  while ! nc -z localhost 8545; do
+     sleep 1
+  done
+
+  echo Hardhat started.
+
   echo ================================
   echo ====== Starting hardhat 2 ======
   echo ================================
@@ -64,6 +70,12 @@ then
         node tools/local-network-setup/run-local-blockchain.js 9545 \"
     end tell"
   echo Waiting for hardhat to start and contracts deployment
+
+  while ! nc -z localhost 9545; do
+     sleep 1
+  done
+
+  echo Hardhat started.
 fi
 
 echo ================================

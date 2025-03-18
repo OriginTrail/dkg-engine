@@ -1,4 +1,5 @@
 import Command from '../../command.js';
+import { OPERATION_ID_STATUS } from '../../../constants/constants.js';
 
 class ValidateAssertionMetadataCommand extends Command {
     constructor(ctx) {
@@ -6,6 +7,8 @@ class ValidateAssertionMetadataCommand extends Command {
         this.operationIdService = ctx.operationIdService;
         this.blockchainModuleManager = ctx.blockchainModuleManager;
         this.dataService = ctx.dataService;
+        this.operationStartEvent = OPERATION_ID_STATUS.VALIDATE_ASSERTION_METADATA_START;
+        this.operationEndEvent = OPERATION_ID_STATUS.VALIDATE_ASSERTION_METADATA_END;
     }
 
     async execute(command) {

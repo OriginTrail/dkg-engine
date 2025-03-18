@@ -30,29 +30,9 @@ class UpdateValidateAssetCommand extends ValidateAssetCommand {
             OPERATION_ID_STATUS.UPDATE.UPDATE_VALIDATE_ASSET_START,
         );
 
-        this.operationIdService.emitChangeEvent(
-            OPERATION_ID_STATUS.UPDATE.UPDATE_GET_CACHED_OPERATION_ID_DATA_START,
-            operationId,
-            blockchain,
-        );
         const cachedData = await this.operationIdService.getCachedOperationIdData(operationId);
-        this.operationIdService.emitChangeEvent(
-            OPERATION_ID_STATUS.UPDATE.UPDATE_GET_CACHED_OPERATION_ID_DATA_END,
-            operationId,
-            blockchain,
-        );
 
-        this.operationIdService.emitChangeEvent(
-            OPERATION_ID_STATUS.UPDATE.UPDATE_VALIDATE_DATASET_ROOT_START,
-            operationId,
-            blockchain,
-        );
         await this.validationService.validateDatasetRoot(cachedData.dataset, datasetRoot);
-        this.operationIdService.emitChangeEvent(
-            OPERATION_ID_STATUS.UPDATE.UPDATE_VALIDATE_DATASET_ROOT_END,
-            operationId,
-            blockchain,
-        );
 
         await this.operationIdService.updateOperationIdStatus(
             operationId,

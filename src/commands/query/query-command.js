@@ -51,11 +51,6 @@ class QueryCommand extends Command {
         try {
             switch (queryType) {
                 case QUERY_TYPES.CONSTRUCT: {
-                    this.operationIdService.emitChangeEvent(
-                        OPERATION_ID_STATUS.QUERY.QUERY_CONSTRUCT_QUERY_START,
-                        operationId,
-                    );
-
                     if (Array.isArray(repository)) {
                         const dataV6 = await this.tripleStoreService.construct(
                             query,
@@ -73,19 +68,9 @@ class QueryCommand extends Command {
                     } else {
                         data = await this.tripleStoreService.construct(query, repository);
                     }
-
-                    this.operationIdService.emitChangeEvent(
-                        OPERATION_ID_STATUS.QUERY.QUERY_CONSTRUCT_QUERY_END,
-                        operationId,
-                    );
                     break;
                 }
                 case QUERY_TYPES.SELECT: {
-                    this.operationIdService.emitChangeEvent(
-                        OPERATION_ID_STATUS.QUERY.QUERY_SELECT_QUERY_START,
-                        operationId,
-                    );
-
                     if (Array.isArray(repository)) {
                         const dataV6 = await this.tripleStoreService.select(query, repository[0]);
                         const dataV8 = await this.tripleStoreService.select(query, repository[1]);
@@ -97,36 +82,15 @@ class QueryCommand extends Command {
                     } else {
                         data = await this.tripleStoreService.select(query, repository);
                     }
-
-                    this.operationIdService.emitChangeEvent(
-                        OPERATION_ID_STATUS.QUERY.QUERY_SELECT_QUERY_END,
-                        operationId,
-                    );
                     break;
                 }
                 default:
                     throw new Error(`Unknown query type ${queryType}`);
             }
 
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.QUERY.QUERY_CACHE_OPERATION_ID_DATA_TO_MEMORY_START,
-                operationId,
-            );
             await this.operationIdService.cacheOperationIdDataToMemory(operationId, data);
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.QUERY.QUERY_CACHE_OPERATION_ID_DATA_TO_MEMORY_END,
-                operationId,
-            );
 
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.QUERY.QUERY_CACHE_OPERATION_ID_DATA_TO_FILE_START,
-                operationId,
-            );
             await this.operationIdService.cacheOperationIdDataToFile(operationId, data);
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.QUERY.QUERY_CACHE_OPERATION_ID_DATA_TO_FILE_END,
-                operationId,
-            );
 
             await this.operationIdService.updateOperationIdStatus(
                 operationId,

@@ -13,18 +13,6 @@ class HandleProtocolMessageCommand extends Command {
 
         this.operationStartEvent = OPERATION_ID_STATUS.HANDLE_PROTOCOL_MESSAGE_START;
         this.operationEndEvent = OPERATION_ID_STATUS.HANDLE_PROTOCOL_MESSAGE_END;
-        this.prepareMessageStartEvent =
-            OPERATION_ID_STATUS.HANDLE_PROTOCOL_MESSAGE_PREPARE_MESSAGE_START;
-        this.prepareMessageEndEvent =
-            OPERATION_ID_STATUS.HANDLE_PROTOCOL_MESSAGE_PREPARE_MESSAGE_END;
-        this.sendMessageResponseStartEvent =
-            OPERATION_ID_STATUS.HANDLE_PROTOCOL_MESSAGE_SEND_MESSAGE_RESPONSE_START;
-        this.sendMessageResponseEndEvent =
-            OPERATION_ID_STATUS.HANDLE_PROTOCOL_MESSAGE_SEND_MESSAGE_RESPONSE_END;
-        this.removeCachedSessionStartEvent =
-            OPERATION_ID_STATUS.HANDLE_PROTOCOL_MESSAGE_REMOVE_CACHED_SESSION_START;
-        this.removeCachedSessionEndEvent =
-            OPERATION_ID_STATUS.HANDLE_PROTOCOL_MESSAGE_REMOVE_CACHED_SESSION_END;
     }
 
     /**
@@ -41,23 +29,8 @@ class HandleProtocolMessageCommand extends Command {
         );
 
         try {
-            this.operationIdService.emitChangeEvent(
-                this.prepareMessageStartEvent,
-                operationId,
-                blockchain,
-            );
             const { messageType, messageData } = await this.prepareMessage(command.data);
-            this.operationIdService.emitChangeEvent(
-                this.prepareMessageEndEvent,
-                operationId,
-                blockchain,
-            );
 
-            this.operationIdService.emitChangeEvent(
-                this.sendMessageResponseStartEvent,
-                operationId,
-                blockchain,
-            );
             await this.networkModuleManager.sendMessageResponse(
                 protocol,
                 remotePeerId,
@@ -78,17 +51,7 @@ class HandleProtocolMessageCommand extends Command {
             await this.handleError(error.message, command);
         }
 
-        this.operationIdService.emitChangeEvent(
-            this.removeCachedSessionStartEvent,
-            operationId,
-            blockchain,
-        );
         this.networkModuleManager.removeCachedSession(operationId, remotePeerId);
-        this.operationIdService.emitChangeEvent(
-            this.removeCachedSessionEndEvent,
-            operationId,
-            blockchain,
-        );
 
         await this.operationIdService.updateOperationIdStatus(
             operationId,
