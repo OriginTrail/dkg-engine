@@ -14,6 +14,7 @@ class StoreAssertionCommand extends Command {
         this.tripleStoreService = ctx.tripleStoreService;
         this.repositoryModuleManager = ctx.repositoryModuleManager;
         this.networkModuleManager = ctx.networkModuleManager;
+        this.operationService = ctx.finalityService;
 
         this.errorType = ERROR_TYPE.STORE_ASSERTION_ERROR;
     }
@@ -49,15 +50,21 @@ class StoreAssertionCommand extends Command {
                     ual,
                     publisherPeerId,
                 );
-            } else {
-                command.sequence.push('findPublisherNodeCommand', 'networkFinalityCommand');
+                await this.operationService.markOperationAsCompleted(
+                    operationId,
+                    blockchain,
+                    null,
+                    [OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_END],
+                );
+                return Command.empty();
             }
+
+            command.sequence.push('findPublisherNodeCommand', 'networkFinalityCommand');
+            return this.continueSequence(command.data, command.sequence);
         } catch (e) {
             await this.handleError(operationId, blockchain, e.message, this.errorType, true);
             return Command.empty(); // TODO: Should it end here or do a retry?
         }
-
-        return this.continueSequence(command.data, command.sequence);
     }
 
     async _insertAssertion(assertion, ual) {
