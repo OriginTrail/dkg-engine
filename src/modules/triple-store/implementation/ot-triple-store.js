@@ -1,4 +1,5 @@
 import { QueryEngine as Engine } from '@comunica/query-sparql';
+import { trace } from '@opentelemetry/api';
 import { setTimeout } from 'timers/promises';
 import {
     SCHEMA_CONTEXT,
@@ -15,6 +16,7 @@ class OtTripleStore {
         this.initializeContexts();
         await this.ensureConnections();
         this.queryEngine = new Engine();
+        this.tracer = trace.getTracer('triple-store');
     }
 
     initializeRepositories() {
@@ -275,24 +277,62 @@ class OtTripleStore {
         await this.queryVoid(repository, query);
     }
 
+    _wrapPromiseInSpan(promise, name, attributes) {
+        return this.tracer.startActiveSpan(name, { attributes }, async (span) =>
+            promise
+                .then((result) => {
+                    span.end();
+                    return result;
+                })
+                .catch((error) => {
+                    span.recordException(error);
+                    span.end();
+                    throw error;
+                }),
+        );
+    }
+
     async construct(repository, query) {
-        return this._executeQuery(repository, query, MEDIA_TYPES.N_QUADS);
+        return this._wrapPromiseInSpan(
+            this._executeQuery(repository, query, MEDIA_TYPES.N_QUADS),
+            'SPARQL - CONSTRUCT',
+            {
+                'sparql.repository': repository,
+                'sparql.query': query,
+            },
+        );
     }
 
     async select(repository, query) {
         // todo: add media type once bug is fixed
         // no media type is passed because of comunica bug
         // https://github.com/comunica/comunica/issues/1034
-        const result = await this._executeQuery(repository, query);
-        return result ? JSON.parse(result) : [];
+        return this._wrapPromiseInSpan(this._executeQuery(repository, query), 'SPARQL - SELECT', {
+            'sparql.repository': repository,
+            'sparql.query': query,
+        });
     }
 
     async queryVoid(repository, query) {
-        return this.queryEngine.queryVoid(query, this.repositories[repository].updateContext);
+        return this._wrapPromiseInSpan(
+            this.queryEngine.queryVoid(query, this.repositories[repository].updateContext),
+            'SPARQL - QUERY',
+            {
+                'sparql.repository': repository,
+                'sparql.query': query,
+            },
+        );
     }
 
     async ask(repository, query) {
-        return this.queryEngine.queryBoolean(query, this.repositories[repository].queryContext);
+        return this._wrapPromiseInSpan(
+            this.queryEngine.queryBoolean(query, this.repositories[repository].queryContext),
+            'SPARQL - ASK',
+            {
+                'sparql.repository': repository,
+                'sparql.query': query,
+            },
+        );
     }
 
     async assertionExists(repository, assertionId) {
