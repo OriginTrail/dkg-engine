@@ -84,6 +84,8 @@ class TripleStoreService {
             (_, index) => `${knowledgeCollectionUAL}/${index + 1}`,
         );
 
+        const allPossibleNamedGraphs = [];
+
         if (!existsInNamedGraphs) {
             promises.push(
                 this.tripleStoreModuleManager.createKnowledgeCollectionNamedGraphs(
@@ -94,6 +96,8 @@ class TripleStoreService {
                     TRIPLES_VISIBILITY.PUBLIC,
                 ),
             );
+
+            allPossibleNamedGraphs.push(...publicKnowledgeAssetsUALs.map((ual) => `${ual}/public`));
 
             if (triples.private?.length) {
                 const privateKnowledgeAssetsTriplesGrouped = kcTools.groupNquadsBySubject(
@@ -127,6 +131,7 @@ class TripleStoreService {
                         }
                     }
                 }
+
                 promises.push(
                     this.tripleStoreModuleManager.createKnowledgeCollectionNamedGraphs(
                         this.repositoryImplementations[repository],
@@ -136,8 +141,13 @@ class TripleStoreService {
                         TRIPLES_VISIBILITY.PRIVATE,
                     ),
                 );
+
+                allPossibleNamedGraphs.push(
+                    ...privateKnowledgeAssetsUALs.map((ual) => `${ual}/private`),
+                );
             }
         }
+
         const metadataTriples = publicKnowledgeAssetsUALs
             .map(
                 (publicKnowledgeAssetUAL) =>
@@ -159,7 +169,6 @@ class TripleStoreService {
         while (attempts < retries && !success) {
             try {
                 await Promise.all(promises);
-
                 success = true;
 
                 this.logger.info(
@@ -192,11 +201,19 @@ class TripleStoreService {
                             `Rolling back Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
                                 `from the Triple Store's ${repository} repository Named Graphs.`,
                         );
-                        await this.tripleStoreModuleManager.deleteKnowledgeCollectionNamedGraphs(
-                            this.repositoryImplementations[repository],
-                            repository,
-                            publicKnowledgeAssetsUALs,
-                        );
+
+                        await Promise.all([
+                            this.tripleStoreModuleManager.deleteKnowledgeCollectionNamedGraphs(
+                                this.repositoryImplementations[repository],
+                                repository,
+                                allPossibleNamedGraphs,
+                            ),
+                            this.tripleStoreModuleManager.deleteKnowledgeCollectionMetadata(
+                                this.repositoryImplementations[repository],
+                                repository,
+                                allPossibleNamedGraphs,
+                            ),
+                        ]);
                     }
 
                     throw new Error(

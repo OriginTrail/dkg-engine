@@ -1,24 +1,16 @@
 import {
     FINALIZED_COMMAND_CLEANUP_TIME_MILLS,
-    ARCHIVE_COMMANDS_FOLDER,
+    FINALIZED_COMMAND_CLEANUP_TIME_DELAY,
     REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
 } from '../../constants/constants.js';
 import CleanerCommand from './cleaner-command.js';
 
 class CommandsCleanerCommand extends CleanerCommand {
-    async findRowsForRemoval(nowTimestamp) {
-        return this.repositoryModuleManager.findFinalizedCommands(
-            nowTimestamp,
+    async deleteRows(nowTimestamp) {
+        return this.repositoryModuleManager.findAndRemoveFinalizedCommands(
+            nowTimestamp - FINALIZED_COMMAND_CLEANUP_TIME_DELAY,
             REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
         );
-    }
-
-    getArchiveFolderName() {
-        return ARCHIVE_COMMANDS_FOLDER;
-    }
-
-    async deleteRows(ids) {
-        return this.repositoryModuleManager.removeCommands(ids);
     }
 
     /**

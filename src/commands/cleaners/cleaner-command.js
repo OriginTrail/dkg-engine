@@ -5,7 +5,6 @@ class CleanerCommand extends Command {
     constructor(ctx) {
         super(ctx);
         this.repositoryModuleManager = ctx.repositoryModuleManager;
-        this.archiveService = ctx.archiveService;
     }
 
     /**
@@ -13,51 +12,19 @@ class CleanerCommand extends Command {
      * @param command
      */
     async execute() {
-        const nowTimestamp = Date.now();
+        let deletedRowsCount;
 
-        let rowsForRemoval = await this.findRowsForRemoval(nowTimestamp);
-
-        while (rowsForRemoval?.length >= REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER) {
-            const archiveName = this.getArchiveName(rowsForRemoval);
-
+        do {
+            const nowTimestamp = Date.now();
             // eslint-disable-next-line no-await-in-loop
-            await this.archiveService.archiveData(
-                this.getArchiveFolderName(),
-                archiveName,
-                rowsForRemoval,
-            );
-
-            // remove from database;
-            const ids = rowsForRemoval.map((command) => command.id);
-            // eslint-disable-next-line no-await-in-loop
-            await this.deleteRows(ids);
-
-            // eslint-disable-next-line no-await-in-loop
-            rowsForRemoval = await this.findRowsForRemoval(nowTimestamp);
-        }
+            deletedRowsCount = await this.deleteRows(nowTimestamp);
+        } while (deletedRowsCount === REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER);
 
         return Command.repeat();
     }
 
-    getArchiveName(rowsForRemoval) {
-        const firstTimestamp = new Date(rowsForRemoval[0].createdAt).getTime();
-        const lastTimestamp = new Date(
-            rowsForRemoval[rowsForRemoval.length - 1].createdAt,
-        ).getTime();
-        return `${firstTimestamp}-${lastTimestamp}.json`;
-    }
-
     // eslint-disable-next-line no-unused-vars
-    async findRowsForRemoval(nowTimestamp) {
-        throw Error('findRowsForRemoval not implemented');
-    }
-
-    getArchiveFolderName() {
-        throw Error('getArchiveFolderName not implemented');
-    }
-
-    // eslint-disable-next-line no-unused-vars
-    async deleteRows(ids) {
+    async deleteRows(nowTimestamp) {
         throw Error('deleteRows not implemented');
     }
 

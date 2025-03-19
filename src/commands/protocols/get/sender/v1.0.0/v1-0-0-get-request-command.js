@@ -5,7 +5,6 @@ import {
     ERROR_TYPE,
     OPERATION_REQUEST_STATUS,
     OPERATION_STATUS,
-    OPERATION_ID_STATUS,
     PRIVATE_HASH_SUBJECT_PREFIX,
 } from '../../../../../constants/constants.js';
 
@@ -16,12 +15,6 @@ class GetRequestCommand extends ProtocolRequestCommand {
         this.validationService = ctx.validationService;
 
         this.errorType = ERROR_TYPE.GET.GET_REQUEST_ERROR;
-        this.operationStartEvent = OPERATION_ID_STATUS.GET.GET_REQUEST_START;
-        this.operationEndEvent = OPERATION_ID_STATUS.GET.GET_REQUEST_END;
-        this.prepareMessageStartEvent = OPERATION_ID_STATUS.GET.GET_REQUEST_PREPARE_MESSAGE_START;
-        this.prepareMessageEndEvent = OPERATION_ID_STATUS.GET.GET_REQUEST_PREPARE_MESSAGE_END;
-        this.sendMessageStartEvent = OPERATION_ID_STATUS.GET.GET_REQUEST_SEND_MESSAGE_START;
-        this.sendMessageEndEvent = OPERATION_ID_STATUS.GET.GET_REQUEST_SEND_MESSAGE_END;
     }
 
     async shouldSendMessage(command) {

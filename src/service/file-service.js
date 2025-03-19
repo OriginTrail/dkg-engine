@@ -13,7 +13,6 @@ import {
 } from 'fs/promises';
 import appRootPath from 'app-root-path';
 import {
-    ARCHIVE_FOLDER,
     BLS_KEY_DIRECTORY,
     BLS_KEY_FILENAME,
     MIGRATION_FOLDER,
@@ -206,10 +205,6 @@ class FileService {
 
     getSignatureStorageDocumentPath(folderName, operationId) {
         return path.join(this.getSignatureStorageFolderPath(folderName), operationId);
-    }
-
-    getArchiveFolderPath(subFolder) {
-        return path.join(this.getDataFolderPath(), ARCHIVE_FOLDER, subFolder);
     }
 
     getParentDirectory(filePath) {
