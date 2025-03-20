@@ -77,8 +77,11 @@ class ShardingTableService {
         await this.repositoryModuleManager.createManyPeerRecords(newPeerRecords, options);
     }
 
-    async findShard(blockchainId /* filterInactive = false */) {
-        let peers = await this.repositoryModuleManager.getAllPeerRecords(blockchainId);
+    async findShard(blockchainId, filterInactive = false) {
+        let peers = await this.repositoryModuleManager.getAllPeerRecords(
+            blockchainId,
+            filterInactive,
+        );
         peers = peers.map((peer, index) => ({ ...peer.dataValues, index }));
         return peers;
     }
