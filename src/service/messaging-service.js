@@ -1,6 +1,6 @@
 import { NETWORK_MESSAGE_TYPES, OPERATION_REQUEST_STATUS } from '../constants/constants.js';
 
-class ProtocolMessagingService {
+class MessagingService {
     constructor(ctx) {
         this.networkModuleManager = ctx.networkModuleManager;
     }
@@ -81,4 +81,4 @@ class ProtocolMessagingService {
     }
 }
 
-export default ProtocolMessagingService;
+export default MessagingService;
