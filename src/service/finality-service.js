@@ -30,9 +30,7 @@ class FinalityService extends OperationService {
         this.operationMutex = new Mutex();
     }
 
-    async processResponse(command, responseStatus, responseData) {
-        const { operationId, blockchain } = command.data;
-
+    async processResponse(operationId, blockchain, responseStatus, responseData) {
         const responseStatusesFromDB = await this.getResponsesStatuses(
             responseStatus,
             responseData.errorMessage,
