@@ -6,6 +6,7 @@ import {
     RETRY_DELAY_READ_CACHED_PUBLISH_DATA,
     TRIPLE_STORE_REPOSITORIES,
     NETWORK_MESSAGE_TYPES,
+    NETWORK_MESSAGE_TIMEOUT_MILLS,
 } from '../../../constants/constants.js';
 
 class ReadCachedPublishDataCommand extends Command {
@@ -16,10 +17,15 @@ class ReadCachedPublishDataCommand extends Command {
         this.messagingService = ctx.messagingService;
         this.operationService = ctx.finalityService;
         this.errorType = ERROR_TYPE.STORE_ASSERTION_ERROR;
+        this.tripleStoreService = ctx.tripleStoreService;
+        this.operationIdService = ctx.operationIdService;
+        this.networkModuleManager = ctx.networkModuleManager;
+        this.repositoryModuleManager = ctx.repositoryModuleManager;
+        this.dataService = ctx.dataService;
     }
 
     async execute(command) {
-        const { event, publisherPeerId } = command.data;
+        const { event } = command.data;
         const eventData = JSON.parse(event.data);
         const { id, publishOperationId, merkleRoot, byteSize } = eventData;
         const { blockchain, contractAddress } = event;
@@ -30,10 +36,12 @@ class ReadCachedPublishDataCommand extends Command {
 
         let cachedMerkleRoot;
         let assertion;
+        let publisherPeerId;
         try {
             const result = await this.readWithRetries(publishOperationId);
-            cachedMerkleRoot = result.cachedMerkleRoot;
+            cachedMerkleRoot = result.merkleRoot;
             assertion = result.assertion;
+            publisherPeerId = result.remotePeerId;
         } catch (error) {
             this.logger.error(`Failed to read cached publish data: ${error.message}`); // TODO: Make this log more descriptive
             return Command.empty();
@@ -88,7 +96,7 @@ class ReadCachedPublishDataCommand extends Command {
                 );
             } else {
                 const networkProtocols = this.operationService.getNetworkProtocols();
-                const node = [{ id: publisherPeerId, protocol: networkProtocols[0] }];
+                const node = { id: publisherPeerId, protocol: networkProtocols[0] };
 
                 const message = { ual, publishOperationId, blockchain, operationId };
 
@@ -97,6 +105,7 @@ class ReadCachedPublishDataCommand extends Command {
                     operationId,
                     message,
                     NETWORK_MESSAGE_TYPES.REQUESTS.PROTOCOL_REQUEST,
+                    NETWORK_MESSAGE_TIMEOUT_MILLS.FINALITY.REQUEST,
                 );
 
                 await this.messagingService.handleProtocolResponse(
