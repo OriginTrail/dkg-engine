@@ -117,8 +117,9 @@ class ReadCachedPublishDataCommand extends Command {
             }
         } catch (e) {
             await this.handleError(operationId, blockchain, e.message, this.errorType, true);
-            return Command.empty(); // TODO: Should it end here or do a retry?
         }
+
+        return Command.empty();
     }
 
     async validatePublishData(
@@ -196,8 +197,6 @@ class ReadCachedPublishDataCommand extends Command {
     default(map) {
         const command = {
             name: 'readCachedPublishDataCommand',
-            delay: RETRY_DELAY_READ_CACHED_PUBLISH_DATA,
-            retries: MAX_RETRIES_READ_CACHED_PUBLISH_DATA,
             transactional: false,
         };
         Object.assign(command, map);
