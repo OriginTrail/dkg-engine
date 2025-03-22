@@ -38,10 +38,7 @@ class FinalityController extends BaseController {
 
     getCommandSequence(protocol) {
         // TODO: Rework this to schedule different command for update
-        return [
-            'publishFinalitySaveAckCommand',
-            ...this.protocolService.getReceiverCommandSequence(protocol),
-        ];
+        return [...this.protocolService.getReceiverCommandSequence(protocol)];
     }
 }
 
