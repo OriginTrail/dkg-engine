@@ -63,17 +63,6 @@ class ReadCachedPublishDataCommand extends Command {
             return Command.empty();
         }
 
-        // await this.operationIdService.updateOperationIdStatus(
-        //     operationId,
-        //     blockchain,
-        //     this.operationEndEvent,
-        // );
-
-        // await this.operationIdService.updateOperationIdStatus(
-        //     operationId,
-        //     blockchain,
-        //     OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_STORE_ASSERTION_START,
-        // );
         try {
             await this.tripleStoreService.insertKnowledgeCollection(
                 TRIPLE_STORE_REPOSITORIES.DKG,
@@ -99,7 +88,7 @@ class ReadCachedPublishDataCommand extends Command {
                 const node = { id: publisherPeerId, protocol: networkProtocols[0] };
 
                 const message = { ual, publishOperationId, blockchain, operationId };
-
+                // TODO: Add retry logic maybe
                 const response = await this.messagingService.sendProtocolMessage(
                     node,
                     operationId,
