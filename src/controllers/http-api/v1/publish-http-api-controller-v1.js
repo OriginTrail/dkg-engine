@@ -68,14 +68,13 @@ class PublishController extends BaseController {
                 publisherNodePeerId,
             );
 
-            const commandSequence = ['publishFindShardCommand'];
+            const commandSequence = ['localStoreCommand'];
 
             await this.commandExecutor.add({
                 name: commandSequence[0],
                 sequence: commandSequence.slice(1),
                 delay: 0,
                 period: 5000,
-                retries: 3,
                 data: {
                     datasetRoot,
                     blockchain,
