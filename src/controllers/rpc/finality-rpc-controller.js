@@ -10,11 +10,11 @@ class FinalityController extends BaseController {
 
     async v1_0_0HandleRequest(message, remotePeerId, protocol) {
         const { operationId, messageType } = message.header;
-        const [handleRequestCommand] = this.getCommandSequence(protocol);
+        const handleRequestCommands = this.getCommandSequence(protocol);
         let commandName;
         switch (messageType) {
             case NETWORK_MESSAGE_TYPES.REQUESTS.PROTOCOL_REQUEST:
-                commandName = handleRequestCommand;
+                [commandName] = handleRequestCommands;
                 break;
             default:
                 throw Error('unknown messageType');
@@ -22,7 +22,7 @@ class FinalityController extends BaseController {
 
         await this.commandExecutor.add({
             name: commandName,
-            sequence: [],
+            sequence: [...handleRequestCommands.slice(1)],
             delay: 0,
             data: {
                 remotePeerId,
