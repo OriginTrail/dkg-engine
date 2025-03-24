@@ -25,15 +25,8 @@ class LocalStoreCommand extends Command {
     }
 
     async execute(command) {
-        const {
-            operationId,
-            blockchain,
-            contract,
-            tokenId,
-            datasetRoot,
-            minimumNumberOfNodeReplications,
-            batchSize,
-        } = command.data;
+        const { operationId, blockchain, datasetRoot, minimumNumberOfNodeReplications, batchSize } =
+            command.data;
         this.logger.debug(
             `Searching for shard for operationId: ${operationId}, dataset root: ${datasetRoot}`,
         );
@@ -136,7 +129,11 @@ class LocalStoreCommand extends Command {
                 );
             }
 
-            // Here we schedule network messages
+            await this.operationIdService.updateOperationIdStatus(
+                operationId,
+                blockchain,
+                OPERATION_ID_STATUS.LOCAL_STORE.LOCAL_STORE_END,
+            );
         } catch (e) {
             await this.handleError(operationId, blockchain, e.message, this.errorType, true);
             return Command.empty();
@@ -146,8 +143,6 @@ class LocalStoreCommand extends Command {
             dataset: dataset.public,
             datasetRoot,
             blockchain,
-            contract,
-            tokenId,
         };
 
         // Run all message sending operations in parallel
