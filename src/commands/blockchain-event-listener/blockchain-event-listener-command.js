@@ -470,11 +470,14 @@ class BlockchainEventListenerCommand extends Command {
     }
 
     async handleKnowledgeCollectionCreatedEvent(event) {
-        const sequence = ['validateAssertionMetadataCommand', 'storeAssertionCommand'];
-
+        // const sequence = ['validateAssertionMetadataCommand', 'storeAssertionCommand'];
+        console.log(
+            'Started knowledge collection created event for event: ',
+            JSON.parse(event.data).publishOperationId,
+        );
         await this.commandExecutor.add({
             name: 'readCachedPublishDataCommand',
-            sequence,
+            sequence: [],
             delay: RETRY_DELAY_READ_CACHED_PUBLISH_DATA,
             retries: MAX_RETRIES_READ_CACHED_PUBLISH_DATA,
             data: {

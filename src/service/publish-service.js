@@ -61,12 +61,12 @@ class PublishService extends OperationService {
         }
 
         // 1. Check minimum replication reached
-        if (completedNumber === minAckResponses) {
-            this.logger.debug(
-                `Minimum replication ${minAckResponses} reached for operationId: ${operationId}, dataset root: ${datasetRoot}`,
-            );
-            await this.repositoryModuleManager.updateMinAcksReached(operationId, true);
-        }
+        // if (completedNumber === minAckResponses) {
+        //     this.logger.debug(
+        //         `Minimum replication ${minAckResponses} reached for operationId: ${operationId}, dataset root: ${datasetRoot}`,
+        //     );
+        //     await this.repositoryModuleManager.updateMinAcksReached(operationId, true);
+        // }
 
         // 2. Check if all responses have been received
         if (totalResponses === numberOfFoundNodes) {
@@ -78,6 +78,7 @@ class PublishService extends OperationService {
                     null,
                     this.completedStatuses,
                 );
+                await this.repositoryModuleManager.updateMinAcksReached(operationId, true);
                 this.logResponsesSummary(completedNumber, failedNumber);
             }
             // 2.2 Otherwise, mark as failed
