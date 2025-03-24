@@ -20,6 +20,7 @@ class FinalityService extends OperationService {
         this.completedStatuses = [
             OPERATION_ID_STATUS.FINALITY.FINALITY_FETCH_FROM_NODES_END,
             OPERATION_ID_STATUS.FINALITY.FINALITY_END,
+            OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_END,
             OPERATION_ID_STATUS.COMPLETED,
         ];
         this.ualService = ctx.ualService;
