@@ -83,6 +83,16 @@ class ReadCachedPublishDataCommand extends Command {
                     ual,
                     publisherPeerId,
                 );
+
+                await this.operationService.markOperationAsCompleted(
+                    operationId,
+                    blockchain,
+                    {
+                        completedNodes: 1,
+                        allNodesReplicatedData: true,
+                    },
+                    [...this.operationService.completedStatuses],
+                );
             } else {
                 const networkProtocols = this.operationService.getNetworkProtocols();
                 const node = { id: publisherPeerId, protocol: networkProtocols[0] };
