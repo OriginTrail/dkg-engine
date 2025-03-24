@@ -221,7 +221,12 @@ class ReadCachedPublishDataCommand extends Command {
                 attempt += 1;
 
                 if (attempt === MAX_RETRIES_READ_CACHED_PUBLISH_DATA) {
-                    return Command.retry(); // All retries failed
+                    console.log(
+                        'All retries failed for reading cached publish data for operationId: ',
+                        publishOperationId,
+                        'attempt: ',
+                        attempt,
+                    );
                 }
 
                 // Wait 5 seconds before next attempt
