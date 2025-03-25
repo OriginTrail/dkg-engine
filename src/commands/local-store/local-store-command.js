@@ -9,7 +9,7 @@ import {
 } from '../../constants/constants.js';
 import Command from '../command.js';
 
-class LocalStoreCommand extends Command {
+class PublishReplicationCommand extends Command {
     constructor(ctx) {
         super(ctx);
         this.operationIdService = ctx.operationIdService;
@@ -182,6 +182,7 @@ class LocalStoreCommand extends Command {
                 responseData,
             );
         } else {
+            console.log(`Received NACK ${response}`);
             // eslint-disable-next-line no-await-in-loop
             await this.operationService.processResponse(
                 command,
@@ -257,7 +258,7 @@ class LocalStoreCommand extends Command {
      */
     default(map) {
         const command = {
-            name: 'localStoreCommand',
+            name: 'publishReplicationCommand',
             delay: 0,
             transactional: false,
         };
@@ -266,4 +267,4 @@ class LocalStoreCommand extends Command {
     }
 }
 
-export default LocalStoreCommand;
+export default PublishReplicationCommand;

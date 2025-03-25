@@ -68,7 +68,7 @@ class PublishController extends BaseController {
                 publisherNodePeerId,
             );
 
-            const commandSequence = ['localStoreCommand'];
+            const commandSequence = ['publishReplicationCommand'];
 
             await this.commandExecutor.add({
                 name: commandSequence[0],
