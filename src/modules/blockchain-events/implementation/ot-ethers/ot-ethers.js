@@ -105,6 +105,9 @@ class OtEthers extends BlockchainEventsService {
         let fromBlock =
             currentBlock - lastCheckedBlock > maxBlocksToSync ? currentBlock : lastCheckedBlock + 1;
         const eventsMissed = currentBlock - lastCheckedBlock > maxBlocksToSync;
+        console.log(
+            `Syncing blocks: blockchain: ${blockchain}, maxBlocksToSync: ${maxBlocksToSync}, currentBlock: ${currentBlock}, lastCheckedBlock: ${lastCheckedBlock}, fromBlock: ${fromBlock}, eventsMissed: ${eventsMissed}`,
+        );
         if (eventsMissed) {
             return {
                 events: [],
@@ -112,7 +115,6 @@ class OtEthers extends BlockchainEventsService {
                 eventsMissed,
             };
         }
-
         const contractAddresses = [];
         const topics = [];
         const addressToContractNameMap = {};
@@ -144,6 +146,9 @@ class OtEthers extends BlockchainEventsService {
 
         const events = [];
         let toBlock = currentBlock;
+        console.log(
+            `Syncing blocks from ${fromBlock} to ${currentBlock} for blockchain: ${blockchain}, contractAddresses: ${contractAddresses}`,
+        );
         try {
             while (fromBlock <= currentBlock) {
                 toBlock = Math.min(
@@ -166,13 +171,18 @@ class OtEthers extends BlockchainEventsService {
                         topics: [topics],
                     },
                 ]);
-
+                console.log(
+                    `Syncing blocks in batch from ${fromBlock} to ${toBlock} for blockchain: ${blockchain}`,
+                );
                 for (const log of newLogs) {
                     const contractName = addressToContractNameMap[log.address];
                     const contractInterface = new ethers.utils.Interface(ABIs[contractName]);
 
                     try {
                         const parsedLog = contractInterface.parseLog(log);
+                        console.log(
+                            `Parsed log for contract: ${contractName}. Event: ${parsedLog.name} block: ${log.blockNumber} blockchain: ${blockchain}`,
+                        );
                         events.push({
                             blockchain,
                             contract: contractName,
@@ -223,6 +233,7 @@ class OtEthers extends BlockchainEventsService {
                 const blockTimeMillis = await this._getBlockTimeMillis(blockchain);
 
                 this.maxNumberOfHistoricalBlocksForSync = Math.round(
+                    // 60 * 60 * 1000 = 1 hour
                     MAX_BLOCKCHAIN_EVENT_SYNC_OF_HISTORICAL_BLOCKS_IN_MILLS / blockTimeMillis,
                 );
             }
