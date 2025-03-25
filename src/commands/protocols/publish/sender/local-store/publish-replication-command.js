@@ -6,8 +6,8 @@ import {
     NETWORK_SIGNATURES_FOLDER,
     PUBLISHER_NODE_SIGNATURES_FOLDER,
     NETWORK_MESSAGE_TIMEOUT_MILLS,
-} from '../../constants/constants.js';
-import Command from '../command.js';
+} from '../../../../../constants/constants.js';
+import Command from '../../../../command.js';
 
 class PublishReplicationCommand extends Command {
     constructor(ctx) {
