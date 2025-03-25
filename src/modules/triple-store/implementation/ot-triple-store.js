@@ -278,36 +278,44 @@ class OtTripleStore {
         retries = 5,
         retryDelay = 10,
     ) {
-        const queries = uals.map(
-            (ual, index) => `
-                PREFIX schema: <${SCHEMA_CONTEXT}>
-                INSERT DATA {
-                    GRAPH <${ual}/${visibility}> {
-                        ${assetsNQuads[index].join('\n')}
-                    }
+        const graphInserts = uals
+            .map(
+                (ual, index) => `
+                GRAPH <${ual}/${visibility}> {
+                    ${assetsNQuads[index].join('\n')}
                 }
             `,
-        );
-        for (const [index, query] of queries.entries()) {
-            let attempts = 0;
-            let success = false;
+            )
+            .join('\n');
 
-            while (attempts < retries && !success) {
-                try {
-                    await this.queryVoid(repository, query);
-                    success = true;
-                } catch (error) {
-                    attempts += 1;
-                    if (attempts <= retries) {
-                        this.logger.warn(
-                            `Insert failed for GRAPH <${uals[index]}/${visibility}>. Attempt ${attempts}/${retries}. Retrying in ${retryDelay}ms.`,
-                        );
-                        await setTimeout(retryDelay);
-                    } else {
-                        throw new Error(
-                            `Failed to insert into GRAPH <${uals[index]}/${visibility}> after ${retries} attempts.`,
-                        );
-                    }
+        const query = `
+            PREFIX schema: <${SCHEMA_CONTEXT}>
+            INSERT DATA {
+                ${graphInserts}
+            }
+        `;
+
+        let attempts = 0;
+        let success = false;
+
+        while (attempts < retries && !success) {
+            try {
+                await this.queryVoid(repository, query);
+                success = true;
+            } catch (error) {
+                attempts += 1;
+                if (attempts <= retries) {
+                    this.logger.warn(
+                        `Batch insert failed for ${uals[0]
+                            .split('/')
+                            .pop()
+                            .join(
+                                '/',
+                            )} graphs. Attempt ${attempts}/${retries}. Retrying in ${retryDelay}ms.`,
+                    );
+                    await setTimeout(retryDelay);
+                } else {
+                    throw new Error(`Failed to perform batch insert after ${retries} attempts.`);
                 }
             }
         }
