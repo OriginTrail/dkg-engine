@@ -38,28 +38,10 @@ class ReadCachedPublishDataCommand extends Command {
         let assertion;
         let publisherPeerId;
         try {
-            console.log(
-                'Started reading cached publish data for operationId: ',
-                operationId,
-                'publishOperationId: ',
-                publishOperationId,
-            );
             const result = await this.readWithRetries(publishOperationId);
             cachedMerkleRoot = result.merkleRoot;
             assertion = result.assertion;
             publisherPeerId = result.remotePeerId;
-            console.log(
-                'Completed reading cached publish data for operationId: ',
-                operationId,
-                'publishOperationId: ',
-                publishOperationId,
-                'cachedMerkleRoot: ',
-                cachedMerkleRoot,
-                'assertion: ',
-                assertion,
-                'publisherPeerId: ',
-                publisherPeerId,
-            );
         } catch (error) {
             this.logger.error(`Failed to read cached publish data: ${error.message}`); // TODO: Make this log more descriptive
             return Command.empty();
@@ -82,26 +64,10 @@ class ReadCachedPublishDataCommand extends Command {
         }
 
         try {
-            console.log(
-                'Started triple store insertion for operationId: ',
-                operationId,
-                'publishOperationId: ',
-                publishOperationId,
-                'ual: ',
-                ual,
-            );
             await this.tripleStoreService.insertKnowledgeCollection(
                 TRIPLE_STORE_REPOSITORIES.DKG,
                 ual,
                 assertion,
-            );
-            console.log(
-                'Completed triple store insertion for operationId: ',
-                operationId,
-                'publishOperationId: ',
-                publishOperationId,
-                'ual: ',
-                ual,
             );
 
             await this.operationIdService.updateOperationIdStatus(
@@ -112,12 +78,6 @@ class ReadCachedPublishDataCommand extends Command {
 
             const myPeerId = this.networkModuleManager.getPeerId().toB58String();
             if (publisherPeerId === myPeerId) {
-                console.log(
-                    'Started local finalization saving for operationId: ',
-                    operationId,
-                    'publishOperationId: ',
-                    publishOperationId,
-                );
                 await this.repositoryModuleManager.saveFinalityAck(
                     publishOperationId,
                     ual,
@@ -132,13 +92,6 @@ class ReadCachedPublishDataCommand extends Command {
                         allNodesReplicatedData: true,
                     },
                     [...this.operationService.completedStatuses],
-                );
-
-                console.log(
-                    'Completed local finalization for operationId: ',
-                    operationId,
-                    'publishOperationId: ',
-                    publishOperationId,
                 );
             } else {
                 const networkProtocols = this.operationService.getNetworkProtocols();
@@ -216,20 +169,10 @@ class ReadCachedPublishDataCommand extends Command {
                     this.fileService.getPendingStorageDocumentPath(publishOperationId);
                 // eslint-disable-next-line no-await-in-loop
                 const cachedData = await this.fileService.readFile(datasetPath, true);
-                return cachedData; // Success - exit loop and return data
+                return cachedData;
             } catch (error) {
                 attempt += 1;
 
-                if (attempt === MAX_RETRIES_READ_CACHED_PUBLISH_DATA) {
-                    console.log(
-                        'All retries failed for reading cached publish data for operationId: ',
-                        publishOperationId,
-                        'attempt: ',
-                        attempt,
-                    );
-                }
-
-                // Wait 5 seconds before next attempt
                 // eslint-disable-next-line no-await-in-loop
                 await new Promise((resolve) => {
                     setTimeout(resolve, RETRY_DELAY_READ_CACHED_PUBLISH_DATA);
