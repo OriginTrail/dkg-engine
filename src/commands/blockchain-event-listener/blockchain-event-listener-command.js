@@ -471,7 +471,7 @@ class BlockchainEventListenerCommand extends Command {
 
     async handleKnowledgeCollectionCreatedEvent(event) {
         await this.commandExecutor.add({
-            name: 'readCachedPublishDataCommand',
+            name: 'publishFinalizationCommand',
             sequence: [],
             data: {
                 event,

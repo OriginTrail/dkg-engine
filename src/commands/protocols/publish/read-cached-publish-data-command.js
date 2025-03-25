@@ -9,7 +9,7 @@ import {
     NETWORK_MESSAGE_TIMEOUT_MILLS,
 } from '../../../constants/constants.js';
 
-class ReadCachedPublishDataCommand extends Command {
+class PublishFinalizationCommand extends Command {
     constructor(ctx) {
         super(ctx);
         this.ualService = ctx.ualService;
@@ -190,7 +190,7 @@ class ReadCachedPublishDataCommand extends Command {
      */
     default(map) {
         const command = {
-            name: 'readCachedPublishDataCommand',
+            name: 'publishFinalizationCommand',
             transactional: false,
         };
         Object.assign(command, map);
@@ -198,4 +198,4 @@ class ReadCachedPublishDataCommand extends Command {
     }
 }
 
-export default ReadCachedPublishDataCommand;
+export default PublishFinalizationCommand;
