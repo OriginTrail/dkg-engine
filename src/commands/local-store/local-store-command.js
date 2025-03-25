@@ -182,7 +182,6 @@ class PublishReplicationCommand extends Command {
                 responseData,
             );
         } else {
-            console.log(`Received NACK ${response}`);
             // eslint-disable-next-line no-await-in-loop
             await this.operationService.processResponse(
                 command,
