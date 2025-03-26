@@ -64,6 +64,12 @@ class PublishFinalizationCommand extends Command {
         }
 
         try {
+            await this.operationIdService.updateOperationIdStatus(
+                operationId,
+                blockchain,
+                OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_STORE_ASSERTION_START,
+            );
+
             await this.tripleStoreService.insertKnowledgeCollection(
                 TRIPLE_STORE_REPOSITORIES.DKG,
                 ual,
