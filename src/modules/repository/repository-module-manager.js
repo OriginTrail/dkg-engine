@@ -224,8 +224,8 @@ class RepositoryModuleManager extends BaseModuleManager {
         return this.getRepository('shard').getPeerRecord(peerId, blockchain, options);
     }
 
-    async getAllPeerRecords(blockchain, options = {}) {
-        return this.getRepository('shard').getAllPeerRecords(blockchain, options);
+    async getAllPeerRecords(blockchain, filterInactive = false, options = {}) {
+        return this.getRepository('shard').getAllPeerRecords(blockchain, filterInactive, options);
     }
 
     async getPeerRecordsByIds(blockchain, peerIds, options = {}) {
