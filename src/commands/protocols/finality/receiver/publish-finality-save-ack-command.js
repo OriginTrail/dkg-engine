@@ -56,15 +56,9 @@ class PublishFinalitySaveAckCommand extends Command {
         }
 
         await this.operationService.markOperationAsCompleted(operationId, blockchain, success, [
-            OPERATION_ID_STATUS.FINALITY.PUBLISH_FINALITY_FETCH_FROM_NODES_END,
-            OPERATION_ID_STATUS.FINALITY.PUBLISH_FINALITY_END,
+            OPERATION_ID_STATUS.FINALITY.PUBLISH_FINALITY_REMOTE_END,
             OPERATION_ID_STATUS.COMPLETED,
         ]);
-        await this.operationIdService.updateOperationIdStatus(
-            operationId,
-            blockchain,
-            OPERATION_ID_STATUS.FINALITY.PUBLISH_FINALITY_REMOTE_END,
-        );
 
         return this.continueSequence({ ...command.data, response }, command.sequence);
     }

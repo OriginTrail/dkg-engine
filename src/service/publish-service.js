@@ -31,7 +31,6 @@ class PublishService extends OperationService {
             operationId,
             blockchain,
             numberOfFoundNodes,
-            leftoverNodes,
             batchSize,
             minAckResponses,
             datasetRoot,
@@ -53,9 +52,7 @@ class PublishService extends OperationService {
             } response with status: ${responseStatus} for operationId: ${operationId}, dataset root: ${datasetRoot}. Total number of nodes: ${numberOfFoundNodes}, number of nodes in batch: ${Math.min(
                 numberOfFoundNodes,
                 batchSize,
-            )} number of leftover nodes: ${
-                leftoverNodes.length
-            }, number of responses: ${totalResponses}, Completed: ${completedNumber}, Failed: ${failedNumber}, minimum replication factor: ${minAckResponses}`,
+            )}, number of responses: ${totalResponses}, Completed: ${completedNumber}, Failed: ${failedNumber}, minimum replication factor: ${minAckResponses}`,
         );
         if (responseData.errorMessage) {
             this.logger.trace(
@@ -64,12 +61,12 @@ class PublishService extends OperationService {
         }
 
         // 1. Check minimum replication reached
-        if (completedNumber === minAckResponses) {
-            this.logger.debug(
-                `Minimum replication ${minAckResponses} reached for operationId: ${operationId}, dataset root: ${datasetRoot}`,
-            );
-            await this.repositoryModuleManager.updateMinAcksReached(operationId, true);
-        }
+        // if (completedNumber === minAckResponses) {
+        //     this.logger.debug(
+        //         `Minimum replication ${minAckResponses} reached for operationId: ${operationId}, dataset root: ${datasetRoot}`,
+        //     );
+        //     await this.repositoryModuleManager.updateMinAcksReached(operationId, true);
+        // }
 
         // 2. Check if all responses have been received
         if (totalResponses === numberOfFoundNodes) {
@@ -81,6 +78,7 @@ class PublishService extends OperationService {
                     null,
                     this.completedStatuses,
                 );
+                await this.repositoryModuleManager.updateMinAcksReached(operationId, true);
                 this.logResponsesSummary(completedNumber, failedNumber);
             }
             // 2.2 Otherwise, mark as failed
@@ -93,28 +91,29 @@ class PublishService extends OperationService {
                 );
                 this.logResponsesSummary(completedNumber, failedNumber);
             }
-        } else {
-            // 3. Not all responses have arrived yet.
-            const potentialCompletedNumber = completedNumber + leftoverNodes.length;
-            const canStillReachMinReplication = potentialCompletedNumber >= minAckResponses;
-            const canScheduleBatch = (totalResponses - 1) % batchSize === 0;
-
-            // 3.1 Check if minimum replication can still be achieve  by scheduling leftover nodes
-            //     (and it's at the end of a batch)
-            if (leftoverNodes.length > 0 && canStillReachMinReplication && canScheduleBatch) {
-                await this.scheduleOperationForLeftoverNodes(command.data, leftoverNodes);
-            }
-            // 3.2 If minimum replication cannot be reached and it's end of a batch, mark as failed
-            else if (!canStillReachMinReplication && canScheduleBatch) {
-                await this.markOperationAsFailed(
-                    operationId,
-                    blockchain,
-                    'Not replicated to enough nodes!',
-                    this.errorType,
-                );
-                this.logResponsesSummary(completedNumber, failedNumber);
-            }
         }
+        //  else {
+        //     // 3. Not all responses have arrived yet.
+        //     const potentialCompletedNumber = completedNumber + leftoverNodes.length;
+        //     const canStillReachMinReplication = potentialCompletedNumber >= minAckResponses;
+        //     const canScheduleBatch = (totalResponses - 1) % batchSize === 0;
+
+        //     // 3.1 Check if minimum replication can still be achieve  by scheduling leftover nodes
+        //     //     (and it's at the end of a batch)
+        //     // if (leftoverNodes.length > 0 && canStillReachMinReplication && canScheduleBatch) {
+        //     //     await this.scheduleOperationForLeftoverNodes(command.data, leftoverNodes);
+        //     // }
+        //     // 3.2 If minimum replication cannot be reached and it's end of a batch, mark as failed
+        //     if (!canStillReachMinReplication && canScheduleBatch) {
+        //         await this.markOperationAsFailed(
+        //             operationId,
+        //             blockchain,
+        //             'Not replicated to enough nodes!',
+        //             this.errorType,
+        //         );
+        //         this.logResponsesSummary(completedNumber, failedNumber);
+        //     }
+        // }
     }
 
     getBatchSize(batchSize = null) {
