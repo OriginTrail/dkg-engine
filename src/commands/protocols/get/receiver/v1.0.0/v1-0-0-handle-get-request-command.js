@@ -57,13 +57,14 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
                         },
                     };
                 }
-                //
+                const paranetRepository = this.paranetService.getParanetRepositoryName(paranetUAL);
                 const assertion = await this.tripleStoreService.getAssertion(
                     blockchain,
                     contract,
                     knowledgeCollectionId,
                     knowledgeAssetId,
                     TRIPLES_VISIBILITY.ALL,
+                    paranetRepository,
                 );
 
                 if (assertion?.public?.length) {
