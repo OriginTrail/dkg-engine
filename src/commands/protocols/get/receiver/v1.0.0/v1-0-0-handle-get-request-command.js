@@ -4,6 +4,7 @@ import {
     NETWORK_MESSAGE_TYPES,
     OPERATION_ID_STATUS,
     TRIPLES_VISIBILITY,
+    PARANET_ACCESS_POLICY,
 } from '../../../../../constants/constants.js';
 
 class HandleGetRequestCommand extends HandleProtocolMessageCommand {
@@ -28,69 +29,59 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
             knowledgeAssetId,
             ual,
             includeMetadata,
-            // paranetId,
-            // paranetUAL,
+            paranetId,
+            paranetUAL,
+            remotePeerId,
         } = commandData;
 
-        // if (paranetUAL) {
-        //     const paranetNodeAccessPolicy = await this.blockchainModuleManager.getNodesAccessPolicy(
-        //         blockchain,
-        //         paranetId,
-        //     );
-        //     if (paranetNodeAccessPolicy === PARANET_ACCESS_POLICY.CURATED) {
-        //         const paranetCuratedNodes =
-        //             await this.blockchainModuleManager.getParanetCuratedNodes(
-        //                 blockchain,
-        //                 paranetId,
-        //             );
-        //         const paranetCuratedPeerIds = paranetCuratedNodes.map((node) =>
-        //             this.blockchainModuleManager.convertHexToAscii(blockchain, node.nodeId),
-        //         );
+        if (paranetUAL) {
+            const paranetNodeAccessPolicy = await this.blockchainModuleManager.getNodesAccessPolicy(
+                blockchain,
+                paranetId,
+            );
+            if (paranetNodeAccessPolicy === PARANET_ACCESS_POLICY.CURATED) {
+                const paranetCuratedNodes =
+                    await this.blockchainModuleManager.getParanetCuratedNodes(
+                        blockchain,
+                        paranetId,
+                    );
+                const paranetCuratedPeerIds = paranetCuratedNodes.map((node) =>
+                    this.blockchainModuleManager.convertHexToAscii(blockchain, node.nodeId),
+                );
 
-        //         if (!paranetCuratedPeerIds.includes(remotePeerId)) {
-        //             return {
-        //                 messageType: NETWORK_MESSAGE_TYPES.RESPONSES.NACK,
-        //                 messageData: {
-        //                     errorMessage: `Remote peer ${remotePeerId} is not a part of the Paranet (${paranetId}) with UAL: ${paranetUAL}`,
-        //                 },
-        //             };
-        //         }
-        //         const ual = this.ualService.deriveUAL(blockchain, contract, tokenId);
-        //         const paranetRepository = this.paranetService.getParanetRepositoryName(paranetUAL);
-        //         const syncedAssetRecord =
-        //             await this.repositoryModuleManager.getParanetSyncedAssetRecordByUAL(ual);
+                if (!paranetCuratedPeerIds.includes(remotePeerId)) {
+                    return {
+                        messageType: NETWORK_MESSAGE_TYPES.RESPONSES.NACK,
+                        messageData: {
+                            errorMessage: `Remote peer ${remotePeerId} is not a part of the Paranet (${paranetId}) with UAL: ${paranetUAL}`,
+                        },
+                    };
+                }
+                // const paranetRepository = this.paranetService.getParanetRepositoryName(paranetUAL);
 
-        //         nquads = await this.tripleStoreService.getAssertion(paranetRepository, assertionId);
+                const assertion = await this.tripleStoreService.getAssertion(
+                    blockchain,
+                    contract,
+                    knowledgeCollectionId,
+                    knowledgeAssetId,
+                    TRIPLES_VISIBILITY.ALL,
+                );
 
-        //         let privateNquads;
-        //         if (syncedAssetRecord.privateAssertionId) {
-        //             privateNquads = await this.tripleStoreService.getAssertion(
-        //                 paranetRepository,
-        //                 syncedAssetRecord.privateAssertionId,
-        //             );
-        //         }
+                if (assertion?.public?.length) {
+                    return {
+                        messageType: NETWORK_MESSAGE_TYPES.RESPONSES.ACK,
+                        messageData: { assertion },
+                    };
+                }
 
-        //         if (nquads?.length) {
-        //             const response = {
-        //                 messageType: NETWORK_MESSAGE_TYPES.RESPONSES.ACK,
-        //                 messageData: { nquads, syncedAssetRecord },
-        //             };
-
-        //             if (privateNquads?.length) {
-        //                 response.messageData.privateNquads = privateNquads;
-        //             }
-
-        //             return response;
-        //         }
-
-        //         return {
-        //             messageType: NETWORK_MESSAGE_TYPES.RESPONSES.NACK,
-        //             messageData: {
-        //                 errorMessage: `Unable to find assertion ${assertionId} for Paranet ${paranetId} with UAL: ${paranetUAL}`,
-        //             },
-        //         };
-        //     }
-        // }
+                return {
+                    messageType: NETWORK_MESSAGE_TYPES.RESPONSES.NACK,
+                    messageData: {
+                        errorMessage: `Unable to find assertion ${ual} for Paranet ${paranetId} with Paranet UAL: ${paranetUAL}`,
+                    },
+                };
+            }
+        }
 
         const promises = [];
 
