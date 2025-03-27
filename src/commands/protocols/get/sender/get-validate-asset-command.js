@@ -1,3 +1,4 @@
+import { kcTools } from 'assertion-tools';
 import ValidateAssetCommand from '../../../common/validate-asset-command.js';
 import Command from '../../../command.js';
 import {
@@ -6,15 +7,23 @@ import {
     PARANET_ACCESS_POLICY,
     TRIPLE_STORE_REPOSITORIES,
     NETWORK_MESSAGE_TYPES,
-    OPERATION_REQUEST_STATUS,
     NETWORK_MESSAGE_TIMEOUT_MILLS,
+    PRIVATE_HASH_SUBJECT_PREFIX,
 } from '../../../../constants/constants.js';
 
 class GetValidateAssetCommand extends ValidateAssetCommand {
     constructor(ctx) {
         super(ctx);
+        this.operationIdService = ctx.operationIdService;
         this.operationService = ctx.getService;
         this.errorType = ERROR_TYPE.GET.GET_VALIDATE_ASSET_ERROR;
+        this.validationService = ctx.validationService;
+        this.blockchainModuleManager = ctx.blockchainModuleManager;
+        this.paranetService = ctx.paranetService;
+        this.tripleStoreService = ctx.tripleStoreService;
+        this.networkModuleManager = ctx.networkModuleManager;
+        this.shardingTableService = ctx.shardingTableService;
+        this.messagingService = ctx.messagingService;
     }
 
     async handleError(operationId, blockchain, errorMessage, errorType) {
@@ -174,7 +183,6 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
 
         const networkProtocols = this.operationService.getNetworkProtocols();
 
-        let nodePartOfShard = false;
         const currentPeerId = this.networkModuleManager.getPeerId().toB58String();
 
         const shardNodes = await this.shardingTableService.findShard(
@@ -190,18 +198,12 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
         );
 
         for (const node of foundNodes) {
-            if (node.id === currentPeerId) {
-                nodePartOfShard = true;
-            } else {
+            if (node.id !== currentPeerId) {
                 shardNodes.push({ id: node.id, protocol: networkProtocols[0] });
             }
         }
 
-        this.logger.debug(
-            `Found ${
-                shardNodes.length + (nodePartOfShard ? 1 : 0)
-            } node(s) for operationId: ${operationId}`,
-        );
+        this.logger.debug(`Found ${shardNodes.length} node(s) for operationId: ${operationId}`);
         // TODO: Log local node
         this.logger.trace(
             `Found shard: ${JSON.stringify(
@@ -211,7 +213,7 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
             )}`,
         );
 
-        if (shardNodes.length + (nodePartOfShard ? 1 : 0) < this.minAckResponses) {
+        if (shardNodes.length < this.minAckResponses) {
             await this.handleError(
                 operationId,
                 blockchain,
@@ -222,15 +224,79 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
             return Command.empty();
         }
 
-        // const message = {
-        //     blockchain,
-        //     contract,
-        //     knowledgeCollectionId,
-        //     knowledgeAssetId,
-        //     includeMetadata,
-        //     ual,
-        //     paranetUAL,
-        // };
+        const message = {
+            blockchain,
+            contract,
+            knowledgeCollectionId,
+            knowledgeAssetId,
+            includeMetadata,
+            ual,
+            paranetUAL,
+        };
+
+        // Here send messages
+        // Do them in parallel in batch size, read from shardNodes and get next
+        // When first is done check result
+        // If success return Command.empty()
+        // If failed shcedule next message to next node
+
+        // Define batch size (adjust as necessary)
+        const BATCH_SIZE = 5;
+        let index = 0;
+
+        // Process shard nodes in batches
+        while (index < shardNodes.length) {
+            // Slice out a batch of nodes
+            const batch = shardNodes.slice(index, index + BATCH_SIZE);
+
+            // Send messages in parallel to all nodes in the current batch
+            // eslint-disable-next-line no-await-in-loop
+            const results = await Promise.all(
+                batch.map((node) => this.sendMessage(node, operationId, message)),
+            );
+
+            const succsesfulResult = [];
+            const failedResults = [];
+
+            results.forEach((result) => {
+                if (result.success) {
+                    succsesfulResult.push(result);
+                } else {
+                    failedResults.push(result);
+                }
+            });
+
+            for (const result of succsesfulResult) {
+                // eslint-disable-next-line no-await-in-loop
+                const isResponseValid = await this.validateResponse(
+                    result.responseData,
+                    blockchain,
+                    contract,
+                    knowledgeCollectionId,
+                    knowledgeAssetId,
+                );
+                if (isResponseValid) {
+                    this.operationService.markOperationAsCompleted(
+                        operationId,
+                        blockchain,
+                        result.responseData,
+                        [OPERATION_ID_STATUS.GET.GET_END, OPERATION_ID_STATUS.COMPLETED],
+                    );
+                    return Command.empty();
+                }
+            }
+            // Otherwise, continue with the next batch
+            index += BATCH_SIZE;
+        }
+
+        await this.handleError(
+            operationId,
+            blockchain,
+            `No node responded successfully for getValidateAssetCommand. Minimum required responses: ${this.minAckResponses}`,
+            this.errorType,
+        );
+
+        return Command.empty();
     }
 
     async validateUAL(operationId, blockchain, contract, knowledgeCollectionId, ual) {
@@ -321,7 +387,7 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
         return { isValid: true, errorMessage: null };
     }
 
-    async sendAndHandleMessage(node, operationId, message, command) {
+    async sendMessage(node, operationId, message) {
         const response = await this.messagingService.sendProtocolMessage(
             node,
             operationId,
@@ -329,22 +395,84 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
             NETWORK_MESSAGE_TYPES.REQUESTS.PROTOCOL_REQUEST,
             NETWORK_MESSAGE_TIMEOUT_MILLS.GET.REQUEST,
         );
-        const responseData = response.data;
-        if (response.header.messageType === NETWORK_MESSAGE_TYPES.RESPONSES.ACK) {
-            // eslint-disable-next-line no-await-in-loop
-            await this.operationService.processResponse(
-                command,
-                OPERATION_REQUEST_STATUS.COMPLETED,
-                responseData,
-            );
-        } else {
-            // eslint-disable-next-line no-await-in-loop
-            await this.operationService.processResponse(
-                command,
-                OPERATION_REQUEST_STATUS.FAILED,
-                responseData,
-            );
+        return {
+            success: response.header.messageType === NETWORK_MESSAGE_TYPES.RESPONSES.ACK,
+            responseData: response.data,
+        };
+
+        //     // eslint-disable-next-line no-await-in-loop
+        //     await this.operationService.processResponse(
+        //         command,
+        //         OPERATION_REQUEST_STATUS.COMPLETED,
+        //         responseData,
+        //     );
+
+        //     return true;
+        // }
+        // // eslint-disable-next-line no-await-in-loop
+        // await this.operationService.processResponse(
+        //     command,
+        //     OPERATION_REQUEST_STATUS.FAILED,
+        //     responseData,
+        // );
+
+        // return false;
+    }
+
+    async validateResponse(
+        responseData,
+        blockchain,
+        contract,
+        knowledgeCollectionId,
+        knowledgeAssetId,
+    ) {
+        if (responseData?.assertion?.public) {
+            // We can only validate whole collection not particular KA
+            if (!knowledgeAssetId) {
+                const publicAssertion = responseData?.assertion?.public;
+
+                const filteredPublic = [];
+                const privateHashTriples = [];
+                publicAssertion.forEach((triple) => {
+                    if (triple.startsWith(`<${PRIVATE_HASH_SUBJECT_PREFIX}`)) {
+                        privateHashTriples.push(triple);
+                    } else {
+                        filteredPublic.push(triple);
+                    }
+                });
+
+                const publicKnowledgeAssetsTriplesGrouped = kcTools.groupNquadsBySubject(
+                    filteredPublic,
+                    true,
+                );
+                publicKnowledgeAssetsTriplesGrouped.push(
+                    ...kcTools.groupNquadsBySubject(privateHashTriples, true),
+                );
+
+                try {
+                    await this.validationService.validateDatasetOnBlockchain(
+                        publicKnowledgeAssetsTriplesGrouped.map((t) => t.sort()).flat(),
+                        blockchain,
+                        contract,
+                        knowledgeCollectionId,
+                    );
+
+                    // This is added as support when get starts supporting private for curated paranet
+                    // TODO: This needs to be fixed when paranets are introduced
+                    if (responseData.assertion?.private?.length)
+                        await this.validationService.validatePrivateMerkleRoot(
+                            responseData.assertion.public,
+                            responseData.assertion.private,
+                        );
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            return true;
         }
+
+        return false;
     }
 
     /**
