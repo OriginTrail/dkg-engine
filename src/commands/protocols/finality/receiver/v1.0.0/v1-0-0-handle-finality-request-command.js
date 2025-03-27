@@ -1,5 +1,10 @@
 import HandleProtocolMessageCommand from '../../../common/handle-protocol-message-command.js';
-import { ERROR_TYPE, OPERATION_ID_STATUS } from '../../../../../constants/constants.js';
+import {
+    ERROR_TYPE,
+    OPERATION_ID_STATUS,
+    COMMAND_PRIORITY,
+    NETWORK_MESSAGE_TYPES,
+} from '../../../../../constants/constants.js';
 
 class HandleFinalityRequestCommand extends HandleProtocolMessageCommand {
     constructor(ctx) {
@@ -9,6 +14,11 @@ class HandleFinalityRequestCommand extends HandleProtocolMessageCommand {
         this.pendingStorageService = ctx.pendingStorageService;
         this.paranetService = ctx.paranetService;
         this.repositoryModuleManager = ctx.repositoryModuleManager;
+        this.commandExecutor = ctx.commandExecutor;
+        this.protocolService = ctx.protocolService;
+        this.operationService = ctx.finalityService;
+        this.networkModuleManager = ctx.networkModuleManager;
+        this.repositoryModuleManager = ctx.repositoryModuleManager;
 
         this.errorType = ERROR_TYPE.FINALITY.FINALITY_REQUEST_REMOTE_ERROR;
         this.operationStartEvent = OPERATION_ID_STATUS.FINALITY.FINALITY_REMOTE_START;
@@ -17,6 +27,60 @@ class HandleFinalityRequestCommand extends HandleProtocolMessageCommand {
 
     async prepareMessage(commandData) {
         return commandData.response;
+    }
+
+    async execute(command) {
+        const { ual, publishOperationId, blockchain, operationId, remotePeerId, state } =
+            command.data;
+
+        let ualWithState = ual;
+        if (state) {
+            ualWithState = `${ual}:${state}`;
+        }
+        await this.operationIdService.updateOperationIdStatus(
+            operationId,
+            blockchain,
+            OPERATION_ID_STATUS.FINALITY.PUBLISH_FINALITY_REMOTE_START,
+        );
+
+        let response;
+        let success;
+        try {
+            await this.repositoryModuleManager.saveFinalityAck(
+                publishOperationId,
+                ualWithState,
+                remotePeerId,
+            );
+
+            success = true;
+            response = {
+                messageType: NETWORK_MESSAGE_TYPES.RESPONSES.ACK,
+                messageData: { message: `Acknowledged storing of ${ualWithState}.` },
+            };
+        } catch (err) {
+            success = false;
+            response = {
+                messageType: NETWORK_MESSAGE_TYPES.RESPONSES.NACK,
+                messageData: { errorMessage: `Failed to acknowledge storing of ${ualWithState}.` },
+            };
+        }
+
+        await this.operationService.markOperationAsCompleted(operationId, blockchain, success, [
+            OPERATION_ID_STATUS.FINALITY.PUBLISH_FINALITY_FETCH_FROM_NODES_END,
+            OPERATION_ID_STATUS.FINALITY.PUBLISH_FINALITY_END,
+            OPERATION_ID_STATUS.COMPLETED,
+        ]);
+        await this.operationIdService.updateOperationIdStatus(
+            operationId,
+            blockchain,
+            OPERATION_ID_STATUS.FINALITY.PUBLISH_FINALITY_REMOTE_END,
+        );
+
+        // eslint-disable-next-line no-param-reassign
+        command.data.response = response;
+        super.execute(command);
+
+        return HandleFinalityRequestCommand.empty();
     }
 
     /**
@@ -30,6 +94,7 @@ class HandleFinalityRequestCommand extends HandleProtocolMessageCommand {
             delay: 0,
             transactional: false,
             errorType: ERROR_TYPE.FINALITY.FINALITY_REQUEST_REMOTE_ERROR,
+            priority: COMMAND_PRIORITY.HIGHEST,
         };
         Object.assign(command, map);
         return command;

@@ -18,8 +18,7 @@ class FinalityService extends OperationService {
         this.networkProtocols = NETWORK_PROTOCOLS.FINALITY;
         this.errorType = ERROR_TYPE.FINALITY.FINALITY_ERROR;
         this.completedStatuses = [
-            OPERATION_ID_STATUS.FINALITY.FINALITY_FETCH_FROM_NODES_END,
-            OPERATION_ID_STATUS.FINALITY.FINALITY_END,
+            OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_END,
             OPERATION_ID_STATUS.COMPLETED,
         ];
         this.ualService = ctx.ualService;
@@ -30,9 +29,7 @@ class FinalityService extends OperationService {
         this.operationMutex = new Mutex();
     }
 
-    async processResponse(command, responseStatus, responseData) {
-        const { operationId, blockchain } = command.data;
-
+    async processResponse(operationId, blockchain, responseStatus, responseData) {
         const responseStatusesFromDB = await this.getResponsesStatuses(
             responseStatus,
             responseData.errorMessage,
