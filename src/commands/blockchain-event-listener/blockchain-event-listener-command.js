@@ -7,8 +7,6 @@ import {
     OPERATION_ID_STATUS,
     MONITORED_CONTRACTS,
     MONITORED_EVENTS,
-    RETRY_DELAY_READ_CACHED_PUBLISH_DATA,
-    MAX_RETRIES_READ_CACHED_PUBLISH_DATA,
 } from '../../constants/constants.js';
 
 class BlockchainEventListenerCommand extends Command {
@@ -50,7 +48,7 @@ class BlockchainEventListenerCommand extends Command {
     }
 
     async fetchAndHandleBlockchainEvents(blockchainId, repositoryTransaction) {
-        this.currentBlock = (await this.blockchainEventsService.getBlock(blockchainId)).number - 2;
+        const currentBlock = (await this.blockchainEventsService.getBlock(blockchainId)).number - 2;
         const lastCheckedBlockRecord = await this.repositoryModuleManager.getLastCheckedBlock(
             blockchainId,
             { transaction: repositoryTransaction },
@@ -62,7 +60,7 @@ class BlockchainEventListenerCommand extends Command {
                 MONITORED_CONTRACTS,
                 MONITORED_EVENTS,
                 lastCheckedBlockRecord?.lastCheckedBlock ?? 0,
-                this.currentBlock,
+                currentBlock,
             );
 
         if (eventsMissed) {
@@ -80,7 +78,7 @@ class BlockchainEventListenerCommand extends Command {
 
         await this.repositoryModuleManager.updateLastCheckedBlock(
             blockchainId,
-            this.currentBlock,
+            currentBlock,
             Date.now(),
             { transaction: repositoryTransaction },
         );
@@ -119,8 +117,8 @@ class BlockchainEventListenerCommand extends Command {
         });
 
         await Promise.all([
-            this.processIndependentEvents(repositoryTransaction),
-            this.processDependentEvents(repositoryTransaction),
+            this.processIndependentEvents(currentBlock, repositoryTransaction),
+            this.processDependentEvents(currentBlock, repositoryTransaction),
         ]);
     }
 
@@ -129,13 +127,15 @@ class BlockchainEventListenerCommand extends Command {
         return contractIndependentEvents.includes(eventName);
     }
 
-    async processIndependentEvents(repositoryTransaction) {
+    async processIndependentEvents(currentBlock, repositoryTransaction) {
         await Promise.all(
-            this.independentEvents.map((event) => this.processEvent(event, repositoryTransaction)),
+            this.independentEvents.map((event) =>
+                this.processEvent(event, currentBlock, repositoryTransaction),
+            ),
         );
     }
 
-    async processDependentEvents(repositoryTransaction) {
+    async processDependentEvents(currentBlock, repositoryTransaction) {
         let index = 0;
 
         while (index < this.dependentEvents.length) {
@@ -181,7 +181,7 @@ class BlockchainEventListenerCommand extends Command {
 
             // Step 3: Process the current event
             // eslint-disable-next-line no-await-in-loop
-            await this.processEvent(event, repositoryTransaction);
+            await this.processEvent(event, currentBlock, repositoryTransaction);
 
             index += 1; // Move to the next event
         }
@@ -190,7 +190,7 @@ class BlockchainEventListenerCommand extends Command {
         this.invalidatedContracts.clear();
     }
 
-    async processEvent(event, repositoryTransaction) {
+    async processEvent(event, currentBlock, repositoryTransaction) {
         const handlerFunctionName = `handle${event.event}Event`;
 
         if (typeof this[handlerFunctionName] !== 'function') {
@@ -200,7 +200,7 @@ class BlockchainEventListenerCommand extends Command {
 
         this.logger.trace(`Processing event ${event.event} in block ${event.blockNumber}.`);
         try {
-            await this[handlerFunctionName](event, repositoryTransaction);
+            await this[handlerFunctionName](event, currentBlock, repositoryTransaction);
         } catch (error) {
             this.logger.error(
                 `Error processing event ${event.event} in block ${event.blockNumber}: ${error.message}`,
@@ -227,7 +227,7 @@ class BlockchainEventListenerCommand extends Command {
         }
     }
 
-    async handleNewContractEvent(event, repositoryTransaction) {
+    async handleNewContractEvent(event, currentBlock, repositoryTransaction) {
         const { contractName, newContractAddress } = JSON.parse(event.data);
 
         const blockchchainModuleContractAddress = this.blockchainModuleManager.getContractAddress(
@@ -272,7 +272,7 @@ class BlockchainEventListenerCommand extends Command {
                 [contractName],
                 MONITORED_CONTRACT_EVENTS[contractName],
                 event.blockNumber,
-                this.currentBlock,
+                currentBlock,
             );
 
             if (newEvents.length !== 0) {
@@ -288,7 +288,7 @@ class BlockchainEventListenerCommand extends Command {
         }
     }
 
-    async handleContractChangedEvent(event, repositoryTransaction) {
+    async handleContractChangedEvent(event, currentBlock, repositoryTransaction) {
         const { contractName, newContractAddress } = JSON.parse(event.data);
 
         const blockchchainModuleContractAddress = this.blockchainModuleManager.getContractAddress(
@@ -333,7 +333,7 @@ class BlockchainEventListenerCommand extends Command {
                 [contractName],
                 MONITORED_CONTRACT_EVENTS[contractName],
                 event.blockNumber,
-                this.currentBlock,
+                currentBlock,
             );
 
             if (newEvents.length !== 0) {
@@ -349,7 +349,7 @@ class BlockchainEventListenerCommand extends Command {
         }
     }
 
-    async handleNewAssetStorageEvent(event, repositoryTransaction) {
+    async handleNewAssetStorageEvent(event, currentBlock, repositoryTransaction) {
         const { contractName, newContractAddress } = JSON.parse(event.data);
 
         const blockchchainModuleContractAddress = this.blockchainModuleManager.getContractAddress(
@@ -393,7 +393,7 @@ class BlockchainEventListenerCommand extends Command {
                 [contractName],
                 MONITORED_CONTRACT_EVENTS[contractName],
                 event.blockNumber,
-                this.currentBlock,
+                currentBlock,
             );
 
             if (newEvents.length !== 0) {
@@ -409,7 +409,7 @@ class BlockchainEventListenerCommand extends Command {
         }
     }
 
-    async handleAssetStorageChangedEvent(event, repositoryTransaction) {
+    async handleAssetStorageChangedEvent(event, currentBlock, repositoryTransaction) {
         const { contractName, newContractAddress } = JSON.parse(event.data);
 
         const blockchchainModuleContractAddress = this.blockchainModuleManager.getContractAddress(
@@ -453,7 +453,7 @@ class BlockchainEventListenerCommand extends Command {
                 [contractName],
                 MONITORED_CONTRACT_EVENTS[contractName],
                 event.blockNumber,
-                this.currentBlock,
+                currentBlock,
             );
 
             if (newEvents.length !== 0) {
@@ -470,13 +470,9 @@ class BlockchainEventListenerCommand extends Command {
     }
 
     async handleKnowledgeCollectionCreatedEvent(event) {
-        const sequence = ['validateAssertionMetadataCommand', 'storeAssertionCommand'];
-
         await this.commandExecutor.add({
-            name: 'readCachedPublishDataCommand',
-            sequence,
-            delay: RETRY_DELAY_READ_CACHED_PUBLISH_DATA,
-            retries: MAX_RETRIES_READ_CACHED_PUBLISH_DATA,
+            name: 'publishFinalizationCommand',
+            sequence: [],
             data: {
                 event,
             },
