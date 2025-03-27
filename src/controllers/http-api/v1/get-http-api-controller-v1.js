@@ -45,27 +45,22 @@ class GetController extends BaseController {
         let knowledgeAssetId;
         try {
             const { paranetUAL, includeMetadata, contentType } = req.body;
-            let { ual } = req.body;
+            const ual = req.body.id;
             ({ blockchain, contract, knowledgeCollectionId, knowledgeAssetId } =
                 this.ualService.resolveUAL(ual));
             contract = contract.toLowerCase();
-            ual = this.ualService.deriveUAL(
-                blockchain,
-                contract,
-                knowledgeCollectionId,
-                knowledgeAssetId,
-            );
+            // ual = this.ualService.deriveUAL(
+            //     blockchain,
+            //     contract,
+            //     knowledgeCollectionId,
+            //     knowledgeAssetId,
+            // );
 
             this.logger.info(`Get for ${ual} with operation id ${operationId} initiated.`);
 
-            const commandSequence = [];
-            commandSequence.push('getValidateAssetCommand');
-
-            commandSequence.push('getFindShardCommand');
-
             await this.commandExecutor.add({
-                name: commandSequence[0],
-                sequence: commandSequence.slice(1),
+                name: 'getValidateAssetCommand',
+                sequence: [],
                 delay: 0,
                 data: {
                     ual,

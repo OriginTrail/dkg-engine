@@ -4,7 +4,6 @@ import {
     NETWORK_MESSAGE_TYPES,
     OPERATION_ID_STATUS,
     TRIPLES_VISIBILITY,
-    TRIPLE_STORE_REPOSITORIES,
 } from '../../../../../constants/constants.js';
 
 class HandleGetRequestCommand extends HandleProtocolMessageCommand {
@@ -26,13 +25,12 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
             blockchain,
             contract,
             knowledgeCollectionId,
+            knowledgeAssetId,
             ual,
             includeMetadata,
-            isOperationV0,
-            isV6Contract,
+            // paranetId,
+            // paranetUAL,
         } = commandData;
-
-        let { assertionId, knowledgeAssetId } = commandData;
 
         // if (paranetUAL) {
         //     const paranetNodeAccessPolicy = await this.blockchainModuleManager.getNodesAccessPolicy(
@@ -96,94 +94,14 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
 
         const promises = [];
 
-        let assertionPromise;
-        let notMigrated = false;
+        const assertionPromise = this.tripleStoreService.getAssertion(
+            blockchain,
+            contract,
+            knowledgeCollectionId,
+            knowledgeAssetId,
+            TRIPLES_VISIBILITY.PUBLIC,
+        );
 
-        if (!assertionId && isV6Contract) {
-            assertionId = await this.tripleStoreService.getLatestAssertionId(
-                TRIPLE_STORE_REPOSITORIES.PUBLIC_CURRENT,
-                ual,
-            );
-
-            this.logger.info(
-                `Found assertion id: ${assertionId}, operation id ${operationId}, ual: ${ual}`,
-            );
-        }
-
-        if (assertionId) {
-            // DO NOT RUN THIS IF !assertionId
-            assertionPromise = (async () => {
-                let result = null;
-
-                if (!isOperationV0) {
-                    result = await this.tripleStoreService.getAssertion(
-                        blockchain,
-                        contract,
-                        knowledgeCollectionId,
-                        knowledgeAssetId,
-                        TRIPLES_VISIBILITY.PUBLIC,
-                    );
-                }
-
-                if (!result?.length) {
-                    // eslint-disable-next-line no-await-in-loop
-                    result = await this.tripleStoreService.getV6Assertion(
-                        TRIPLE_STORE_REPOSITORIES.PUBLIC_CURRENT,
-                        assertionId,
-                    );
-                    if (result?.length && !isOperationV0) {
-                        notMigrated = true;
-                    }
-
-                    if (!result?.length && isOperationV0) {
-                        result = await this.tripleStoreService.getAssertion(
-                            blockchain,
-                            contract,
-                            knowledgeCollectionId,
-                            knowledgeAssetId,
-                            TRIPLES_VISIBILITY.PUBLIC,
-                        );
-                    }
-                }
-
-                return typeof result === 'string'
-                    ? result.split('\n').filter((res) => res.length > 0)
-                    : result;
-            })();
-        } else {
-            if (!knowledgeAssetId) {
-                try {
-                    knowledgeAssetId = await this.blockchainModuleManager.getKnowledgeAssetsRange(
-                        blockchain,
-                        contract,
-                        knowledgeCollectionId,
-                    );
-                } catch (error) {
-                    // Asset created on old content asset storage contract
-                    // TODO: actually it could be other error so we should check that, or add try catch to getKARange function
-                    knowledgeAssetId = {
-                        startTokenId: 1,
-                        endTokenId: 1,
-                        burned: [],
-                    };
-                }
-            } else {
-                // kaId is number, so transform it to range
-                knowledgeAssetId = {
-                    startTokenId: knowledgeAssetId,
-                    endTokenId: knowledgeAssetId,
-                    burned: [],
-                };
-            }
-
-            assertionPromise = this.tripleStoreService.getAssertion(
-                blockchain,
-                contract,
-                knowledgeCollectionId,
-                knowledgeAssetId,
-                TRIPLES_VISIBILITY.PUBLIC,
-            );
-        }
         promises.push(assertionPromise);
 
         if (includeMetadata) {
@@ -199,10 +117,7 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
         const [assertion, metadata] = await Promise.all(promises);
 
         const responseData = {
-            assertion:
-                (isOperationV0 || notMigrated) && isV6Contract
-                    ? [...(assertion.public ?? []), ...(assertion.private ?? [])]
-                    : assertion,
+            assertion,
             ...(includeMetadata && metadata && { metadata }),
         };
 

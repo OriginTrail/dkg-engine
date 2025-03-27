@@ -196,24 +196,24 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
                 this.shardingTableService.findPeerAddressAndProtocols(peerId),
             ),
         );
-
+        const nodesInfo = [];
         for (const node of foundNodes) {
             if (node.id !== currentPeerId) {
-                shardNodes.push({ id: node.id, protocol: networkProtocols[0] });
+                nodesInfo.push({ id: node.id, protocol: networkProtocols[0] });
             }
         }
 
-        this.logger.debug(`Found ${shardNodes.length} node(s) for operationId: ${operationId}`);
+        this.logger.debug(`Found ${nodesInfo.length} node(s) for operationId: ${operationId}`);
         // TODO: Log local node
         this.logger.trace(
             `Found shard: ${JSON.stringify(
-                shardNodes.map((node) => node.id),
+                nodesInfo.map((node) => node.id),
                 null,
                 2,
             )}`,
         );
 
-        if (shardNodes.length < this.minAckResponses) {
+        if (nodesInfo.length < this.minAckResponses) {
             await this.handleError(
                 operationId,
                 blockchain,
@@ -245,9 +245,9 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
         let index = 0;
 
         // Process shard nodes in batches
-        while (index < shardNodes.length) {
+        while (index < nodesInfo.length) {
             // Slice out a batch of nodes
-            const batch = shardNodes.slice(index, index + BATCH_SIZE);
+            const batch = nodesInfo.slice(index, index + BATCH_SIZE);
 
             // Send messages in parallel to all nodes in the current batch
             // eslint-disable-next-line no-await-in-loop
@@ -316,12 +316,10 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
         );
 
         if (!isValidUal) {
-            if (!isUAL) {
-                return {
-                    isValid: false,
-                    errorMessage: `Get for operation id: ${operationId}, UAL: ${ual}: there is no asset with this UAL.`,
-                };
-            }
+            return {
+                isValid: false,
+                errorMessage: `Get for operation id: ${operationId}, UAL: ${ual}: there is no asset with this UAL.`,
+            };
         }
         return {
             isValid: true,
@@ -399,24 +397,6 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
             success: response.header.messageType === NETWORK_MESSAGE_TYPES.RESPONSES.ACK,
             responseData: response.data,
         };
-
-        //     // eslint-disable-next-line no-await-in-loop
-        //     await this.operationService.processResponse(
-        //         command,
-        //         OPERATION_REQUEST_STATUS.COMPLETED,
-        //         responseData,
-        //     );
-
-        //     return true;
-        // }
-        // // eslint-disable-next-line no-await-in-loop
-        // await this.operationService.processResponse(
-        //     command,
-        //     OPERATION_REQUEST_STATUS.FAILED,
-        //     responseData,
-        // );
-
-        // return false;
     }
 
     async validateResponse(
