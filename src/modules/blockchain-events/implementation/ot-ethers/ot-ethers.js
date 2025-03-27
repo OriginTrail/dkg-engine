@@ -112,7 +112,6 @@ class OtEthers extends BlockchainEventsService {
                 eventsMissed,
             };
         }
-
         const contractAddresses = [];
         const topics = [];
         const addressToContractNameMap = {};
@@ -166,7 +165,6 @@ class OtEthers extends BlockchainEventsService {
                         topics: [topics],
                     },
                 ]);
-
                 for (const log of newLogs) {
                     const contractName = addressToContractNameMap[log.address];
                     const contractInterface = new ethers.utils.Interface(ABIs[contractName]);
@@ -223,6 +221,7 @@ class OtEthers extends BlockchainEventsService {
                 const blockTimeMillis = await this._getBlockTimeMillis(blockchain);
 
                 this.maxNumberOfHistoricalBlocksForSync = Math.round(
+                    // 60 * 60 * 1000 = 1 hour
                     MAX_BLOCKCHAIN_EVENT_SYNC_OF_HISTORICAL_BLOCKS_IN_MILLS / blockTimeMillis,
                 );
             }
