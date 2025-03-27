@@ -16,7 +16,6 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
         super(ctx);
         this.operationIdService = ctx.operationIdService;
         this.operationService = ctx.getService;
-        this.errorType = ERROR_TYPE.GET.GET_VALIDATE_ASSET_ERROR;
         this.validationService = ctx.validationService;
         this.blockchainModuleManager = ctx.blockchainModuleManager;
         this.paranetService = ctx.paranetService;
@@ -66,14 +65,24 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
             ual,
         );
         if (!isValid) {
-            await this.handleError(operationId, blockchain, errorMessage, this.errorType);
+            await this.handleError(
+                operationId,
+                blockchain,
+                errorMessage,
+                ERROR_TYPE.GET.GET_VALIDATE_ASSET_ERROR,
+            );
             return Command.empty();
         }
 
         const { isValid: paranetIsValid, errorMessage: paranetErrorMessage } =
             await this.validateParanet(operationId, paranetUAL);
         if (!paranetIsValid) {
-            await this.handleError(operationId, blockchain, paranetErrorMessage, this.errorType);
+            await this.handleError(
+                operationId,
+                blockchain,
+                paranetErrorMessage,
+                ERROR_TYPE.GET.GET_VALIDATE_ASSET_ERROR,
+            );
             return Command.empty();
         }
 
@@ -142,18 +151,6 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
 
         const [assertion, metadata] = await Promise.all(promises);
 
-        if (!assertion?.public?.length) {
-            this.handleError(
-                operationId,
-                blockchain,
-                `Unable to locally find an asset with UAL: ${ual} ${
-                    paranetUAL ? `in the paranet with UAL: ${paranetUAL}` : ''
-                }`,
-                this.errorType,
-            );
-            return Command.empty();
-        }
-
         const responseData = {
             assertion,
             ...(includeMetadata && metadata && { metadata }),
@@ -172,6 +169,7 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
 
             return Command.empty();
         }
+        this.logger.debug(`Could not find asset with UAL: ${ual} locally`);
 
         await this.operationIdService.updateOperationIdStatus(
             operationId,
@@ -204,7 +202,6 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
         }
 
         this.logger.debug(`Found ${nodesInfo.length} node(s) for operationId: ${operationId}`);
-        // TODO: Log local node
         this.logger.trace(
             `Found shard: ${JSON.stringify(
                 nodesInfo.map((node) => node.id),
@@ -218,7 +215,7 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
                 operationId,
                 blockchain,
                 `Unable to find enough nodes for operationId: ${operationId}. Minimum number of nodes required: ${this.minAckResponses}`,
-                this.errorType,
+                ERROR_TYPE.FIND_SHARD.GET_FIND_SHARD_ERROR,
                 true,
             );
             return Command.empty();
@@ -233,14 +230,6 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
             ual,
             paranetUAL,
         };
-
-        // Here send messages
-        // Do them in parallel in batch size, read from shardNodes and get next
-        // When first is done check result
-        // If success return Command.empty()
-        // If failed shcedule next message to next node
-
-        // Define batch size (adjust as necessary)
         const BATCH_SIZE = 5;
         let index = 0;
 
@@ -292,8 +281,8 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
         await this.handleError(
             operationId,
             blockchain,
-            `No node responded successfully for getValidateAssetCommand. Minimum required responses: ${this.minAckResponses}`,
-            this.errorType,
+            `No node responded successfully for GET for ${ual}. Minimum required responses: ${this.minAckResponses}. Operation id: ${operationId}`,
+            ERROR_TYPE.FIND_SHARD.GET_ERROR,
         );
 
         return Command.empty();
