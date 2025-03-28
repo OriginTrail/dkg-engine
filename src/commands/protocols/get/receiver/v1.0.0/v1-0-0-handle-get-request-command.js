@@ -29,12 +29,21 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
             knowledgeAssetId,
             ual,
             includeMetadata,
-            paranetId,
             paranetUAL,
             remotePeerId,
         } = commandData;
 
         if (paranetUAL) {
+            const {
+                contract: paranetContract,
+                knowledgeCollectionId: paranetKnowledgeCollectionId,
+                knowledgeAssetId: paranetKnowledgeAssetId,
+            } = this.ualService.resolveUAL(paranetUAL);
+            const paranetId = this.paranetService.constructParanetId(
+                paranetContract,
+                paranetKnowledgeCollectionId,
+                paranetKnowledgeAssetId,
+            );
             const paranetNodeAccessPolicy = await this.blockchainModuleManager.getNodesAccessPolicy(
                 blockchain,
                 paranetId,
