@@ -8,6 +8,7 @@ import {
     TRIPLE_STORE_REPOSITORIES,
     NETWORK_MESSAGE_TYPES,
     NETWORK_MESSAGE_TIMEOUT_MILLS,
+    PRIVATE_ASSERTION_PREDICATE,
     PRIVATE_HASH_SUBJECT_PREFIX,
 } from '../../../../constants/constants.js';
 
@@ -49,6 +50,7 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
             paranetSync,
             contentType,
             includeMetadata,
+            paranetNodesAccessPolicy,
         } = command.data;
         let { knowledgeAssetId } = command.data;
         await this.operationIdService.updateOperationIdStatus(
@@ -64,6 +66,7 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
             knowledgeCollectionId,
             ual,
         );
+
         if (!isValid) {
             await this.handleError(
                 operationId,
@@ -74,18 +77,40 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
             return Command.empty();
         }
 
-        const { isValid: paranetIsValid, errorMessage: paranetErrorMessage } =
-            await this.validateParanet(operationId, paranetUAL);
-        if (!paranetIsValid) {
-            await this.handleError(
-                operationId,
-                blockchain,
-                paranetErrorMessage,
-                ERROR_TYPE.GET.GET_VALIDATE_ASSET_ERROR,
+        const currentPeerId = this.networkModuleManager.getPeerId().toB58String();
+        let paranetId;
+        if (paranetUAL) {
+            const {
+                blockchain: paranetBlockchain,
+                contract: paranetContract,
+                knowledgeCollectionId: paranetKnowledgeCollectionId,
+                knowledgeAssetId: paranetKnowledgeAssetId,
+            } = this.ualService.resolveUAL(paranetUAL);
+            paranetId = this.paranetService.constructParanetId(
+                paranetContract,
+                paranetKnowledgeCollectionId,
+                paranetKnowledgeAssetId,
             );
-            return Command.empty();
-        }
 
+            const { isValid: paranetIsValid, errorMessage: paranetErrorMessage } =
+                await this.validateParanet(
+                    operationId,
+                    paranetUAL,
+                    paranetNodesAccessPolicy,
+                    paranetBlockchain,
+                    paranetKnowledgeAssetId,
+                    paranetId,
+                );
+            if (!paranetIsValid) {
+                await this.handleError(
+                    operationId,
+                    blockchain,
+                    paranetErrorMessage,
+                    ERROR_TYPE.GET.GET_VALIDATE_ASSET_ERROR,
+                );
+                return Command.empty();
+            }
+        }
         await this.operationIdService.updateOperationIdStatus(
             operationId,
             blockchain,
@@ -155,7 +180,19 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
             assertion,
             ...(includeMetadata && metadata && { metadata }),
         };
-        if (assertion?.public?.length || assertion?.private?.length || assertion?.length) {
+        let localGetPassed = false;
+        if (paranetUAL && paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.CURATED) {
+            const assertionShouldHavePrivateTriples = assertion.public.some((triple) =>
+                triple.includes(`${PRIVATE_ASSERTION_PREDICATE}`),
+            );
+            if (assertionShouldHavePrivateTriples) {
+                localGetPassed = assertion?.private?.length > 0;
+            }
+        }
+        if (
+            localGetPassed &&
+            (assertion?.public?.length || assertion?.private?.length || assertion?.length)
+        ) {
             await this.operationService.markOperationAsCompleted(
                 operationId,
                 blockchain,
@@ -183,7 +220,15 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
             OPERATION_ID_STATUS.GET.GET_SHARD_START,
         );
 
-        const nodesInfo = await this.findNodes(operationId, blockchain);
+        let nodesInfo = await this.findNodes(operationId, blockchain, currentPeerId);
+        if (paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.CURATED) {
+            const permissionedNodes = await this.blockchainModuleManager.getPermissionedNodes(
+                blockchain,
+                paranetId,
+            );
+            // Awful nested loop here but small arrays
+            nodesInfo = nodesInfo.filter((node) => permissionedNodes.some((n) => n.id === node.id));
+        }
 
         if (nodesInfo.length < this.minAckResponses) {
             await this.handleError(
@@ -269,39 +314,6 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
         return Command.empty();
     }
 
-    async findNodes(operationId, blockchain) {
-        this.logger.debug(`Searching for shard for operationId: ${operationId}`);
-
-        const networkProtocols = this.operationService.getNetworkProtocols();
-
-        const currentPeerId = this.networkModuleManager.getPeerId().toB58String();
-
-        const shardNodes = await this.shardingTableService.findShard(blockchain, true);
-
-        // TODO: Optimize this so it's returned by shardingTableService.findShard
-        const foundNodes = await Promise.all(
-            shardNodes.map(({ peerId }) =>
-                this.shardingTableService.findPeerAddressAndProtocols(peerId),
-            ),
-        );
-        const nodesInfo = [];
-        for (const node of foundNodes) {
-            if (node.id !== currentPeerId) {
-                nodesInfo.push({ id: node.id, protocol: networkProtocols[0] });
-            }
-        }
-
-        this.logger.debug(`Found ${nodesInfo.length} node(s) for operationId: ${operationId}`);
-        this.logger.trace(
-            `Found shard: ${JSON.stringify(
-                nodesInfo.map((node) => node.id),
-                null,
-                2,
-            )}`,
-        );
-        return nodesInfo;
-    }
-
     async validateUAL(operationId, blockchain, contract, knowledgeCollectionId, ual) {
         const isUAL = this.ualService.isUAL(ual);
 
@@ -330,62 +342,83 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
         };
     }
 
-    async validateParanet(operationId, paranetUAL) {
-        if (paranetUAL) {
-            const {
-                blockchain: paranetBlockchain,
-                contract: paranetContract,
-                knowledgeCollectionId: paranetKnowledgeCollectionId,
-                knowledgeAssetId: paranetKnowledgeAssetId,
-            } = this.ualService.resolveUAL(paranetUAL);
-
-            if (!paranetKnowledgeAssetId) {
-                return {
-                    isValid: false,
-                    errorMessage: `Invalid paranet UAL: ${paranetUAL} . Paranet knowledge asset token id is required!`,
-                };
-            }
-            const isParanetUAL = this.ualService.isUAL(paranetUAL);
-
-            if (!isParanetUAL) {
-                return {
-                    isValid: false,
-                    errorMessage: `Get for operation id: ${operationId}, Paranet UAL: ${paranetUAL}: is not a UAL.`,
-                };
-            }
-
-            const paranetId = this.paranetService.constructParanetId(
-                paranetContract,
-                paranetKnowledgeCollectionId,
-                paranetKnowledgeAssetId,
-            );
-
-            const [paranetExists, paranetNodesAccessPolicy] = await Promise.all([
-                this.blockchainModuleManager.paranetExists(paranetBlockchain, paranetId),
-                this.blockchainModuleManager.getNodesAccessPolicy(paranetBlockchain, paranetId),
-            ]);
-
-            if (!paranetExists) {
-                return {
-                    isValid: false,
-                    errorMessage: `Get for operation id: ${operationId}, Paranet UAL: ${paranetUAL}: paranet does not exist.`,
-                };
-            }
-
-            if (paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.CURATED) {
-                return {
-                    isValid: false,
-                    errorMessage: `Get for operation id: ${operationId}, Paranet UAL: ${paranetUAL}: curated paranets are currently not supported.`,
-                };
-            }
-
+    async validateParanet(
+        operationId,
+        paranetUAL,
+        paranetBlockchain,
+        paranetKnowledgeAssetId,
+        paranetNodeAccessPolicy,
+        paranetId,
+    ) {
+        if (!paranetKnowledgeAssetId) {
             return {
-                isValid: true,
-                errorMessage: null,
+                isValid: false,
+                errorMessage: `Invalid paranet UAL: ${paranetUAL} . Paranet knowledge asset token id is required!`,
+            };
+        }
+        const isParanetUAL = this.ualService.isUAL(paranetUAL);
+
+        if (!isParanetUAL) {
+            return {
+                isValid: false,
+                errorMessage: `Get for operation id: ${operationId}, Paranet UAL: ${paranetUAL}: is not a UAL.`,
             };
         }
 
-        return { isValid: true, errorMessage: null };
+        const [paranetExists, chainParanetNodesAccessPolicy] = await Promise.all([
+            this.blockchainModuleManager.paranetExists(paranetBlockchain, paranetId),
+            this.blockchainModuleManager.getNodesAccessPolicy(paranetBlockchain, paranetId),
+        ]);
+
+        if (!paranetExists) {
+            return {
+                isValid: false,
+                errorMessage: `Get for operation id: ${operationId}, Paranet UAL: ${paranetUAL}: paranet does not exist.`,
+            };
+        }
+
+        if (paranetNodeAccessPolicy !== chainParanetNodesAccessPolicy) {
+            return {
+                isValid: false,
+                errorMessage: `Get for operation id: ${operationId}, Paranet UAL: ${paranetUAL}: onchain paranet access policy does not match the requested paranet access policy.`,
+            };
+        }
+
+        return {
+            isValid: true,
+            errorMessage: null,
+        };
+    }
+
+    async findNodes(operationId, blockchain, currentPeerId) {
+        this.logger.debug(`Searching for shard for operationId: ${operationId}`);
+
+        const networkProtocols = this.operationService.getNetworkProtocols();
+
+        const shardNodes = await this.shardingTableService.findShard(blockchain, true);
+
+        // TODO: Optimize this so it's returned by shardingTableService.findShard
+        const foundNodes = await Promise.all(
+            shardNodes.map(({ peerId }) =>
+                this.shardingTableService.findPeerAddressAndProtocols(peerId),
+            ),
+        );
+        const nodesInfo = [];
+        for (const node of foundNodes) {
+            if (node.id !== currentPeerId) {
+                nodesInfo.push({ id: node.id, protocol: networkProtocols[0] });
+            }
+        }
+
+        this.logger.debug(`Found ${nodesInfo.length} node(s) for operationId: ${operationId}`);
+        this.logger.trace(
+            `Found shard: ${JSON.stringify(
+                nodesInfo.map((node) => node.id),
+                null,
+                2,
+            )}`,
+        );
+        return nodesInfo;
     }
 
     async sendMessage(node, operationId, message) {
@@ -440,8 +473,6 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
                         knowledgeCollectionId,
                     );
 
-                    // This is added as support when get starts supporting private for curated paranet
-                    // TODO: This needs to be fixed when paranets are introduced
                     if (responseData.assertion?.private?.length)
                         await this.validationService.validatePrivateMerkleRoot(
                             responseData.assertion.public,

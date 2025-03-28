@@ -373,12 +373,12 @@ class OTNode {
                 // eslint-disable-next-line no-await-in-loop
                 const identityId = await blockchainModuleManager.getIdentityId(blockchain);
                 // eslint-disable-next-line no-await-in-loop
-                const isCuratedNode = await blockchainModuleManager.isCuratedNode(
+                const isPermissionedNode = await blockchainModuleManager.isPermissionedNode(
                     blockchain,
                     paranetId,
                     identityId,
                 );
-                if (!isCuratedNode) {
+                if (!isPermissionedNode) {
                     this.logger.warn(
                         `Unable to initialize Paranet with id ${paranetUAL} because node with id ${identityId} is not a curated node`,
                     );

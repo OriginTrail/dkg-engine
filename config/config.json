@@ -995,7 +995,9 @@
         "appDataPath": "data",
         "logLevel": "trace",
         "assetSync": {
-            "syncParanets": []
+            "syncParanets": [
+                "did:dkg:hardhat1:31337/0xd5724171c2b7f0aa717a324626050bd05767e2c6/1/1"
+            ]
         },
         "auth": {
             "ipBasedAuthEnabled": true,

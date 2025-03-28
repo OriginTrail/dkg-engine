@@ -103,7 +103,13 @@ class ParanetSyncCommand extends Command {
 
         const syncResults = await Promise.all(
             syncBatch.map(({ ual }) =>
-                this.syncKc(paranetUAL, ual, paranetId, paranetNodesAccessPolicy, operationId),
+                this.syncKc(
+                    paranetUAL,
+                    ual,
+                    paranetId,
+                    paranetMetadata.nodesAccessPolicy,
+                    operationId,
+                ),
             ),
         );
 

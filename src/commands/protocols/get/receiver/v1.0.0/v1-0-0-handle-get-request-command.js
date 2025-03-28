@@ -14,6 +14,9 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
         this.tripleStoreService = ctx.tripleStoreService;
         this.pendingStorageService = ctx.pendingStorageService;
         this.paranetService = ctx.paranetService;
+        this.blockchainModuleManager = ctx.blockchainModuleManager;
+        this.networkModuleManager = ctx.networkModuleManager;
+        this.cryptoService = ctx.cryptoService;
 
         this.errorType = ERROR_TYPE.GET.GET_REQUEST_REMOTE_ERROR;
         this.operationStartEvent = OPERATION_ID_STATUS.GET.GET_REMOTE_START;
@@ -49,13 +52,29 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
                 paranetId,
             );
             if (paranetNodeAccessPolicy === PARANET_ACCESS_POLICY.CURATED) {
-                const paranetCuratedNodes =
-                    await this.blockchainModuleManager.getParanetCuratedNodes(
+                const knowledgeCollectionOnchainId = this.cryptoService.keccak256EncodePacked(
+                    ['address', 'uint256'],
+                    [contract, knowledgeCollectionId],
+                );
+                const [isKCInParanet, paranetCuratedNodes] = await Promise.all([
+                    this.blockchainModuleManager.isKnowledgeCollectionRegistered(
                         blockchain,
                         paranetId,
-                    );
+                        knowledgeCollectionOnchainId,
+                    ),
+                    this.blockchainModuleManager.getPermissionedNodes(blockchain, paranetId),
+                ]);
+
+                if (!isKCInParanet) {
+                    return {
+                        messageType: NETWORK_MESSAGE_TYPES.RESPONSES.NACK,
+                        messageData: {
+                            errorMessage: `Knowledge collection ${knowledgeCollectionId} is not registered in the Paranet (${paranetId}) with UAL: ${paranetUAL}`,
+                        },
+                    };
+                }
                 const paranetCuratedPeerIds = paranetCuratedNodes.map((node) =>
-                    this.blockchainModuleManager.convertHexToAscii(blockchain, node.nodeId),
+                    this.cryptoService.convertHexToAscii(node.nodeId),
                 );
 
                 if (!paranetCuratedPeerIds.includes(remotePeerId)) {
@@ -66,14 +85,22 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
                         },
                     };
                 }
-                const paranetRepository = this.paranetService.getParanetRepositoryName(paranetUAL);
+
+                const currentPeerId = this.networkModuleManager.getPeerId().toB58String();
+                if (!paranetCuratedPeerIds.includes(currentPeerId)) {
+                    return {
+                        messageType: NETWORK_MESSAGE_TYPES.RESPONSES.NACK,
+                        messageData: {
+                            errorMessage: `This node is not a part of the Paranet (${paranetId}) with UAL: ${paranetUAL}`,
+                        },
+                    };
+                }
                 const assertion = await this.tripleStoreService.getAssertion(
                     blockchain,
                     contract,
                     knowledgeCollectionId,
                     knowledgeAssetId,
                     TRIPLES_VISIBILITY.ALL,
-                    paranetRepository,
                 );
 
                 if (assertion?.public?.length) {
@@ -86,7 +113,7 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
                 return {
                     messageType: NETWORK_MESSAGE_TYPES.RESPONSES.NACK,
                     messageData: {
-                        errorMessage: `Unable to find assertion ${ual} for Paranet ${paranetId} with Paranet UAL: ${paranetUAL}`,
+                        errorMessage: `Unable to find assertion ${ual} for Paranet (${paranetId}) with UAL: ${paranetUAL}`,
                     },
                 };
             }

@@ -118,12 +118,13 @@ class ValidateAssetCommand extends Command {
                 );
                 if (nodesAccessPolicy === PARANET_ACCESS_POLICY.CURATED) {
                     const identityId = await this.blockchainModuleManager.getIdentityId(blockchain);
-                    const isCuratedNode = await this.blockchainModuleManager.isCuratedNode(
-                        blockchain,
-                        paranetId,
-                        identityId,
-                    );
-                    if (!isCuratedNode) {
+                    const isPermissionedNode =
+                        await this.blockchainModuleManager.isPermissionedNode(
+                            blockchain,
+                            paranetId,
+                            identityId,
+                        );
+                    if (!isPermissionedNode) {
                         await this.handleError(
                             operationId,
                             blockchain,
