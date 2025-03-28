@@ -177,38 +177,13 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
             OPERATION_ID_STATUS.GET.GET_LOCAL_END,
         );
 
-        this.logger.debug(`Searching for shard for operationId: ${operationId}`);
-
-        const networkProtocols = this.operationService.getNetworkProtocols();
-
-        const currentPeerId = this.networkModuleManager.getPeerId().toB58String();
-
-        const shardNodes = await this.shardingTableService.findShard(
+        await this.operationIdService.updateOperationIdStatus(
+            operationId,
             blockchain,
-            true, // filter inactive nodes
+            OPERATION_ID_STATUS.GET.GET_SHARD_START,
         );
 
-        // TODO: Optimize this so it's returned by shardingTableService.findShard
-        const foundNodes = await Promise.all(
-            shardNodes.map(({ peerId }) =>
-                this.shardingTableService.findPeerAddressAndProtocols(peerId),
-            ),
-        );
-        const nodesInfo = [];
-        for (const node of foundNodes) {
-            if (node.id !== currentPeerId) {
-                nodesInfo.push({ id: node.id, protocol: networkProtocols[0] });
-            }
-        }
-
-        this.logger.debug(`Found ${nodesInfo.length} node(s) for operationId: ${operationId}`);
-        this.logger.trace(
-            `Found shard: ${JSON.stringify(
-                nodesInfo.map((node) => node.id),
-                null,
-                2,
-            )}`,
-        );
+        const nodesInfo = await this.findNodes(operationId, blockchain);
 
         if (nodesInfo.length < this.minAckResponses) {
             await this.handleError(
@@ -220,6 +195,12 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
             );
             return Command.empty();
         }
+
+        await this.operationIdService.updateOperationIdStatus(
+            operationId,
+            blockchain,
+            OPERATION_ID_STATUS.GET.GET_SHARD_END,
+        );
 
         const message = {
             blockchain,
@@ -286,6 +267,39 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
         );
 
         return Command.empty();
+    }
+
+    async findNodes(operationId, blockchain) {
+        this.logger.debug(`Searching for shard for operationId: ${operationId}`);
+
+        const networkProtocols = this.operationService.getNetworkProtocols();
+
+        const currentPeerId = this.networkModuleManager.getPeerId().toB58String();
+
+        const shardNodes = await this.shardingTableService.findShard(blockchain, true);
+
+        // TODO: Optimize this so it's returned by shardingTableService.findShard
+        const foundNodes = await Promise.all(
+            shardNodes.map(({ peerId }) =>
+                this.shardingTableService.findPeerAddressAndProtocols(peerId),
+            ),
+        );
+        const nodesInfo = [];
+        for (const node of foundNodes) {
+            if (node.id !== currentPeerId) {
+                nodesInfo.push({ id: node.id, protocol: networkProtocols[0] });
+            }
+        }
+
+        this.logger.debug(`Found ${nodesInfo.length} node(s) for operationId: ${operationId}`);
+        this.logger.trace(
+            `Found shard: ${JSON.stringify(
+                nodesInfo.map((node) => node.id),
+                null,
+                2,
+            )}`,
+        );
+        return nodesInfo;
     }
 
     async validateUAL(operationId, blockchain, contract, knowledgeCollectionId, ual) {
