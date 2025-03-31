@@ -189,8 +189,16 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
                 localGetPassed = assertion?.private?.length > 0;
             }
         }
+        const localGetResultValid = await this.validateResponse(
+            responseData,
+            blockchain,
+            contract,
+            knowledgeCollectionId,
+            knowledgeAssetId,
+        );
         if (
             localGetPassed &&
+            localGetResultValid &&
             (assertion?.public?.length || assertion?.private?.length || assertion?.length)
         ) {
             await this.operationService.markOperationAsCompleted(
