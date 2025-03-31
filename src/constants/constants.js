@@ -331,6 +331,7 @@ export const TRIPLE_STORE_IMPLEMENTATION = {
     BLAZEGRAPH: 'Blazegraph',
     GRAPHDB: 'GraphDB',
     FUSEKI: 'Fuseki',
+    NEPTUNE: 'Neptune',
 };
 
 export const NETWORK_MESSAGE_TYPES = {
