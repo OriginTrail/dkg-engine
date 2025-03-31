@@ -164,6 +164,17 @@ install_blazegraph() {
     perform_step systemctl status blazegraph "Blazegraph status"
 }
 
+check_neptune() {
+    response=$(curl -s -G "$NEPTUNE_ENDPOINT")
+    status=$(echo "$response" | jq -r '.status')
+    if [[ "$status" == "healthy" ]]; then
+	echo "The Neptune service is running and healthy."
+    else
+        echo "The service is not healthy or not running."
+        exit 1
+    fi
+}
+
 install_sql() {
     #check which sql to install/update
     text_color $YELLOW"IMPORTANT NOTE: to avoid potential migration issues from one SQL to another, please select the one you are currently using. If this is your first installation, both choices are valid. If you don't know the answer, select [1].
@@ -622,6 +633,9 @@ if [[ $tripleStore = "ot-blazegraph" ]]; then
     fi
 fi
 
+if [[ $tripleStore = "ot-neptune" ]]; then
+    check_neptune
+fi
 
 # otnode logger sytemctl setup
 yes | sudo apt install ncat
