@@ -15,6 +15,7 @@ class GetCommand extends Command {
     constructor(ctx) {
         super(ctx);
         this.operationIdService = ctx.operationIdService;
+        this.ualService = ctx.ualService;
         this.operationService = ctx.getService;
         this.validationService = ctx.validationService;
         this.blockchainModuleManager = ctx.blockchainModuleManager;
@@ -22,6 +23,7 @@ class GetCommand extends Command {
         this.tripleStoreService = ctx.tripleStoreService;
         this.networkModuleManager = ctx.networkModuleManager;
         this.shardingTableService = ctx.shardingTableService;
+        this.cryptoService = ctx.cryptoService;
         this.messagingService = ctx.messagingService;
     }
 
@@ -180,8 +182,11 @@ class GetCommand extends Command {
             ...(includeMetadata && metadata && { metadata }),
         };
         let localGetPassed = false;
-        if (paranetUAL && paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED) {
-            const assertionShouldHavePrivateTriples = assertion.public.some((triple) =>
+        if (
+            Array.isArray(assertion?.public) &&
+            paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED
+        ) {
+            const assertionShouldHavePrivateTriples = assertion?.public?.some((triple) =>
                 triple.includes(`${PRIVATE_ASSERTION_PREDICATE}`),
             );
             if (assertionShouldHavePrivateTriples) {
@@ -234,7 +239,11 @@ class GetCommand extends Command {
                 paranetId,
             );
             // Awful nested loop here but small arrays
-            nodesInfo = nodesInfo.filter((node) => permissionedNodes.some((n) => n.id === node.id));
+            nodesInfo = nodesInfo.filter((node) =>
+                permissionedNodes.some(
+                    (n) => this.cryptoService.convertHexToAscii(n.nodeId) === node.id,
+                ),
+            );
         }
 
         if (nodesInfo.length < this.minAckResponses) {
