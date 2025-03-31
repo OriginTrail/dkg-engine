@@ -59,7 +59,7 @@ class GetController extends BaseController {
             this.logger.info(`Get for ${ual} with operation id ${operationId} initiated.`);
 
             await this.commandExecutor.add({
-                name: 'getValidateAssetCommand',
+                name: 'getCommand',
                 sequence: [],
                 delay: 0,
                 data: {

@@ -172,7 +172,7 @@ class ParanetSyncCommand extends Command {
         let getResult;
 
         await this.commandExecutor.add({
-            name: 'getValidateAssetCommand',
+            name: 'getCommand',
             sequence: [],
             delay: 0,
             data: {

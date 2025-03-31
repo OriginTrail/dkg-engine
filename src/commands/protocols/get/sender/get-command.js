@@ -1,5 +1,4 @@
 import { kcTools } from 'assertion-tools';
-import ValidateAssetCommand from '../../../common/validate-asset-command.js';
 import Command from '../../../command.js';
 import {
     OPERATION_ID_STATUS,
@@ -12,7 +11,7 @@ import {
     PRIVATE_HASH_SUBJECT_PREFIX,
 } from '../../../../constants/constants.js';
 
-class GetValidateAssetCommand extends ValidateAssetCommand {
+class GetCommand extends Command {
     constructor(ctx) {
         super(ctx);
         this.operationIdService = ctx.operationIdService;
@@ -498,13 +497,13 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
     }
 
     /**
-     * Builds default getValidateAssetCommand
+     * Builds default GetCommand
      * @param map
      * @returns {{add, data: *, delay: *, deadline: *}}
      */
     default(map) {
         const command = {
-            name: 'getValidateAssetCommand',
+            name: 'getCommand',
             delay: 0,
             transactional: false,
         };
@@ -513,4 +512,4 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
     }
 }
 
-export default GetValidateAssetCommand;
+export default GetCommand;
