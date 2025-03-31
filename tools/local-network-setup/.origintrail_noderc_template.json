@@ -48,6 +48,32 @@
                         }
                     }
                 },
+		"ot-neptune": {
+                    "enabled": false,
+                    "package": "./triple-store/implementation/ot-neptune/ot-neptune.js",
+                    "config": {
+                        "repositories": {
+                            "dkg": {
+                                "url": "https://neptune-01.origin-trail.network",
+                                "name": "dkg",
+                                "username": "",
+                                "password": ""
+                            },
+                            "privateCurrent": {
+                                "url": "https://neptune-01.origin-trail.network",
+                                "name": "private-current",
+                                "username": "",
+                                "password": ""
+                            },
+                            "publicCurrent": {
+                                "url": "https://neptune-01.origin-trail.network",
+                                "name": "public-current",
+                                "username": "",
+                                "password": ""
+                            }
+                        }
+                    }
+                },
                 "ot-fuseki": {
                     "enabled": false,
                     "package": "./triple-store/implementation/ot-fuseki/ot-fuseki.js",
