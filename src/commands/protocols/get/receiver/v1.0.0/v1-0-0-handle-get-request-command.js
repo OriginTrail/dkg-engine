@@ -51,12 +51,12 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
                 blockchain,
                 paranetId,
             );
-            if (paranetNodeAccessPolicy === PARANET_ACCESS_POLICY.CURATED) {
+            if (paranetNodeAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED) {
                 const knowledgeCollectionOnchainId = this.cryptoService.keccak256EncodePacked(
                     ['address', 'uint256'],
                     [contract, knowledgeCollectionId],
                 );
-                const [isKCInParanet, paranetCuratedNodes] = await Promise.all([
+                const [isKCInParanet, paranetPermissionedNodes] = await Promise.all([
                     this.blockchainModuleManager.isKnowledgeCollectionRegistered(
                         blockchain,
                         paranetId,
@@ -73,11 +73,11 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
                         },
                     };
                 }
-                const paranetCuratedPeerIds = paranetCuratedNodes.map((node) =>
+                const paranetPermissionedPeerIds = paranetPermissionedNodes.map((node) =>
                     this.cryptoService.convertHexToAscii(node.nodeId),
                 );
 
-                if (!paranetCuratedPeerIds.includes(remotePeerId)) {
+                if (!paranetPermissionedPeerIds.includes(remotePeerId)) {
                     return {
                         messageType: NETWORK_MESSAGE_TYPES.RESPONSES.NACK,
                         messageData: {
@@ -87,7 +87,7 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
                 }
 
                 const currentPeerId = this.networkModuleManager.getPeerId().toB58String();
-                if (!paranetCuratedPeerIds.includes(currentPeerId)) {
+                if (!paranetPermissionedPeerIds.includes(currentPeerId)) {
                     return {
                         messageType: NETWORK_MESSAGE_TYPES.RESPONSES.NACK,
                         messageData: {

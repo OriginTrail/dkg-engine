@@ -49,12 +49,6 @@ class GetController extends BaseController {
             ({ blockchain, contract, knowledgeCollectionId, knowledgeAssetId } =
                 this.ualService.resolveUAL(ual));
             contract = contract.toLowerCase();
-            // ual = this.ualService.deriveUAL(
-            //     blockchain,
-            //     contract,
-            //     knowledgeCollectionId,
-            //     knowledgeAssetId,
-            // );
 
             this.logger.info(`Get for ${ual} with operation id ${operationId} initiated.`);
 

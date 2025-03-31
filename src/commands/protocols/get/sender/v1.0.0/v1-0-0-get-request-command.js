@@ -104,9 +104,6 @@ class GetRequestCommand extends ProtocolRequestCommand {
                             contract,
                             knowledgeCollectionId,
                         );
-
-                        // This is added as support when get starts supporting private for curated paranet
-                        // TODO: This needs to be fixed when paranets are introduced
                         if (responseData.assertion?.private?.length)
                             await this.validationService.validatePrivateMerkleRoot(
                                 responseData.assertion.public,

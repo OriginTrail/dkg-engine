@@ -180,7 +180,7 @@ class GetCommand extends Command {
             ...(includeMetadata && metadata && { metadata }),
         };
         let localGetPassed = false;
-        if (paranetUAL && paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.CURATED) {
+        if (paranetUAL && paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED) {
             const assertionShouldHavePrivateTriples = assertion.public.some((triple) =>
                 triple.includes(`${PRIVATE_ASSERTION_PREDICATE}`),
             );
@@ -228,7 +228,7 @@ class GetCommand extends Command {
         );
 
         let nodesInfo = await this.findNodes(operationId, blockchain, currentPeerId);
-        if (paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.CURATED) {
+        if (paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED) {
             const permissionedNodes = await this.blockchainModuleManager.getPermissionedNodes(
                 blockchain,
                 paranetId,

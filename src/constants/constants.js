@@ -137,7 +137,7 @@ export const PARANET_SYNC_RETRY_DELAY_MS = 60 * 1000;
 
 export const PARANET_ACCESS_POLICY = {
     OPEN: 0,
-    CURATED: 1,
+    PERMISSIONED: 1,
 };
 
 export const TRIPLE_STORE_REPOSITORIES = {
@@ -344,7 +344,7 @@ export const NETWORK_MESSAGE_TYPES = {
     },
 };
 
-export const PARANET_NODES_ACCESS_POLICIES = ['OPEN', 'CURATED'];
+export const PARANET_NODES_ACCESS_POLICIES = ['OPEN', 'PERMISSIONED'];
 
 export const NETWORK_MESSAGE_TIMEOUT_MILLS = {
     PUBLISH: {

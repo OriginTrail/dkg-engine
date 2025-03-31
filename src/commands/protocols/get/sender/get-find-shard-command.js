@@ -15,7 +15,7 @@ class GetFindShardCommand extends FindShardCommand {
     getOperationCommandSequence(nodePartOfShard, commandData) {
         const sequence = ['localGetCommand'];
         sequence.push(
-            commandData.paranetNodesAccessPolicy === 'CURATED'
+            commandData.paranetNodesAccessPolicy === 'PERMISSIONED'
                 ? 'curatedParanetNetworkGetCommand'
                 : 'networkGetCommand',
         );
