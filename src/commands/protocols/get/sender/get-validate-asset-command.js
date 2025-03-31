@@ -96,9 +96,9 @@ class GetValidateAssetCommand extends ValidateAssetCommand {
                 await this.validateParanet(
                     operationId,
                     paranetUAL,
-                    paranetNodesAccessPolicy,
                     paranetBlockchain,
                     paranetKnowledgeAssetId,
+                    paranetNodesAccessPolicy,
                     paranetId,
                 );
             if (!paranetIsValid) {

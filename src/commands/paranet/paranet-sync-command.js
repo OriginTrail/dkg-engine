@@ -11,6 +11,7 @@ import {
     PARANET_SYNC_RETRY_DELAY_MS,
     OPERATION_STATUS,
     PARANET_NODES_ACCESS_POLICIES,
+    PARANET_ACCESS_POLICY,
     TRIPLES_VISIBILITY,
 } from '../../constants/constants.js';
 
@@ -182,7 +183,10 @@ class ParanetSyncCommand extends Command {
                 knowledgeCollectionId,
                 state: assertionId,
                 ual: this.ualService.deriveUAL(blockchain, contract, knowledgeCollectionId),
-                contentType: TRIPLES_VISIBILITY.PUBLIC,
+                contentType:
+                    paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.CURATED
+                        ? TRIPLES_VISIBILITY.ALL
+                        : TRIPLES_VISIBILITY.PUBLIC,
                 paranetId,
                 paranetUAL,
                 paranetNodesAccessPolicy,
