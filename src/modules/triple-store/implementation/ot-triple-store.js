@@ -315,7 +315,9 @@ class OtTripleStore {
                     );
                     await setTimeout(retryDelay);
                 } else {
-                    throw new Error(`Failed to perform batch insert after ${retries} attempts.`);
+                    throw new Error(
+                        `Failed to perform batch insert after ${retries} attempts. Error: ${error.message}`,
+                    );
                 }
             }
         }
