@@ -308,14 +308,16 @@ class OtTripleStore {
                     this.logger.warn(
                         `Batch insert failed for ${uals[0]
                             .split('/')
-                            .pop()
+                            .slice(0, -1)
                             .join(
                                 '/',
                             )} graphs. Attempt ${attempts}/${retries}. Retrying in ${retryDelay}ms.`,
                     );
                     await setTimeout(retryDelay);
                 } else {
-                    throw new Error(`Failed to perform batch insert after ${retries} attempts.`);
+                    throw new Error(
+                        `Failed to perform batch insert after ${retries} attempts. Error: ${error.message}`,
+                    );
                 }
             }
         }
