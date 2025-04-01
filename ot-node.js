@@ -53,6 +53,7 @@ class OTNode {
         this.initializeBlockchainEventsService();
         await this.initializeShardingTableService();
         await this.initializeParanets();
+        await this.initializeProofing();
 
         await this.createProfiles();
 
@@ -395,6 +396,11 @@ class OTNode {
         }
         this.config.assetSync.syncParanets = validParanets;
         tripleStoreService.initializeRepositories();
+    }
+
+    async initializeProofing() {
+        const proofingService = this.container.resolve('proofingService');
+        await proofingService.initialize();
     }
 
     stop(code = 0) {
