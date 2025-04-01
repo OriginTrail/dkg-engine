@@ -308,7 +308,7 @@ class OtTripleStore {
                     this.logger.warn(
                         `Batch insert failed for ${uals[0]
                             .split('/')
-                            .pop()
+                            .slice(0, -1)
                             .join(
                                 '/',
                             )} graphs. Attempt ${attempts}/${retries}. Retrying in ${retryDelay}ms.`,
