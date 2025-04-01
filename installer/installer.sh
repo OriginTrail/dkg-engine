@@ -165,7 +165,7 @@ install_blazegraph() {
 }
 
 check_neptune() {
-    response=$(curl -s -G "$NEPTUNE_ENDPOINT")
+    response=$(curl -s -G "$NEPTUNE_ENDPOINT/status")
     status=$(echo "$response" | jq -r '.status')
     if [[ "$status" == "healthy" ]]; then
 	echo "The Neptune service is running and healthy."
@@ -600,9 +600,10 @@ OTNODE_DIR=$OTNODE_DIR/current
 
 header_color $BGREEN"Installing Triplestore (Graph Database)..."
 
-read -p "Please select the database you would like to use: (Default: Blazegraph) [1]Blazegraph [2]Fuseki [E]xit: " choice
+read -p "Please select the database you would like to use: (Default: Blazegraph) [1]Blazegraph [2]Fuseki [3]Neptune [E]xit: " choice
 case "$choice" in
     [2] ) text_color $GREEN"Fuseki selected. Proceeding with installation."; tripleStore=ot-fuseki; tripleStoreUrl="http://localhost:3030";;
+    [3] ) text_color $GREEN"Neptune selected. Proceeding with installation."; tripleStore=ot-neptune; tripleStoreUrl="$NEPTUNE_ENDPOINT";;
     [Ee] )  text_color $RED"Installer stopped by user"; exit;;
     * )     text_color $GREEN"Blazegraph selected. Proceeding with installation."; tripleStore=ot-blazegraph; tripleStoreUrl="http://localhost:9999";;
 esac
