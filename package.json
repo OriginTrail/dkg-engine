@@ -1,6 +1,6 @@
 {
     "name": "origintrail_node",
-    "version": "8.0.3",
+    "version": "8.0.4",
     "description": "OTNode V8",
     "main": "index.js",
     "type": "module",
@@ -81,7 +81,7 @@
         "axios": "^1.6.0",
         "cors": "^2.8.5",
         "deep-extend": "^0.6.0",
-        "dkg-evm-module": "git+https://github.com/OriginTrail/dkg-evm-module.git#feature/enable-permissioned-paranets",
+        "dkg-evm-module": "8.0.4",
         "dotenv": "^16.0.1",
         "ethers": "^5.7.2",
         "express": "^4.18.1",
