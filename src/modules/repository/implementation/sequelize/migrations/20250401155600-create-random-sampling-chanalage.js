@@ -46,22 +46,6 @@ export const up = async ({ context: { queryInterface, Sequelize } }) => {
         },
     });
 
-    const [[{ indexExists: randomSamplingBlockchainIdStartDateIndexExists }]] = await queryInterface
-        .sequelize.query(`
-      SELECT COUNT(*) AS indexExists
-      FROM information_schema.statistics
-      WHERE TABLE_SCHEMA = DATABASE()
-        AND TABLE_NAME = 'random_sampling_challenge'
-        AND INDEX_NAME = 'idx_random_sampling_blockchain_id_start_date';
-  `);
-
-    if (!randomSamplingBlockchainIdStartDateIndexExists) {
-        await queryInterface.addIndex(
-            'random_sampling_challenge',
-            ['blockchain_id', 'start_date'],
-            { name: 'idx_random_sampling_blockchain_id_start_date' },
-        );
-    }
     const [[{ indexExists: randomSamplingBlockchainIdEpochSentSuccessfullyIndexExists }]] =
         await queryInterface.sequelize.query(`
           SELECT COUNT(*) AS indexExists
@@ -113,20 +97,6 @@ export const up = async ({ context: { queryInterface, Sequelize } }) => {
 };
 
 export const down = async ({ context: { queryInterface } }) => {
-    const [[{ indexExists: randomSamplingBlockchainIdStartDateIndexExists }]] = await queryInterface
-        .sequelize.query(`
-          SELECT COUNT(*) AS indexExists
-          FROM information_schema.statistics
-          WHERE TABLE_SCHEMA = DATABASE()
-          AND TABLE_NAME = 'random_sampling_challenge'
-          AND INDEX_NAME = 'idx_random_sampling_blockchain_id_start_date';
-  `);
-    if (randomSamplingBlockchainIdStartDateIndexExists) {
-        await queryInterface.removeIndex(
-            'random_sampling_challenge',
-            'idx_random_sampling_blockchain_id_start_date',
-        );
-    }
     const [[{ indexExists: randomSamplingBlockchainIdEpochSentSuccessfullyIndexExists }]] =
         await queryInterface.sequelize.query(`
           SELECT COUNT(*) AS indexExists
