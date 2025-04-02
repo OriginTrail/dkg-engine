@@ -19,6 +19,15 @@ class MissedParanetAssetRepository {
             limit,
         });
     }
+
+    async deleteRandomSamplingChalangeForBlockchainIdEpoch(blockchainId, epoch) {
+        return this.model.destroy({
+            where: {
+                blockchainId,
+                epoch,
+            },
+        });
+    }
 }
 
 export default MissedParanetAssetRepository;
