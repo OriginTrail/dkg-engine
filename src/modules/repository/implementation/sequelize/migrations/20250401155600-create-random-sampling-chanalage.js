@@ -52,7 +52,7 @@ export const up = async ({ context: { queryInterface, Sequelize } }) => {
           FROM information_schema.statistics
           WHERE TABLE_SCHEMA = DATABASE()
           AND TABLE_NAME = 'random_sampling_challenge'
-          AND INDEX_NAME = 'idx_random_sampling_blockchain_id_epoch_sent_successfully';
+          AND INDEX_NAME = 'idx_rs_challenge_status';
     `);
 
     if (!randomSamplingBlockchainIdEpochSentSuccessfullyIndexExists) {
@@ -103,13 +103,10 @@ export const down = async ({ context: { queryInterface } }) => {
           FROM information_schema.statistics
           WHERE TABLE_SCHEMA = DATABASE()
           AND TABLE_NAME = 'random_sampling_challenge'
-          AND INDEX_NAME = 'idx_random_sampling_blockchain_id_epoch_sent_successfully';
+          AND INDEX_NAME = 'idx_rs_challenge_status';
         `);
     if (randomSamplingBlockchainIdEpochSentSuccessfullyIndexExists) {
-        await queryInterface.removeIndex(
-            'random_sampling_challenge',
-            'idx_random_sampling_blockchain_id_epoch_sent_successfully',
-        );
+        await queryInterface.removeIndex('random_sampling_challenge', 'idx_rs_challenge_status');
     }
     await queryInterface.dropTable('random_sampling_challenge');
 };
