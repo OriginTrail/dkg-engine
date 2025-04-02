@@ -59,7 +59,7 @@ export const up = async ({ context: { queryInterface, Sequelize } }) => {
         await queryInterface.addIndex(
             'random_sampling_challenge',
             ['blockchain_id', 'epoch', 'sent_successfully', 'updated_at'],
-            { name: 'idx_random_sampling_blockchain_id_epoch_sent_successfully_updated_at' },
+            { name: 'idx_rs_challenge_status' },
         );
     }
 
