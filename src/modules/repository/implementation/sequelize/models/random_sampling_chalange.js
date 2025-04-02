@@ -12,6 +12,7 @@ export default (sequelize, DataTypes) => {
             endDate: DataTypes.DATE,
             knowledgeCollectionId: DataTypes.INTEGER,
             chunkNumber: DataTypes.INTEGER,
+            epoch: DataTypes.INTEGER,
             createdAt: DataTypes.DATE,
             updatedAt: DataTypes.DATE,
         },

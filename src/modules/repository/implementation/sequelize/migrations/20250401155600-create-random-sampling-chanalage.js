@@ -25,6 +25,10 @@ export const up = async ({ context: { queryInterface, Sequelize } }) => {
             allowNull: false,
             type: Sequelize.INTEGER,
         },
+        epoch: {
+            allowNull: false,
+            type: Sequelize.INTEGER,
+        },
         created_at: {
             allowNull: false,
             type: Sequelize.DATE,
