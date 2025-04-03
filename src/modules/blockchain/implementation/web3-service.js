@@ -1143,6 +1143,36 @@ class Web3Service {
         );
     }
 
+    async isActiveProofPeriodStillValid() {
+        return this.callContractFunction(
+            this.contracts.RandomSamplingChallenge,
+            'isActiveProofPeriodStillValid',
+            [],
+        );
+    }
+
+    async createChallenge() {
+        return this._executeContractFunction(
+            this.contracts.RandomSamplingChallenge,
+            'createChallenge',
+            [],
+        );
+    }
+
+    async getNodeChallenge(nodeId) {
+        return this.callContractFunction(this.contracts.RandomSamplingChallenge, 'getChallenge', [
+            nodeId,
+        ]);
+    }
+
+    async submitProof(chunk, merkleProof) {
+        return this._executeContractFunction(
+            this.contracts.RandomSamplingChallenge,
+            'submitProof',
+            [chunk, merkleProof],
+        );
+    }
+
     // SUPPORT FOR OLD CONTRACTS
     async getLatestAssertionId(assetContractAddress, tokenId) {
         const assetStorageContractInstance =

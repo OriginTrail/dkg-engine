@@ -277,6 +277,22 @@ class BlockchainModuleManager extends BaseModuleManager {
         ]);
     }
 
+    async isActiveProofPeriodStillValid(blockchain) {
+        return this.callImplementationFunction(blockchain, 'isActiveProofPeriodStillValid');
+    }
+
+    async createChallenge(blockchain) {
+        return this.callImplementationFunction(blockchain, 'createChallenge', []);
+    }
+
+    async getNodeChallenge(blockchain, nodeId) {
+        return this.callImplementationFunction(blockchain, 'getNodeChallenge', [nodeId]);
+    }
+
+    async submitProof(blockchain, chunk, merkleProof) {
+        return this.callImplementationFunction(blockchain, 'submitProof', [chunk, merkleProof]);
+    }
+
     // SUPPORT FOR OLD CONTRACTS
     async getLatestAssertionId(blockchain, assetContractAddress, tokenId) {
         return this.callImplementationFunction(blockchain, 'getLatestAssertionId', [
