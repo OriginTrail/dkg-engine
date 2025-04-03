@@ -63,6 +63,9 @@ class ProofingService {
     async runProofing(blockchainId) {
         // Implement your proofing logic here
         this.logger.debug(`Running proofing mechanism for ${blockchainId}`);
+        // Check wat is current proof period
+        // Check what is your latest chalange
+        // If chalange passed get new
     }
 
     // Add cleanup method to stop intervals

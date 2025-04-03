@@ -279,6 +279,7 @@ export const ABIs = {
     AskStorage: require('dkg-evm-module/abi/AskStorage.json'),
     Chronos: require('dkg-evm-module/abi/Chronos.json'),
     Paranet: require('dkg-evm-module/abi/Paranet.json'),
+    RandomSamplingChallenge: require('dkg-evm-module/abi/RandomSampling.json'),
 };
 
 export const CONTRACT_FUNCTION_PRIORITY = {};
