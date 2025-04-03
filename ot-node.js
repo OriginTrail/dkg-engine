@@ -262,8 +262,17 @@ class OTNode {
     }
 
     async startNetworkModule() {
-        const networkModuleManager = this.container.resolve('networkModuleManager');
-        await networkModuleManager.start();
+        try {
+            this.logger.info('Starting network module');
+            const networkModuleManager = this.container.resolve('networkModuleManager');
+            await networkModuleManager.start();
+            this.logger.info('Network module started successfully');
+        } catch (error) {
+            this.logger.error(
+                `Unable to start network module. Error message: ${error.message} OT-node shutting down...`,
+            );
+            this.stop(1);
+        }
     }
 
     async initializeShardingTableService() {

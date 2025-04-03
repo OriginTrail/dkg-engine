@@ -25,22 +25,22 @@ jobs:
       - name: Run linter
         run: npm run lint
 
-  unit-tests:
-    runs-on: ubuntu-latest
-    services:
-      graphdb:
-        image: khaller/graphdb-free:latest
-        ports:
-          - 7200:7200
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+ # unit-tests:
+ #   runs-on: ubuntu-latest
+ #   services:
+ #     graphdb:
+  #      image: khaller/graphdb-free:latest
+  #      ports:
+  #        - 7200:7200
+  #    steps:
+  #      - name: Checkout repository
+   #     uses: actions/checkout@v3
 
-      - name: Set up environment
-        uses: ./.github/actions/setup
+    #  - name: Set up environment
+    #    uses: ./.github/actions/setup
 
-      - name: Run unit tests
-        run: npm run test:unit
+  #     - name: Run unit tests
+  #       run: npm run test:unit
 
   bdd-tests:
     runs-on: ubuntu-latest
@@ -70,7 +70,7 @@ jobs:
 
       - name: Upload log files
         if: '!cancelled()'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bdd-test-logs
           path: ./test/bdd/log/

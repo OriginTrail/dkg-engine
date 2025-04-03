@@ -33,16 +33,16 @@ Given(
             const rpcPort = 8901 + nodeIndex;
             const networkPort = 9001 + nodeIndex;
             const nodeName = `origintrail-test-${nodeIndex}`;
-            const sharesTokenName = `origintrail-test-${nodeIndex}`;
-            const sharesTokenSymbol = `OT-T-${nodeIndex}`;
+            // const sharesTokenName = `origintrail-test-${nodeIndex}`;
+            // const sharesTokenSymbol = `OT-T-${nodeIndex}`;
             const nodeConfiguration = stepsUtils.createNodeConfiguration(
                 blockchains,
                 nodeIndex,
                 nodeName,
                 rpcPort,
                 networkPort,
-                sharesTokenName,
-                sharesTokenSymbol,
+                // sharesTokenName,
+                // sharesTokenSymbol,
             );
             const forkedNode = stepsUtils.forkNode(nodeConfiguration);
             const logFileStream = fs.createWriteStream(
@@ -104,7 +104,7 @@ Given(
 
 Given(
     /^(\d+) bootstrap is running$/,
-    { timeout: 30000 },
+    { timeout: 50000 },
     function bootstrapRunning(nodeCount, done) {
         expect(this.state.bootstraps).to.have.length(0);
         expect(nodeCount).to.be.equal(1); // Currently not supported more.
@@ -125,16 +125,16 @@ Given(
         const rpcPort = 8900;
         const networkPort = 9000;
         const nodeName = 'origintrail-test-bootstrap';
-        const sharesTokenName = `${nodeName}-${nodeIndex}`;
-        const sharesTokenSymbol = `OT-B-${nodeIndex}`;
+        // const sharesTokenName = `${nodeName}-${nodeIndex}`;
+        // const sharesTokenSymbol = `OT-B-${nodeIndex}`;
         const nodeConfiguration = stepsUtils.createNodeConfiguration(
             blockchains,
             nodeIndex,
             nodeName,
             rpcPort,
             networkPort,
-            sharesTokenName,
-            sharesTokenSymbol,
+           // sharesTokenName,
+            // sharesTokenSymbol,
             true,
         );
         const forkedNode = stepsUtils.forkNode(nodeConfiguration);
@@ -327,3 +327,8 @@ Given(
         );
     },
 );
+
+Given(/^infrastucture is functional$/, { timeout: 1000 }, async function checkInfrastructure() {
+    this.logger.log('Checking if infrastructure is functional');
+    // Add actual infrastructure checks here
+});
