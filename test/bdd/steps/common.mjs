@@ -35,12 +35,16 @@ Given(
             const nodeName = `origintrail-test-${nodeIndex}`;
             // const sharesTokenName = `origintrail-test-${nodeIndex}`;
             // const sharesTokenSymbol = `OT-T-${nodeIndex}`;
+            // const sharesTokenName = `origintrail-test-${nodeIndex}`;
+            // const sharesTokenSymbol = `OT-T-${nodeIndex}`;
             const nodeConfiguration = stepsUtils.createNodeConfiguration(
                 blockchains,
                 nodeIndex,
                 nodeName,
                 rpcPort,
                 networkPort,
+                // sharesTokenName,
+                // sharesTokenSymbol,
                 // sharesTokenName,
                 // sharesTokenSymbol,
             );
@@ -127,12 +131,16 @@ Given(
         const nodeName = 'origintrail-test-bootstrap';
         // const sharesTokenName = `${nodeName}-${nodeIndex}`;
         // const sharesTokenSymbol = `OT-B-${nodeIndex}`;
+        // const sharesTokenName = `${nodeName}-${nodeIndex}`;
+        // const sharesTokenSymbol = `OT-B-${nodeIndex}`;
         const nodeConfiguration = stepsUtils.createNodeConfiguration(
             blockchains,
             nodeIndex,
             nodeName,
             rpcPort,
             networkPort,
+           // sharesTokenName,
+            // sharesTokenSymbol,
            // sharesTokenName,
             // sharesTokenSymbol,
             true,
@@ -330,5 +338,4 @@ Given(
 
 Given(/^infrastucture is functional$/, { timeout: 1000 }, async function checkInfrastructure() {
     this.logger.log('Checking if infrastructure is functional');
-    // Add actual infrastructure checks here
 });
