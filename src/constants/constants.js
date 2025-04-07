@@ -1022,3 +1022,4 @@ export const V6_CONTENT_STORAGE_MAP = {
 
 export const PROOFING_INTERVAL = 1 * 1000;
 export const PROOFING_MAX_ATTEMPTS = 60;
+export const REORG_PROOFING_BUFFER = 24 * 1000;
