@@ -1173,6 +1173,14 @@ class Web3Service {
         );
     }
 
+    async getNodeEpochProofPeriodScore(nodeId, epoch, proofPeriodStartBlock) {
+        return this.callContractFunction(
+            this.contracts.RandomSamplingChallenge,
+            'getProofPeriodScore',
+            [nodeId, epoch, proofPeriodStartBlock],
+        );
+    }
+
     // SUPPORT FOR OLD CONTRACTS
     async getLatestAssertionId(assetContractAddress, tokenId) {
         const assetStorageContractInstance =

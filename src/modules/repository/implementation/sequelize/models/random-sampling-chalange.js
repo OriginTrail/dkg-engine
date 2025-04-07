@@ -13,6 +13,8 @@ export default (sequelize, DataTypes) => {
             knowledgeCollectionId: DataTypes.INTEGER,
             chunkNumber: DataTypes.INTEGER,
             epoch: DataTypes.INTEGER,
+            activeProofPeriodStartBlock: DataTypes.BIGINT,
+            finalized: DataTypes.BOOLEAN,
             sentSuccessfully: DataTypes.BOOLEAN,
             createdAt: DataTypes.DATE,
             updatedAt: DataTypes.DATE,

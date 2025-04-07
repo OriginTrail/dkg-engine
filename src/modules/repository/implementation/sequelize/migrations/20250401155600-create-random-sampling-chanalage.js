@@ -25,11 +25,20 @@ export const up = async ({ context: { queryInterface, Sequelize } }) => {
             allowNull: false,
             type: Sequelize.INTEGER,
         },
+        active_proof_period_start_block: {
+            allowNull: false,
+            type: Sequelize.BIGINT,
+        },
         epoch: {
             allowNull: false,
             type: Sequelize.INTEGER,
         },
         sent_successfully: {
+            allowNull: false,
+            type: Sequelize.BOOLEAN,
+            defaultValue: false,
+        },
+        finalized: {
             allowNull: false,
             type: Sequelize.BOOLEAN,
             defaultValue: false,

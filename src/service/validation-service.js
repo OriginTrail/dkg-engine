@@ -1,4 +1,10 @@
-import { ZERO_ADDRESS, PRIVATE_ASSERTION_PREDICATE, ZERO_BYTES32 } from '../constants/constants.js';
+import { kcTools } from 'assertion-tools';
+import {
+    ZERO_ADDRESS,
+    PRIVATE_ASSERTION_PREDICATE,
+    ZERO_BYTES32,
+    PRIVATE_HASH_SUBJECT_PREFIX,
+} from '../constants/constants.js';
 
 class ValidationService {
     constructor(ctx) {
@@ -123,6 +129,60 @@ class ValidationService {
                 `Merkle Root validation failed. Private Merkle Root not present in public assertion.`,
             );
         }
+    }
+
+    async validateGetResponse(
+        assertion,
+        blockchain,
+        contract,
+        knowledgeCollectionId,
+        knowledgeAssetId,
+    ) {
+        if (assertion.public) {
+            // We can only validate whole collection not particular KA
+            if (!knowledgeAssetId) {
+                const publicAssertion = assertion?.public;
+
+                const filteredPublic = [];
+                const privateHashTriples = [];
+                publicAssertion.forEach((triple) => {
+                    if (triple.startsWith(`<${PRIVATE_HASH_SUBJECT_PREFIX}`)) {
+                        privateHashTriples.push(triple);
+                    } else {
+                        filteredPublic.push(triple);
+                    }
+                });
+
+                const publicKnowledgeAssetsTriplesGrouped = kcTools.groupNquadsBySubject(
+                    filteredPublic,
+                    true,
+                );
+                publicKnowledgeAssetsTriplesGrouped.push(
+                    ...kcTools.groupNquadsBySubject(privateHashTriples, true),
+                );
+
+                try {
+                    await this.validationService.validateDatasetOnBlockchain(
+                        publicKnowledgeAssetsTriplesGrouped.map((t) => t.sort()).flat(),
+                        blockchain,
+                        contract,
+                        knowledgeCollectionId,
+                    );
+
+                    if (assertion?.private?.length)
+                        await this.validationService.validatePrivateMerkleRoot(
+                            assertion.public,
+                            assertion.private,
+                        );
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return false;
     }
 }
 

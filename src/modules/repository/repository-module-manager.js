@@ -467,6 +467,24 @@ class RepositoryModuleManager extends BaseModuleManager {
         return this.getRepository('finality_status').getFinalityAcksCount(ual, options);
     }
 
+    async getLatestChallenge(blockchainId) {
+        return this.getRepository('random_sampling_challenge').getLatestChallenge(blockchainId);
+    }
+
+    async updateRandomSamplingChallengeRecord(randomSamplingChallenge, options) {
+        return this.getRepository('random_sampling_challenge').updateRandomSamplingChallengeRecord(
+            randomSamplingChallenge,
+            options,
+        );
+    }
+
+    async deleteRandomSamplingChallengeRecord(randomSamplingChallenge, options) {
+        return this.getRepository('random_sampling_challenge').deleteRandomSamplingChallengeRecord(
+            randomSamplingChallenge,
+            options,
+        );
+    }
+
     async saveFinalityAck(publishOperationId, ual, peerId, options = {}) {
         return this.getRepository('finality_status').saveFinalityAck(
             publishOperationId,
