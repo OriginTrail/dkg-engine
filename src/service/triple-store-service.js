@@ -97,6 +97,29 @@ class TripleStoreService {
                 ),
             );
 
+            promises.push(
+                this.tripleStoreModuleManager.insertIntoCurrentGraph(
+                    this.repositoryImplementations[repository],
+                    repository,
+                    publicKnowledgeAssetsUALs,
+                    TRIPLES_VISIBILITY.PUBLIC,
+                ),
+            );
+            this.logger.info(`Adding metadata triples to current graph for public asets`);
+
+            promises.push(
+                this.tripleStoreModuleManager.insertKCKAConnectionsMetadata(
+                    this.repositoryImplementations[repository],
+                    repository,
+                    knowledgeCollectionUAL,
+                    publicKnowledgeAssetsUALs,
+                    TRIPLES_VISIBILITY.PUBLIC,
+                ),
+            );
+            this.logger.info(
+                `Adding Kc-Ka connections metadata triples to metadata graph for public asets`,
+            );
+
             allPossibleNamedGraphs.push(...publicKnowledgeAssetsUALs.map((ual) => `${ual}/public`));
 
             if (triples.private?.length) {
@@ -140,6 +163,29 @@ class TripleStoreService {
                         privateKnowledgeAssetsTriplesGrouped,
                         TRIPLES_VISIBILITY.PRIVATE,
                     ),
+                );
+
+                promises.push(
+                    this.tripleStoreModuleManager.insertIntoCurrentGraph(
+                        this.repositoryImplementations[repository],
+                        repository,
+                        privateKnowledgeAssetsUALs,
+                        TRIPLES_VISIBILITY.PRIVATE,
+                    ),
+                );
+                this.logger.info(`Adding metadata triples to current graph for private asets`);
+
+                promises.push(
+                    this.tripleStoreModuleManager.insertKCKAConnectionsMetadata(
+                        this.repositoryImplementations[repository],
+                        repository,
+                        knowledgeCollectionUAL,
+                        privateKnowledgeAssetsUALs,
+                        TRIPLES_VISIBILITY.PRIVATE,
+                    ),
+                );
+                this.logger.info(
+                    `Adding Kc-Ka connections metadata triples to metadata graph for private asets`,
                 );
 
                 allPossibleNamedGraphs.push(

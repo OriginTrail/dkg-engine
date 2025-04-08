@@ -76,6 +76,11 @@ class PublishFinalizationCommand extends Command {
                 assertion,
             );
 
+            const totalTriples =
+                (assertion?.public?.length ?? 0) + (assertion?.private?.length ?? 0);
+            await this.repositoryModuleManager.incrementInsertedTriples(totalTriples);
+            this.logger.info(`Number of triples added to the database +${totalTriples}`);
+
             await this.operationIdService.updateOperationIdStatus(
                 operationId,
                 blockchain,

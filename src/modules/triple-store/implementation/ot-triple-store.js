@@ -9,6 +9,8 @@ import {
     BASE_NAMED_GRAPHS,
     TRIPLE_ANNOTATION_LABEL_PREDICATE,
     TRIPLES_VISIBILITY,
+    DKG_CONTAINS_PREDICATE,
+    DKG_HAS_KA_PREDICATE,
 } from '../../../constants/constants.js';
 
 class OtTripleStore {
@@ -321,6 +323,44 @@ class OtTripleStore {
                 }
             }
         }
+    }
+
+    async insertIntoCurrentGraph(repository, kaUALs, visibility) {
+        const triples = kaUALs
+            .map((ual) => `<current:graph> <${DKG_CONTAINS_PREDICATE}> <${ual}/${visibility}> .`)
+            .join('\n');
+
+        const query = `
+            INSERT DATA {
+                GRAPH <${BASE_NAMED_GRAPHS.CURRENT}> {
+                    ${triples}
+                }
+            }
+        `;
+
+        await this.queryVoid(repository, query);
+    }
+
+    async insertKCKAConnectionsMetadata(repository, kcUAL, kaUALs, visibility) {
+        const triples = kaUALs
+            .map((ual) => {
+                const graphWithVisibility = `${ual}/${visibility}`;
+                return [
+                    `<${kcUAL}> <${DKG_HAS_KA_PREDICATE}> <${ual}> .`,
+                    `<${kcUAL}> <${DKG_CONTAINS_PREDICATE}> <${graphWithVisibility}> .`,
+                ].join('\n');
+            })
+            .join('\n');
+
+        const query = `
+            INSERT DATA {
+                GRAPH <${BASE_NAMED_GRAPHS.METADATA}> {
+                    ${triples}
+                }
+            }
+        `;
+
+        await this.queryVoid(repository, query);
     }
 
     async deleteKnowledgeCollectionNamedGraphs(repository, namedGraphs) {

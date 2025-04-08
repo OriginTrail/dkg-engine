@@ -150,6 +150,7 @@ export const BASE_NAMED_GRAPHS = {
     UNIFIED: 'unified:graph',
     HISTORICAL_UNIFIED: 'historical-unified:graph',
     METADATA: 'metadata:graph',
+    CURRENT: 'current:graph',
 };
 
 export const REQUIRED_MODULES = [
@@ -259,6 +260,10 @@ export const TRANSACTION_PRIORITY = {
 
 export const V0_PRIVATE_ASSERTION_PREDICATE =
     'https://ontology.origintrail.io/dkg/1.0#privateAssertionID';
+
+export const DKG_CONTAINS_PREDICATE = 'https://ontology.origintrail.io/dkg/1.0#hasNamedGraph';
+
+export const DKG_HAS_KA_PREDICATE = 'https://ontology.origintrail.io/dkg/1.0#hasKnowledgeAsset';
 
 const require = createRequire(import.meta.url);
 
