@@ -277,8 +277,8 @@ class BlockchainModuleManager extends BaseModuleManager {
         ]);
     }
 
-    async isActiveProofPeriodStillValid(blockchain) {
-        return this.callImplementationFunction(blockchain, 'isActiveProofPeriodStillValid');
+    async getActiveProofPeriodStatus(blockchain) {
+        return this.callImplementationFunction(blockchain, 'getActiveProofPeriodStatus');
     }
 
     async createChallenge(blockchain) {
