@@ -153,7 +153,7 @@ class ProofingService {
     async getAndPersistNewChallenge(blockchainId, latestChallenge) {
         // Node has challenge for previous period need to get new one
         // Get new challenge
-        const newChallenge = await this.blockchainModuleManager.getNewChallenge(blockchainId);
+        const newChallenge = await this.blockchainModuleManager.createChallenge(blockchainId);
         // Persist new challenge
         if (
             latestChallenge.epoch === newChallenge.epoch &&

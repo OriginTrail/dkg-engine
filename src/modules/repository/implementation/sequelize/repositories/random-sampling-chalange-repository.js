@@ -19,7 +19,7 @@ class RandomSamplingChallengeRepository {
                 epoch,
                 sentSuccessfully: false,
             },
-            order: [['createAt', 'DESC']], // Should this be camel case
+            order: [['createdAt', 'DESC']], // Should this be camel case ?
             limit,
         });
     }
