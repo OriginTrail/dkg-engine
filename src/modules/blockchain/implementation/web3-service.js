@@ -1143,10 +1143,10 @@ class Web3Service {
         );
     }
 
-    async isActiveProofPeriodStillValid() {
+    async getActiveProofPeriodStatus() {
         return this.callContractFunction(
             this.contracts.RandomSamplingChallenge,
-            'isActiveProofPeriodStillValid',
+            'getActiveProofPeriodStatus',
             [],
         );
     }

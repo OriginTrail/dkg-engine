@@ -78,7 +78,7 @@ class ProofingService {
         // Implement your proofing logic here
         this.logger.debug(`Running proofing mechanism for ${blockchainId}`);
         // Check what is current proof period {isValid, proofPeriod}
-        const isProofPeriodValid = await this.blockchainModuleManager.isActiveProofPeriodStillValid(
+        const isProofPeriodValid = await this.blockchainModuleManager.getActiveProofPeriodStatus(
             blockchainId,
         );
         const latestChallenge =
