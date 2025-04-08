@@ -488,7 +488,7 @@
                         "enabled": false,
                         "package": "./blockchain/implementation/ot-parachain/ot-parachain-service.js",
                         "config": {
-                            "hubContractAddress": "0xE233B5b78853A62B1E11eBe88bF083e25b0a57a6",
+                            "hubContractAddress": "0xe233b5b78853a62b1e11ebe88bf083e25b0a57a6",
                             "rpcEndpoints": [
                                 "https://lofar-testnet.origin-trail.network",
                                 "https://lofar-testnet.origintrail.network"
@@ -581,8 +581,8 @@
                             },
                             "hubContractAddress": {
                                 "base:84532": "0xf21CE8f8b01548D97DCFb36869f1ccB0814a4e05",
-                                "otp:20430": "0xd7d073b560412c6A7F33dD670d323D01061E5DEb",
-                                "gnosis:10200": "0xE233B5b78853A62B1E11eBe88bF083e25b0a57a6"
+                                "otp:20430": "0xe233b5b78853a62b1e11ebe88bf083e25b0a57a6",
+                                "gnosis:10200": "0x2c08AC4B630c009F709521e56Ac385A6af70650f"
                             }
                         }
                     }
