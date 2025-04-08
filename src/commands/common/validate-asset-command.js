@@ -116,18 +116,19 @@ class ValidateAssetCommand extends Command {
                     blockchain,
                     paranetId,
                 );
-                if (nodesAccessPolicy === PARANET_ACCESS_POLICY.CURATED) {
+                if (nodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED) {
                     const identityId = await this.blockchainModuleManager.getIdentityId(blockchain);
-                    const isCuratedNode = await this.blockchainModuleManager.isCuratedNode(
-                        blockchain,
-                        paranetId,
-                        identityId,
-                    );
-                    if (!isCuratedNode) {
+                    const isPermissionedNode =
+                        await this.blockchainModuleManager.isPermissionedNode(
+                            blockchain,
+                            paranetId,
+                            identityId,
+                        );
+                    if (!isPermissionedNode) {
                         await this.handleError(
                             operationId,
                             blockchain,
-                            `Node is not part of curated paranet ${paranetId}  because node with id ${identityId} is not a curated node.`,
+                            `Node is not part of permissioned paranet ${paranetId}  because node with id ${identityId} is not a permissioned node.`,
                             this.errorType,
                             true,
                         );
@@ -137,7 +138,7 @@ class ValidateAssetCommand extends Command {
                     await this.handleError(
                         operationId,
                         blockchain,
-                        `Paranet ${paranetId} is not curated paranet.`,
+                        `Paranet ${paranetId} is not permissioned paranet.`,
                         this.errorType,
                         true,
                     );

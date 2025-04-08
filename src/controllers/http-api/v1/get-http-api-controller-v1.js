@@ -3,7 +3,6 @@ import {
     OPERATION_STATUS,
     ERROR_TYPE,
     TRIPLES_VISIBILITY,
-    V6_CONTENT_STORAGE_MAP,
 } from '../../../constants/constants.js';
 import BaseController from '../base-http-api-controller.js';
 
@@ -40,56 +39,25 @@ class GetController extends BaseController {
             OPERATION_STATUS.IN_PROGRESS,
         );
 
-        let tripleStoreMigrationAlreadyExecuted = false;
-        try {
-            tripleStoreMigrationAlreadyExecuted =
-                (await this.fileService.readFile(
-                    '/root/ot-node/data/migrations/v8DataMigration',
-                )) === 'MIGRATED';
-        } catch (e) {
-            this.logger.warn(`No triple store migration file error: ${e}`);
-        }
         let blockchain;
         let contract;
         let knowledgeCollectionId;
         let knowledgeAssetId;
         try {
             const { paranetUAL, includeMetadata, contentType } = req.body;
-            let { id } = req.body;
+            const ual = req.body.id;
             ({ blockchain, contract, knowledgeCollectionId, knowledgeAssetId } =
-                this.ualService.resolveUAL(id));
+                this.ualService.resolveUAL(ual));
             contract = contract.toLowerCase();
-            id = this.ualService.deriveUAL(
-                blockchain,
-                contract,
-                knowledgeCollectionId,
-                knowledgeAssetId,
-            );
 
-            this.logger.info(`Get for ${id} with operation id ${operationId} initiated.`);
-
-            // Get assertionId - datasetRoot
-            //
-
-            const isV6Contract = Object.values(V6_CONTENT_STORAGE_MAP).some((ca) =>
-                ca.toLowerCase().includes(contract.toLowerCase()),
-            );
-
-            const commandSequence = [];
-            commandSequence.push('getValidateAssetCommand');
-
-            if (!tripleStoreMigrationAlreadyExecuted && isV6Contract) {
-                commandSequence.push('getAssertionMerkleRootCommand');
-            }
-
-            commandSequence.push('getFindShardCommand');
+            this.logger.info(`Get for ${ual} with operation id ${operationId} initiated.`);
 
             await this.commandExecutor.add({
-                name: commandSequence[0],
-                sequence: commandSequence.slice(1),
+                name: 'getCommand',
+                sequence: [],
                 delay: 0,
                 data: {
-                    ual: id,
+                    ual,
                     includeMetadata,
                     blockchain,
                     contract,
@@ -97,7 +65,6 @@ class GetController extends BaseController {
                     knowledgeAssetId,
                     operationId,
                     paranetUAL,
-                    isV6Contract,
                     contentType: contentType ?? TRIPLES_VISIBILITY.ALL,
                 },
                 transactional: false,

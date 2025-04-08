@@ -137,7 +137,7 @@ export const PARANET_SYNC_RETRY_DELAY_MS = 60 * 1000;
 
 export const PARANET_ACCESS_POLICY = {
     OPEN: 0,
-    CURATED: 1,
+    PERMISSIONED: 1,
 };
 
 export const TRIPLE_STORE_REPOSITORIES = {
@@ -345,7 +345,7 @@ export const NETWORK_MESSAGE_TYPES = {
     },
 };
 
-export const PARANET_NODES_ACCESS_POLICIES = ['OPEN', 'CURATED'];
+export const PARANET_NODES_ACCESS_POLICIES = ['OPEN', 'PERMISSIONED'];
 
 export const NETWORK_MESSAGE_TIMEOUT_MILLS = {
     PUBLISH: {
@@ -355,7 +355,7 @@ export const NETWORK_MESSAGE_TIMEOUT_MILLS = {
         REQUEST: 60 * 1000,
     },
     GET: {
-        REQUEST: 5 * 60 * 1000,
+        REQUEST: 15 * 1000,
     },
     ASK: {
         REQUEST: 60 * 1000,
@@ -742,11 +742,11 @@ export const GET_LATEST_SERVICE_AGREEMENT_EXCLUDE_LATEST_TOKEN_ID = 1;
  */
 export const HTTP_API_ROUTES = {
     v0: {
-        publish: {
-            method: 'post',
-            path: '/publish',
-            options: { rateLimit: true },
-        },
+        // publish: {
+        //     method: 'post',
+        //     path: '/publish',
+        //     options: { rateLimit: true },
+        // },
         // update: {
         //     method: 'post',
         //     path: '/update',
@@ -757,11 +757,11 @@ export const HTTP_API_ROUTES = {
             path: '/query',
             options: {},
         },
-        'local-store': {
-            method: 'post',
-            path: '/local-store',
-            options: {},
-        },
+        // 'local-store': {
+        //     method: 'post',
+        //     path: '/local-store',
+        //     options: {},
+        // },
         get: {
             method: 'post',
             path: '/get',
