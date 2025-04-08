@@ -77,15 +77,15 @@ class ProofingService {
     async runProofing(blockchainId) {
         // Implement your proofing logic here
         this.logger.debug(`Running proofing mechanism for ${blockchainId}`);
-        // Check what is current proof period {isValid, proofPeriod}
-        const isProofPeriodValid = await this.blockchainModuleManager.getActiveProofPeriodStatus(
-            blockchainId,
-        );
+        // Check what is current proof period {isValid, activeProofPeriodStartBlock}
+        const activeProofPeriodStatus =
+            await this.blockchainModuleManager.getActiveProofPeriodStatus(blockchainId);
         const latestChallenge =
             await this.repositoryModuleManager.getActiveRandomSamplingChallengeRecord(blockchainId);
         if (
-            isProofPeriodValid.isValid &&
-            latestChallenge.proofPeriod === isProofPeriodValid.proofPeriod &&
+            activeProofPeriodStatus.isValid &&
+            latestChallenge.activeProofPeriodStartBlock ===
+                activeProofPeriodStatus.activeProofPeriodStartBlock &&
             latestChallenge.sentSuccessfully
         ) {
             if (!latestChallenge.finalized) {
@@ -157,7 +157,7 @@ class ProofingService {
         // Persist new challenge
         if (
             latestChallenge.epoch === newChallenge.epoch &&
-            latestChallenge.proofPeriod === newChallenge.proofPeriod
+            latestChallenge.activeProofPeriodStartBlock === newChallenge.activeProofPeriodStartBlock
         ) {
             // Delete old challenge before inserting new one
             await this.repositoryModuleManager.deleteRandomSamplingChallengeRecord(latestChallenge);
