@@ -261,9 +261,9 @@ export const TRANSACTION_PRIORITY = {
 export const V0_PRIVATE_ASSERTION_PREDICATE =
     'https://ontology.origintrail.io/dkg/1.0#privateAssertionID';
 
-export const DKG_CONTAINS_PREDICATE = 'https://ontology.origintrail.io/dkg/1.0#hasNamedGraph';
-
-export const DKG_HAS_KA_PREDICATE = 'https://ontology.origintrail.io/dkg/1.0#hasKnowledgeAsset';
+export const DKG_PREDICATE = 'https://ontology.origintrail.io/dkg/1.0#';
+export const HAS_NAMED_GRAPH_SUFFIX = 'hasNamedGraph';
+export const HAS_KNOWLEDGE_ASSET_SUFFIX = 'hasKnowledgeAsset';
 
 const require = createRequire(import.meta.url);
 

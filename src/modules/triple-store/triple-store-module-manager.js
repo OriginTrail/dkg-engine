@@ -129,19 +129,9 @@ class TripleStoreModuleManager extends BaseModuleManager {
         }
     }
 
-    async insertIntoCurrentGraph(implementationName, repository, uals, visibility) {
+    async insertMetadataTriples(implementationName, repository, kcUal, uals, visibility) {
         if (this.getImplementation(implementationName)) {
-            return this.getImplementation(implementationName).module.insertIntoCurrentGraph(
-                repository,
-                uals,
-                visibility,
-            );
-        }
-    }
-
-    async insertKCKAConnectionsMetadata(implementationName, repository, kcUal, uals, visibility) {
-        if (this.getImplementation(implementationName)) {
-            return this.getImplementation(implementationName).module.insertKCKAConnectionsMetadata(
+            return this.getImplementation(implementationName).module.insertMetadataTriples(
                 repository,
                 kcUal,
                 uals,

@@ -9,8 +9,9 @@ import {
     BASE_NAMED_GRAPHS,
     TRIPLE_ANNOTATION_LABEL_PREDICATE,
     TRIPLES_VISIBILITY,
-    DKG_CONTAINS_PREDICATE,
-    DKG_HAS_KA_PREDICATE,
+    DKG_PREDICATE,
+    HAS_KNOWLEDGE_ASSET_SUFFIX,
+    HAS_NAMED_GRAPH_SUFFIX,
 } from '../../../constants/constants.js';
 
 class OtTripleStore {
@@ -325,9 +326,17 @@ class OtTripleStore {
         }
     }
 
+    async insertMetadataTriples(repository, kcUAL, kaUALs, visibility) {
+        await this.insertIntoCurrentGraph(repository, kaUALs, visibility);
+        await this.insertKCKAConnectionsMetadata(repository, kcUAL, kaUALs, visibility);
+    }
+
     async insertIntoCurrentGraph(repository, kaUALs, visibility) {
         const triples = kaUALs
-            .map((ual) => `<current:graph> <${DKG_CONTAINS_PREDICATE}> <${ual}/${visibility}> .`)
+            .map(
+                (ual) =>
+                    `<current:graph> <${DKG_PREDICATE}${HAS_NAMED_GRAPH_SUFFIX}> <${ual}/${visibility}> .`,
+            )
             .join('\n');
 
         const query = `
@@ -346,8 +355,8 @@ class OtTripleStore {
             .map((ual) => {
                 const graphWithVisibility = `${ual}/${visibility}`;
                 return [
-                    `<${kcUAL}> <${DKG_HAS_KA_PREDICATE}> <${ual}> .`,
-                    `<${kcUAL}> <${DKG_CONTAINS_PREDICATE}> <${graphWithVisibility}> .`,
+                    `<${kcUAL}> <${DKG_PREDICATE}${HAS_KNOWLEDGE_ASSET_SUFFIX}> <${ual}> .`,
+                    `<${kcUAL}> <${DKG_PREDICATE}${HAS_NAMED_GRAPH_SUFFIX}> <${graphWithVisibility}> .`,
                 ].join('\n');
             })
             .join('\n');

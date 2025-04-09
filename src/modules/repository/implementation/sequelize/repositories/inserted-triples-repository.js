@@ -1,3 +1,5 @@
+import { Sequelize } from 'sequelize';
+
 class TriplesInsertCountRepository {
     constructor(models) {
         this.model = models.triples_insert_count;
@@ -8,14 +10,22 @@ class TriplesInsertCountRepository {
         return record?.count || 0;
     }
 
-    async increment(by = 1) {
-        const [record] = await this.model.findOrCreate({ where: {}, defaults: { count: 0 } });
-        record.count += by;
-        await record.save();
-    }
+    async increment(by = 1, options = {}) {
+        const [record] = await this.model.findOrCreate({
+            where: {},
+            defaults: { count: 0 },
+            ...options,
+        });
 
-    async reset() {
-        await this.model.update({ count: 0 }, { where: {} });
+        await this.model.update(
+            {
+                count: Sequelize.literal(`count + ${by}`),
+            },
+            {
+                where: { id: record.id },
+                ...options,
+            },
+        );
     }
 }
 
