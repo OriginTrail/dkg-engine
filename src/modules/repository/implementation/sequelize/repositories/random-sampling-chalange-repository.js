@@ -12,12 +12,10 @@ class RandomSamplingChallengeRepository {
         return this.model.update(randomSamplingChallenge, options);
     }
 
-    async getActiveRandomSamplingChalangeForBlockchainId(blockchainId, epoch, limit = 1) {
+    async getLatestRandomSamplingChallengeRecordForBlockchainId(blockchainId, limit = 1) {
         return this.model.findAll({
             where: {
                 blockchainId,
-                epoch,
-                sentSuccessfully: false,
             },
             order: [['createdAt', 'DESC']], // Should this be camel case ?
             limit,

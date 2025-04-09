@@ -467,8 +467,10 @@ class RepositoryModuleManager extends BaseModuleManager {
         return this.getRepository('finality_status').getFinalityAcksCount(ual, options);
     }
 
-    async getLatestChallenge(blockchainId) {
-        return this.getRepository('random_sampling_challenge').getLatestChallenge(blockchainId);
+    async getLatestRandomSamplingChallengeRecordForBlockchainId(blockchainId, limit = 1) {
+        return this.getRepository(
+            'random_sampling_challenge',
+        ).getLatestRandomSamplingChallengeRecordForBlockchainId(blockchainId, limit);
     }
 
     async updateRandomSamplingChallengeRecord(randomSamplingChallenge, options) {

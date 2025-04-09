@@ -81,7 +81,9 @@ class ProofingService {
         const activeProofPeriodStatus =
             await this.blockchainModuleManager.getActiveProofPeriodStatus(blockchainId);
         const latestChallenge =
-            await this.repositoryModuleManager.getActiveRandomSamplingChallengeRecord(blockchainId);
+            await this.repositoryModuleManager.getLatestRandomSamplingChallengeRecordForBlockchainId(
+                blockchainId,
+            );
         if (
             activeProofPeriodStatus.isValid &&
             latestChallenge.activeProofPeriodStartBlock ===
@@ -109,7 +111,7 @@ class ProofingService {
                             latestChallenge,
                         );
                     }
-                    await this.prepareAndSendProof(blockchainId, latestChallenge);
+                    // If not enough time has passed, do nothing
                 } else {
                     // Score is 0, proof was not sent or was invalid, node thinks it sent valid proof
                     latestChallenge.sentSuccessfully = false;
