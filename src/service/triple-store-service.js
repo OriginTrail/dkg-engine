@@ -114,7 +114,10 @@ class TripleStoreService {
                     TRIPLES_VISIBILITY.PUBLIC,
                 ),
             );
-            totalNumberOfTriplesInserted += publicKnowledgeAssetsUALs.length; // one current metadata triple for each pulibc KA
+            // current metadata triple relates to which named graph that represents Knowledge Asset hold the lates(current) data
+            // so for each Knowledge Asset there will be one current metadata triple
+            // in this case there are publicKnowledgeAssetsUALs.length number of named graphs created so for each there will be one current metadata triple
+            totalNumberOfTriplesInserted += publicKnowledgeAssetsUALs.length;
 
             publicKnowledgeAssetsUALs.forEach((ual) => {
                 const graphWithVisibility = `${ual}/public`;
@@ -184,7 +187,10 @@ class TripleStoreService {
                         TRIPLES_VISIBILITY.PRIVATE,
                     ),
                 );
-                totalNumberOfTriplesInserted += privateKnowledgeAssetsUALs.length; // one current metadata triple for each private KA
+                // current metadata triple relates to which named graph that represents Knowledge Asset hold the lates(current) data
+                // so for each Knowledge Asset there will be one current metadata triple
+                // in this case there are privateKnowledgeAssetsUALs.length number of named graphs created so for each there will be one current metadata triple
+                totalNumberOfTriplesInserted += privateKnowledgeAssetsUALs.length;
 
                 privateKnowledgeAssetsUALs.forEach((ual) => {
                     const graphWithVisibility = `${ual}/private`;

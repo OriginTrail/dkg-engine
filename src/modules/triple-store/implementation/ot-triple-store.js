@@ -327,31 +327,14 @@ class OtTripleStore {
     }
 
     async insertMetadataTriples(repository, kcUAL, kaUALs, visibility) {
-        await this.insertIntoCurrentGraph(repository, kaUALs, visibility);
-        await this.insertKCKAConnectionsMetadata(repository, kcUAL, kaUALs, visibility);
-    }
-
-    async insertIntoCurrentGraph(repository, kaUALs, visibility) {
-        const triples = kaUALs
+        const currentTriples = kaUALs
             .map(
                 (ual) =>
                     `<current:graph> <${DKG_PREDICATE}${HAS_NAMED_GRAPH_SUFFIX}> <${ual}/${visibility}> .`,
             )
             .join('\n');
 
-        const query = `
-            INSERT DATA {
-                GRAPH <${BASE_NAMED_GRAPHS.CURRENT}> {
-                    ${triples}
-                }
-            }
-        `;
-
-        await this.queryVoid(repository, query);
-    }
-
-    async insertKCKAConnectionsMetadata(repository, kcUAL, kaUALs, visibility) {
-        const triples = kaUALs
+        const connectionTriples = kaUALs
             .map((ual) => {
                 const graphWithVisibility = `${ual}/${visibility}`;
                 return [
@@ -363,8 +346,12 @@ class OtTripleStore {
 
         const query = `
             INSERT DATA {
+                GRAPH <${BASE_NAMED_GRAPHS.CURRENT}> {
+                    ${currentTriples}
+                }
+
                 GRAPH <${BASE_NAMED_GRAPHS.METADATA}> {
-                    ${triples}
+                    ${connectionTriples}
                 }
             }
         `;
