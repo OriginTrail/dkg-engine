@@ -5,7 +5,6 @@ set -e
 # Configs
 BLAZEGRAPH_JAR="blazegraph.jar"
 PROPERTIES_FILE="./old.properties"
-TRIPLE_LOG="triples_inserted.txt"
 BASE_DIR="/mnt/pegasus_node_06_volume/ot-node"
 
 log() {
