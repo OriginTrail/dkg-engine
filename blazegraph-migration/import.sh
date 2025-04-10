@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LOG_FILE="migration_$(date +%Y%m%d_%H%M%S).log"
+LOG_FILE="migration_import_$(date +%Y%m%d_%H%M%S).log"
 CURL_TIMEOUT=300
 MAX_RETRIES=3
 CHUNK_DELAY=2
