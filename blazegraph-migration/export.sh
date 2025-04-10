@@ -71,6 +71,15 @@ for NAMESPACE in "$@"; do
   sudo systemctl start blazegraph.service
 done
 
+log "Stopping blazegraph service to remove old journal..."
+sudo systemctl stop blazegraph.service
+
+log "Removing old Blazegraph journal..."
+rm -f blazegraph.jnl
+
+log "Creating new journal on blazegraph start..."
+sudo systemctl start blazegraph.service
+
 log "Resetting triple log..."
 REPO_PW=$(grep ^REPOSITORY_PASSWORD= "$BASE_DIR/current/.env" | cut -d '=' -f2)
 mysql -u root -p"$REPO_PW" operationaldb -e "UPDATE triples_insert_count SET count = 0 WHERE id = 1;"
