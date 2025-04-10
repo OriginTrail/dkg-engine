@@ -5,7 +5,6 @@ set -e
 # Configs
 BLAZEGRAPH_JAR="blazegraph.jar"
 PROPERTIES_FILE="./old.properties"
-TRIPLE_LOG="triples_inserted.txt"
 BASE_DIR="/mnt/pegasus_node_06_volume/ot-node"
 
 log() {
@@ -76,7 +75,7 @@ log "Starting otnode service..."
 sudo systemctl start otnode.service
 
 log "Resetting triple log..."
-REPO_PW=$(grep ^REPOSITORY_PASSWORD= "$BASE_DIR/.env" | cut -d '=' -f2)
+REPO_PW=$(grep ^REPOSITORY_PASSWORD= "$BASE_DIR/current/.env" | cut -d '=' -f2)
 mysql -u root -p"$REPO_PW" operationaldb -e "UPDATE triples_insert_count SET count = 0 WHERE id = 1;"
 
 log "Migration completed for all namespaces."
