@@ -59,9 +59,7 @@ class OTNode {
         await this.initializeCommandExecutor();
 
         await this.initializeRouters();
-        if (process.env.NODE_ENV !== 'test') {
-            await this.startNetworkModule();
-        }
+        await this.startNetworkModule();
         this.resumeCommandExecutor();
         this.logger.info('Node is up and running!');
     }
@@ -264,17 +262,8 @@ class OTNode {
     }
 
     async startNetworkModule() {
-        try {
-            this.logger.info('Starting network module');
-            const networkModuleManager = this.container.resolve('networkModuleManager');
-            await networkModuleManager.start();
-            this.logger.info('Network module started successfully');
-        } catch (error) {
-            this.logger.error(
-                `Unable to start network module. Error message: ${error.message} OT-node shutting down...`,
-            );
-            this.stop(1);
-        }
+        const networkModuleManager = this.container.resolve('networkModuleManager');
+        await networkModuleManager.start();
     }
 
     async initializeShardingTableService() {
