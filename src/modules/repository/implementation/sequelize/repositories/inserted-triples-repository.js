@@ -11,18 +11,12 @@ class TriplesInsertCountRepository {
     }
 
     async increment(by = 1, options = {}) {
-        const [record] = await this.model.findOrCreate({
-            where: {},
-            defaults: { count: 0 },
-            ...options,
-        });
-
-        await this.model.update(
+        await this.model.upsert(
             {
-                count: Sequelize.literal(`count + ${by}`),
+                id: 1,
+                count: Sequelize.literal(`COALESCE(count, 0) + ${by}`),
             },
             {
-                where: { id: record.id },
                 ...options,
             },
         );
