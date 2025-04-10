@@ -48,6 +48,7 @@ process_chunk() {
     local chunk_file="$1"
     local chunk_num="$2"
     local blazegraph_url="$3"
+    local total_chunks="$4"
     local retry_count=0
     local success=false
 
@@ -67,7 +68,7 @@ process_chunk() {
 
             if [ "$chunk_lines" -eq "$modified" ]; then
                 success=true
-                log_message "INFO" "Successfully processed chunk $chunk_num of $total_chunks"
+                log_message "INFO" "Successfully processed chunk $chunk_num/$total_chunks"
                 rm "$chunk_file"
             else
                 log_message "ERROR" "Chunk $chunk_num processing failed: line count mismatch (expected: $chunk_lines, modified: $modified)"
@@ -119,7 +120,7 @@ process_chunks() {
 
     local chunk_num=1
     for chunk in "${chunks[@]}"; do
-        job_pool_run process_chunk "$chunk" "$chunk_num" "$blazegraph_url"
+        job_pool_run process_chunk "$chunk" "$chunk_num" "$blazegraph_url" "$total_chunks"
         chunk_num=$((chunk_num + 1))
     done
 
@@ -141,9 +142,9 @@ process_chunks() {
 
 . job_pool.sh
 
-job_pool_init 10 0
+job_pool_init 5 0
 
-chunk_size=100000
+chunk_size=50000
 target_folders=($(find_target_folders))
 
 if [ ${#target_folders[@]} -eq 0 ]; then
