@@ -193,7 +193,7 @@ class GetCommand extends Command {
             }
         }
         const localGetResultValid = await this.validationService.validateGetResponse(
-            responseData,
+            assertion,
             blockchain,
             contract,
             knowledgeCollectionId,

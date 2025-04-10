@@ -140,7 +140,7 @@ class ValidationService {
     ) {
         if (assertion.public) {
             // We can only validate whole collection not particular KA
-            if (!knowledgeAssetId) {
+            if (knowledgeAssetId) {
                 const publicAssertion = assertion?.public;
 
                 const filteredPublic = [];
@@ -162,7 +162,7 @@ class ValidationService {
                 );
 
                 try {
-                    await this.validationService.validateDatasetOnBlockchain(
+                    await this.validateDatasetOnBlockchain(
                         publicKnowledgeAssetsTriplesGrouped.map((t) => t.sort()).flat(),
                         blockchain,
                         contract,
@@ -170,10 +170,7 @@ class ValidationService {
                     );
 
                     if (assertion?.private?.length)
-                        await this.validationService.validatePrivateMerkleRoot(
-                            assertion.public,
-                            assertion.private,
-                        );
+                        await this.validatePrivateMerkleRoot(assertion.public, assertion.private);
                 } catch (e) {
                     return false;
                 }
