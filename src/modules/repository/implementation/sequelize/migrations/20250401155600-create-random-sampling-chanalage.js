@@ -9,14 +9,14 @@ export const up = async ({ context: { queryInterface, Sequelize } }) => {
             allowNull: false,
             type: Sequelize.STRING,
         },
-        start_date: {
-            allowNull: false,
-            type: Sequelize.DATE,
-        },
-        end_date: {
-            allowNull: false,
-            type: Sequelize.DATE,
-        },
+        // start_date: {
+        //     allowNull: false,
+        //     type: Sequelize.DATE,
+        // },
+        // end_date: {
+        //     allowNull: false,
+        //     type: Sequelize.DATE,
+        // },
         knowledge_collection_id: {
             allowNull: false,
             type: Sequelize.INTEGER,

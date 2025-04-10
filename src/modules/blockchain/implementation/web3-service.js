@@ -1145,40 +1145,35 @@ class Web3Service {
 
     async getActiveProofPeriodStatus() {
         return this.callContractFunction(
-            this.contracts.RandomSamplingChallenge,
+            this.contracts.RandomSamplingStorage,
             'getActiveProofPeriodStatus',
             [],
         );
     }
 
     async createChallenge() {
-        return this._executeContractFunction(
-            this.contracts.RandomSamplingChallenge,
-            'createChallenge',
-            [],
-        );
+        return this.queueTransaction(this.contracts.RandomSampling, 'createChallenge', []);
     }
 
     async getNodeChallenge(nodeId) {
-        return this.callContractFunction(this.contracts.RandomSamplingChallenge, 'getChallenge', [
+        return this.callContractFunction(this.contracts.RandomSamplingStorage, 'getNodeChallenge', [
             nodeId,
         ]);
     }
 
     async submitProof(chunk, merkleProof) {
-        return this._executeContractFunction(
-            this.contracts.RandomSamplingChallenge,
-            'submitProof',
-            [chunk, merkleProof],
-        );
+        return this.queueTransaction(this.contracts.RandomSampling, 'submitProof', [
+            chunk,
+            merkleProof,
+        ]);
     }
 
     async getNodeEpochProofPeriodScore(nodeId, epoch, proofPeriodStartBlock) {
-        return this.callContractFunction(
-            this.contracts.RandomSamplingChallenge,
-            'getProofPeriodScore',
-            [nodeId, epoch, proofPeriodStartBlock],
-        );
+        return this.callContractFunction(this.contracts.RandomSampling, 'getProofPeriodScore', [
+            nodeId,
+            epoch,
+            proofPeriodStartBlock,
+        ]);
     }
 
     // SUPPORT FOR OLD CONTRACTS

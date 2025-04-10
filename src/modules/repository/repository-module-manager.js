@@ -473,6 +473,13 @@ class RepositoryModuleManager extends BaseModuleManager {
         ).getLatestRandomSamplingChallengeRecordForBlockchainId(blockchainId, limit);
     }
 
+    async createRandomSamplingChallengeRecord(randomSamplingChallenge, options) {
+        return this.getRepository('random_sampling_challenge').createRandomSamplingChallengeRecord(
+            randomSamplingChallenge,
+            options,
+        );
+    }
+
     async updateRandomSamplingChallengeRecord(randomSamplingChallenge, options) {
         return this.getRepository('random_sampling_challenge').updateRandomSamplingChallengeRecord(
             randomSamplingChallenge,

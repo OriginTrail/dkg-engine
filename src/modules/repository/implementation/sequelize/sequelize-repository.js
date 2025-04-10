@@ -19,6 +19,7 @@ import UserRepository from './repositories/user-repository.js';
 // import MissedParanetAssetRepository from './repositories/missed-paranet-asset-repository.js';
 // import ParanetSyncedAssetRepository from './repositories/paranet-synced-asset-repository.js';
 import FinalityStatusRepository from './repositories/finality-status-repository.js';
+import RandomSamplingChallengeRepository from './repositories/random-sampling-chalange-repository.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -49,6 +50,7 @@ class SequelizeRepository {
             token: new TokenRepository(this.models),
             user: new UserRepository(this.models),
             finality_status: new FinalityStatusRepository(this.models),
+            random_sampling_challenge: new RandomSamplingChallengeRepository(this.models),
         };
     }
 

@@ -179,16 +179,17 @@ class GetCommand extends Command {
             assertion,
             ...(includeMetadata && metadata && { metadata }),
         };
-        let localGetPassed = false;
-        if (
-            Array.isArray(assertion?.public) &&
-            paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED
-        ) {
-            const assertionShouldHavePrivateTriples = assertion?.public?.some((triple) =>
-                triple.includes(`${PRIVATE_ASSERTION_PREDICATE}`),
-            );
-            if (assertionShouldHavePrivateTriples) {
-                localGetPassed = assertion?.private?.length > 0;
+        let localGetPassed = true;
+        if (paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED) {
+            if (Array.isArray(assertion?.public)) {
+                const assertionShouldHavePrivateTriples = assertion?.public?.some((triple) =>
+                    triple.includes(`${PRIVATE_ASSERTION_PREDICATE}`),
+                );
+                if (assertionShouldHavePrivateTriples) {
+                    localGetPassed = assertion?.private?.length > 0;
+                }
+            } else {
+                localGetPassed = false;
             }
         }
         const localGetResultValid = await this.validationService.validateGetResponse(

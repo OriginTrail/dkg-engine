@@ -279,7 +279,8 @@ export const ABIs = {
     AskStorage: require('dkg-evm-module/abi/AskStorage.json'),
     Chronos: require('dkg-evm-module/abi/Chronos.json'),
     Paranet: require('dkg-evm-module/abi/Paranet.json'),
-    RandomSamplingChallenge: require('dkg-evm-module/abi/RandomSampling.json'),
+    RandomSampling: require('dkg-evm-module/abi/RandomSampling.json'),
+    RandomSamplingStorage: require('dkg-evm-module/abi/RandomSamplingStorage.json'),
 };
 
 export const CONTRACT_FUNCTION_PRIORITY = {};
@@ -1020,6 +1021,6 @@ export const V6_CONTENT_STORAGE_MAP = {
     OTP_DEVNET: '0xABd59A9aa71847F499d624c492d3903dA953d67a',
 };
 
-export const PROOFING_INTERVAL = 1 * 1000;
+export const PROOFING_INTERVAL = 12 * 1000;
 export const PROOFING_MAX_ATTEMPTS = 60;
 export const REORG_PROOFING_BUFFER = 24 * 1000;
