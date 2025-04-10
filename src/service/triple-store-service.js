@@ -69,8 +69,9 @@ class TripleStoreService {
         const privateHashTriples = [];
         const tripleSet = new Set();
 
-        let totalNumberOfTriplesInserted =
-            (triples?.public?.length ?? 0) + (triples?.private?.length ?? 0);
+        let totalNumberOfTriplesInserted = triples?.public
+            ? triples.public.length + (triples.private?.length ?? 0)
+            : triples?.length ?? 0;
 
         publicAssertion.forEach((triple) => {
             if (triple.startsWith(`<${PRIVATE_HASH_SUBJECT_PREFIX}`)) {
