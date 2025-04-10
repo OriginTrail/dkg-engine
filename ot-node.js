@@ -59,7 +59,7 @@ class OTNode {
         await this.initializeCommandExecutor();
 
         await this.initializeRouters();
-        await this.startNetworkModule();
+        // await this.startNetworkModule();
         this.resumeCommandExecutor();
         this.logger.info('Node is up and running!');
     }
