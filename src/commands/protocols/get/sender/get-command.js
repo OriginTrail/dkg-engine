@@ -195,7 +195,7 @@ class GetCommand extends Command {
             }
         }
         const localGetResultValid = await this.validateResponse(
-            responseData,
+            assertion,
             blockchain,
             contract,
             knowledgeCollectionId,
@@ -461,7 +461,15 @@ class GetCommand extends Command {
     ) {
         if (responseData?.assertion?.public) {
             // We can only validate whole collection not particular KA
-            if (!knowledgeAssetId) {
+            if (
+                knowledgeAssetId &&
+                typeof knowledgeAssetId === 'object' &&
+                Object.keys(knowledgeAssetId).length === 3 &&
+                'startTokenId' in knowledgeAssetId &&
+                'endTokenId' in knowledgeAssetId &&
+                'burned' in knowledgeAssetId &&
+                Array.isArray(knowledgeAssetId.burned)
+            ) {
                 const publicAssertion = responseData?.assertion?.public;
 
                 const filteredPublic = [];
