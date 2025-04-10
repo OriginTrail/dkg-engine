@@ -3,7 +3,6 @@ import { kcTools } from 'assertion-tools';
 import {
     PROOFING_INTERVAL,
     TRIPLES_VISIBILITY,
-    TRIPLE_STORE_REPOSITORY,
     OPERATION_ID_STATUS,
     PROOFING_MAX_ATTEMPTS,
     REORG_PROOFING_BUFFER,
@@ -109,8 +108,8 @@ class ProofingService {
         if (
             activeProofPeriodStatus.isValid &&
             latestChallenge?.activeProofPeriodStartBlock ===
-                activeProofPeriodStatus.activeProofPeriodStartBlock &&
-            latestChallenge?.sentSuccessfully
+                activeProofPeriodStatus.activeProofPeriodStartBlock.toNumber()
+            // && latestChallenge?.sentSuccessfully
         ) {
             if (!latestChallenge.finalized) {
                 this.logger.debug('Processing non-finalized challenge');
@@ -121,7 +120,7 @@ class ProofingService {
                     blockchainId,
                     nodeId,
                     latestChallenge.epoch,
-                    latestChallenge.proofPeriodStartBlock,
+                    latestChallenge.activeProofPeriodStartBlock,
                 );
                 this.logger.debug('Retrieved node score', { nodeId, score });
 
@@ -135,8 +134,10 @@ class ProofingService {
                             challengeId: latestChallenge.id,
                         });
                         latestChallenge.finalized = true;
-                        await this.repositoryModuleManager.updateRandomSamplingChallengeRecord(
-                            latestChallenge,
+                        await this.repositoryModuleManager.setCompletedAndFinalizedRandomSamplingChallengeRecord(
+                            latestChallenge.id,
+                            true,
+                            true,
                         );
                     } else {
                         this.logger.debug('Waiting for reorg buffer to pass before finalizing');
@@ -148,7 +149,7 @@ class ProofingService {
                     });
                     latestChallenge.sentSuccessfully = false;
                     latestChallenge.finalized = false;
-                    await this.repositoryModuleManager.updateRandomSamplingChallengeRecord(
+                    await this.repositoryModuleManager.setCompletedAndFinalizedRandomSamplingChallengeRecord(
                         latestChallenge,
                     );
                     await this.prepareAndSendProof(blockchainId, latestChallenge, nodeId);
@@ -235,8 +236,10 @@ class ProofingService {
             sentSuccessfully: false,
             finalized: false,
         };
-        await this.repositoryModuleManager.createRandomSamplingChallengeRecord(newChallengeRecord);
-        return newChallenge;
+        const newRecord = await this.repositoryModuleManager.createRandomSamplingChallengeRecord(
+            newChallengeRecord,
+        );
+        return newRecord;
     }
 
     async fetchAndProcessAssertion(blockchainId, ual, latestChallenge) {
@@ -292,28 +295,46 @@ class ProofingService {
                 data.assertion.public.length + (data.assertion?.private?.length || 0)
             } nquads found for asset with ual: ${ual}`,
         );
-        if (data.assertion && data.assertion?.public?.length > 0) {
-            // TODO: Do this correctly there is no implementation of deleteKnowledgeCollection in tripleStoreService
-            await this.tripleStoreService.deleteKnowledgeCollection(
-                TRIPLE_STORE_REPOSITORY.DKG,
-                ual,
-            );
-        }
-        await this.tripleStoreService.insertKnowledgeCollection(
-            TRIPLE_STORE_REPOSITORY.DKG,
-            ual,
-            data.assertion,
-        );
+        // if (data.assertion && data.assertion?.public?.length > 0) {
+        //     // TODO: Do this correctly there is no implementation of deleteKnowledgeCollection in tripleStoreService
+        //     await this.tripleStoreService.deleteKnowledgeCollection(
+        //         TRIPLE_STORE_REPOSITORY.DKG,
+        //         ual,
+        //     );
+        // }
+        // await this.tripleStoreService.insertKnowledgeCollection(
+        //     TRIPLE_STORE_REPOSITORY.DKG,
+        //     ual,
+        //     data.assertion,
+        // );
 
         return data.assertion;
     }
 
     async calculateAndSubmitProof(data, newChallenge, blockchainId) {
         // Calculate proof
-        const proof = kcTools.calculateProof(data, newChallenge);
+        const CHUNK_SIZE = 32; // Added constant definition
+        const proof = kcTools.calculateMerkleProof(
+            data.public,
+            CHUNK_SIZE,
+            newChallenge.chunkNumber,
+        );
         // Submit proof
         // How to validate result? (we do it in next iteration)
-        await this.blockchainModuleManager.submitProof(blockchainId, proof);
+        const chunk = kcTools.splitIntoChunks(data.public)[newChallenge.chunkNumber - 1];
+        await this.blockchainModuleManager.submitProof(blockchainId, chunk, proof.proof);
+        const score = await this.blockchainModuleManager.getNodeEpochProofPeriodScore(
+            blockchainId,
+            await this.blockchainModuleManager.getIdentityId(blockchainId),
+            newChallenge.epoch,
+            newChallenge.activeProofPeriodStartBlock,
+        );
+        if (score.toNumber() > 0) {
+            await this.repositoryModuleManager.setCompletedRandomSamplingChallengeRecord(
+                newChallenge.id,
+                true,
+            );
+        }
 
         return proof;
     }

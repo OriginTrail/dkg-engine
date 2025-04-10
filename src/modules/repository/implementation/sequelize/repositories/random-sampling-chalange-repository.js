@@ -12,6 +12,25 @@ class RandomSamplingChallengeRepository {
         return this.model.update(randomSamplingChallenge, options);
     }
 
+    async setCompletedRandomSamplingChallengeRecord(randomSamplingChallengeId, completed, options) {
+        return this.model.update(
+            { completed },
+            { where: { id: randomSamplingChallengeId }, ...options },
+        );
+    }
+
+    async setCompletedAndFinalizedRandomSamplingChallengeRecord(
+        randomSamplingChallengeId,
+        completed,
+        finalized,
+        options,
+    ) {
+        return this.model.update(
+            { completed, finalized },
+            { where: { id: randomSamplingChallengeId }, ...options },
+        );
+    }
+
     async getLatestRandomSamplingChallengeRecordForBlockchainId(blockchainId) {
         return this.model.findOne({
             where: {

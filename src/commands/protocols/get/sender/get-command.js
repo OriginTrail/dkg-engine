@@ -1,3 +1,4 @@
+import { kcTools } from 'assertion-tools';
 import Command from '../../../command.js';
 import {
     OPERATION_ID_STATUS,
@@ -7,6 +8,7 @@ import {
     NETWORK_MESSAGE_TYPES,
     NETWORK_MESSAGE_TIMEOUT_MILLS,
     PRIVATE_ASSERTION_PREDICATE,
+    PRIVATE_HASH_SUBJECT_PREFIX,
 } from '../../../../constants/constants.js';
 
 class GetCommand extends Command {
@@ -192,8 +194,8 @@ class GetCommand extends Command {
                 localGetPassed = false;
             }
         }
-        const localGetResultValid = await this.validationService.validateGetResponse(
-            assertion,
+        const localGetResultValid = await this.validateResponse(
+            responseData,
             blockchain,
             contract,
             knowledgeCollectionId,
@@ -298,8 +300,8 @@ class GetCommand extends Command {
 
             for (const result of succsesfulResult) {
                 // eslint-disable-next-line no-await-in-loop
-                const isResponseValid = await this.validationService.validateGetResponse(
-                    result.responseData.assertion,
+                const isResponseValid = await this.validateResponse(
+                    result.responseData,
                     blockchain,
                     contract,
                     knowledgeCollectionId,
@@ -448,6 +450,60 @@ class GetCommand extends Command {
             success: response.header.messageType === NETWORK_MESSAGE_TYPES.RESPONSES.ACK,
             responseData: response.data,
         };
+    }
+
+    async validateResponse(
+        responseData,
+        blockchain,
+        contract,
+        knowledgeCollectionId,
+        knowledgeAssetId,
+    ) {
+        if (responseData?.assertion?.public) {
+            // We can only validate whole collection not particular KA
+            if (!knowledgeAssetId) {
+                const publicAssertion = responseData?.assertion?.public;
+
+                const filteredPublic = [];
+                const privateHashTriples = [];
+                publicAssertion.forEach((triple) => {
+                    if (triple.startsWith(`<${PRIVATE_HASH_SUBJECT_PREFIX}`)) {
+                        privateHashTriples.push(triple);
+                    } else {
+                        filteredPublic.push(triple);
+                    }
+                });
+
+                const publicKnowledgeAssetsTriplesGrouped = kcTools.groupNquadsBySubject(
+                    filteredPublic,
+                    true,
+                );
+                publicKnowledgeAssetsTriplesGrouped.push(
+                    ...kcTools.groupNquadsBySubject(privateHashTriples, true),
+                );
+
+                try {
+                    await this.validationService.validateDatasetOnBlockchain(
+                        publicKnowledgeAssetsTriplesGrouped.map((t) => t.sort()).flat(),
+                        blockchain,
+                        contract,
+                        knowledgeCollectionId,
+                    );
+
+                    if (responseData.assertion?.private?.length)
+                        await this.validationService.validatePrivateMerkleRoot(
+                            responseData.assertion.public,
+                            responseData.assertion.private,
+                        );
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     /**

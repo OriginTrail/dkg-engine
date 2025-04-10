@@ -1169,11 +1169,11 @@ class Web3Service {
     }
 
     async getNodeEpochProofPeriodScore(nodeId, epoch, proofPeriodStartBlock) {
-        return this.callContractFunction(this.contracts.RandomSampling, 'getProofPeriodScore', [
-            nodeId,
-            epoch,
-            proofPeriodStartBlock,
-        ]);
+        return this.callContractFunction(
+            this.contracts.RandomSamplingStorage,
+            'getNodeEpochProofPeriodScore',
+            [nodeId, epoch, proofPeriodStartBlock],
+        );
     }
 
     // SUPPORT FOR OLD CONTRACTS

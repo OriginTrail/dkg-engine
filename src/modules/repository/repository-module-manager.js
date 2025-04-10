@@ -487,9 +487,24 @@ class RepositoryModuleManager extends BaseModuleManager {
         );
     }
 
-    async deleteRandomSamplingChallengeRecord(randomSamplingChallenge, options) {
-        return this.getRepository('random_sampling_challenge').deleteRandomSamplingChallengeRecord(
-            randomSamplingChallenge,
+    async setCompletedRandomSamplingChallengeRecord(randomSamplingChallengeId, completed, options) {
+        return this.getRepository(
+            'random_sampling_challenge',
+        ).setCompletedRandomSamplingChallengeRecord(randomSamplingChallengeId, completed, options);
+    }
+
+    async setCompletedAndFinalizedRandomSamplingChallengeRecord(
+        randomSamplingChallengeId,
+        completed,
+        finalized,
+        options,
+    ) {
+        return this.getRepository(
+            'random_sampling_challenge',
+        ).setCompletedAndFinalizedRandomSamplingChallengeRecord(
+            randomSamplingChallengeId,
+            completed,
+            finalized,
             options,
         );
     }
