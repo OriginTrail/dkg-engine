@@ -214,8 +214,11 @@ Run the Triple Store.
 To use default Triple Store (`blazegraph`), download the exec file and run it with the following command in the separate process:
 
 ```bash
-java -server -Xmx4g -jar blazegraph.jar
+java -server -Xmx6g -jar blazegraph.jar
 ```
+
+It's highly recommended to use a larger heap size (6GB or 8GB), as the DKG node will require a lot of memory.
+
 Make sure that you have a MySQL instance up and running on the default port 3306, and that the password matches one in .env (REPOSITORY_PASSWORD). This is crucial, otherwise the nodes won't be able to start.
 
 Then, depending on the OS, use one of the scripts in order to run the local network with provided number of nodes (minimal amount of nodes should be 6):
