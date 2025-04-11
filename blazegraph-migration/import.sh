@@ -140,7 +140,7 @@ process_chunks() {
     fi
 }
 
-. job_pool.sh
+. ./current/blazegraph_migration/job_pool.sh
 
 job_pool_init 5 0
 
