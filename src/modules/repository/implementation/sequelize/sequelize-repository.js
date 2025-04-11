@@ -18,6 +18,7 @@ import TokenRepository from './repositories/token-repository.js';
 import UserRepository from './repositories/user-repository.js';
 // import MissedParanetAssetRepository from './repositories/missed-paranet-asset-repository.js';
 // import ParanetSyncedAssetRepository from './repositories/paranet-synced-asset-repository.js';
+import TriplesInsertCountRepository from './repositories/inserted-triples-repository.js';
 import FinalityStatusRepository from './repositories/finality-status-repository.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -49,6 +50,7 @@ class SequelizeRepository {
             token: new TokenRepository(this.models),
             user: new UserRepository(this.models),
             finality_status: new FinalityStatusRepository(this.models),
+            inserted_triples: new TriplesInsertCountRepository(this.models),
         };
     }
 
