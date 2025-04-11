@@ -4,7 +4,7 @@ set -e
 
 # Configs
 BLAZEGRAPH_JAR="blazegraph.jar"
-PROPERTIES_FILE="./old.properties"
+
 if [ "$#" -lt 2 ]; then
   echo "Usage: $0 <base_dir> <namespace1> [namespace2 ...]"
   exit 1
@@ -17,11 +17,6 @@ log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
 
-if [ "$#" -lt 1 ]; then
-  echo "Usage: $0 <namespace1> [namespace2 ...]"
-  exit 1
-fi
-
 log "Stopping otnode service..."
 sudo systemctl stop otnode.service
 
@@ -31,6 +26,7 @@ for NAMESPACE in "$@"; do
   EXPORT_SUBFOLDER="$EXPORT_DIR/$FOLDER_NAME"
   EXPORT_FILE="$EXPORT_SUBFOLDER/data.nq.gz"
   QUAD_COUNT_FILE="OLD_QUAD_COUNT_${NAMESPACE}.txt"
+  PROPERTIES_FILE="$EXPORT_DIR/${NAMESPACE}.properties"
   BLAZEGRAPH_URL="http://localhost:9999/blazegraph/namespace/$NAMESPACE/sparql"
 
   log "Processing namespace: $NAMESPACE"
@@ -47,9 +43,28 @@ for NAMESPACE in "$@"; do
   log "Stopping blazegraph service..."
   sudo systemctl stop blazegraph.service
 
-  log "Exporting KB to N-Quads..."
+  log "Creating properties file for $NAMESPACE..."
   mkdir -p "$EXPORT_DIR"
+  cat > "$PROPERTIES_FILE" <<EOF
+com.bigdata.namespace.${NAMESPACE}.spo.com.bigdata.btree.BTree.branchingFactor=1024
+com.bigdata.rdf.store.AbstractTripleStore.textIndex=false
+com.bigdata.rdf.store.AbstractTripleStore.justify=false
+com.bigdata.rdf.store.AbstractTripleStore.statementIdentifiers=false
+com.bigdata.rdf.store.AbstractTripleStore.axiomsClass=com.bigdata.rdf.axioms.NoAxioms
+com.bigdata.rdf.sail.namespace=${NAMESPACE}
+com.bigdata.rdf.store.AbstractTripleStore.quads=true
+com.bigdata.namespace.${NAMESPACE}.lex.com.bigdata.btree.BTree.branchingFactor=400
+com.bigdata.rdf.store.AbstractTripleStore.geoSpatial=false
+com.bigdata.journal.Journal.groupCommit=false
+com.bigdata.rdf.sail.isolatableIndices=false
+com.bigdata.rdf.store.AbstractTripleStore.enableRawRecordsSupport=false
+com.bigdata.rdf.store.AbstractTripleStore.Options.inlineTextLiterals=true
+com.bigdata.rdf.store.AbstractTripleStore.Options.maxInlineTextLength=128
+com.bigdata.rdf.store.AbstractTripleStore.Options.blobsThreshold=256
+com.bigdata.journal.AbstractJournal.file=${BASE_DIR}/blazegraph.jnl
+EOF
 
+  log "Exporting KB to N-Quads..."
   java -Xmx6g -cp "$BLAZEGRAPH_JAR" \
     com.bigdata.rdf.sail.ExportKB \
     -outdir "$EXPORT_DIR" \
@@ -81,7 +96,7 @@ log "Stopping blazegraph service to remove old journal..."
 sudo systemctl stop blazegraph.service
 
 log "Removing old Blazegraph journal..."
-rm -f blazegraph.jnl
+rm -f "${BASE_DIR}/blazegraph.jnl"
 
 log "Creating new journal on blazegraph start..."
 sudo systemctl start blazegraph.service
