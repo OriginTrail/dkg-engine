@@ -17,14 +17,23 @@ log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
 
+# Ensure Blazegraph and Otnode are started on script exit (success or error)
+cleanup() {
+  log "Ensuring Blazegraph service is running..."
+  sudo systemctl start blazegraph.service
+  log "Ensuring Otnode service is running..."
+  sudo systemctl start otnode.service
+}
+trap cleanup EXIT
+
 log "Stopping otnode service..."
 sudo systemctl stop otnode.service
+sleep 10
 
 for NAMESPACE in "$@"; do
   FOLDER_NAME=$(echo "$NAMESPACE" | tr '-' '_')
   EXPORT_DIR="$BASE_DIR/$FOLDER_NAME"
-  EXPORT_SUBFOLDER="$EXPORT_DIR/$FOLDER_NAME"
-  EXPORT_FILE="$EXPORT_SUBFOLDER/data.nq.gz"
+  EXPORT_FILE="$EXPORT_DIR/data.nq.gz"
   QUAD_COUNT_FILE="OLD_QUAD_COUNT_${NAMESPACE}.txt"
   PROPERTIES_FILE="$EXPORT_DIR/${NAMESPACE}.properties"
   BLAZEGRAPH_URL="http://localhost:9999/blazegraph/namespace/$NAMESPACE/sparql"
@@ -37,11 +46,17 @@ for NAMESPACE in "$@"; do
     --data-urlencode 'query=SELECT (COUNT(*) AS ?total) WHERE { GRAPH ?g { ?s ?p ?o } }' \
     | tail -n 1)
 
+  if ! [[ "$QUAD_COUNT" =~ ^[0-9]+$ ]]; then
+    log "❌ Invalid quad count received: '$QUAD_COUNT'"
+    exit 1
+  fi
+
   echo "$QUAD_COUNT" > "$QUAD_COUNT_FILE"
   log "Quad count: $QUAD_COUNT (saved to $QUAD_COUNT_FILE)"
 
   log "Stopping blazegraph service..."
   sudo systemctl stop blazegraph.service
+  sleep 10
 
   log "Creating properties file for $NAMESPACE..."
   mkdir -p "$EXPORT_DIR"
@@ -74,7 +89,7 @@ EOF
   log "Export complete. Output should be in $EXPORT_FILE"
 
   if [ ! -f "$EXPORT_FILE" ]; then
-    log "Export file not found: $EXPORT_FILE"
+    log "❌ Export file not found: $EXPORT_FILE"
     exit 1
   fi
 
@@ -82,30 +97,30 @@ EOF
   LINE_COUNT=$(zcat "$EXPORT_FILE" | wc -l)
 
   if [ "$LINE_COUNT" -eq "$QUAD_COUNT" ]; then
-    log "Line count matches quad count: $LINE_COUNT lines"
+    log "✅ Line count matches quad count: $LINE_COUNT lines"
   else
-    log "MISMATCH for $NAMESPACE: exported $LINE_COUNT lines, expected $QUAD_COUNT"
+    log "❌ MISMATCH for $NAMESPACE: exported $LINE_COUNT lines, expected $QUAD_COUNT"
     exit 1
   fi
 
   log "Starting blazegraph service..."
   sudo systemctl start blazegraph.service
+  until nc -z localhost 9999; do
+    sleep 1
+  done
 done
 
 log "Stopping blazegraph service to remove old journal..."
 sudo systemctl stop blazegraph.service
-
+sleep 10
 log "Removing old Blazegraph journal..."
 rm -f "${BASE_DIR}/blazegraph.jnl"
 
 log "Creating new journal on blazegraph start..."
 sudo systemctl start blazegraph.service
 
-log "Resetting triple log..."
+log "Resetting triple log in MySQL..."
 REPO_PW=$(grep ^REPOSITORY_PASSWORD= "$BASE_DIR/current/.env" | cut -d '=' -f2)
 mysql -u root -p"$REPO_PW" operationaldb -e "UPDATE triples_insert_count SET count = 0 WHERE id = 1;"
 
-log "Starting otnode service..."
-sudo systemctl start otnode.service
-
-log "Migration completed for all namespaces."
+log "✅ Migration completed for all namespaces."
