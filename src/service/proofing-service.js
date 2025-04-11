@@ -6,6 +6,7 @@ import {
     OPERATION_ID_STATUS,
     PROOFING_MAX_ATTEMPTS,
     REORG_PROOFING_BUFFER,
+    PRIVATE_HASH_SUBJECT_PREFIX,
 } from '../constants/constants.js';
 
 class ProofingService {
@@ -312,16 +313,44 @@ class ProofingService {
     }
 
     async calculateAndSubmitProof(data, newChallenge, blockchainId) {
+        const publicAssertion = data.public;
+
+        const filteredPublic = [];
+        const privateHashTriples = [];
+        publicAssertion.forEach((triple) => {
+            if (triple.startsWith(`<${PRIVATE_HASH_SUBJECT_PREFIX}`)) {
+                privateHashTriples.push(triple);
+            } else {
+                filteredPublic.push(triple);
+            }
+        });
+
+        let publicKnowledgeAssetsTriplesGrouped = kcTools.groupNquadsBySubject(
+            filteredPublic,
+            true,
+        );
+        publicKnowledgeAssetsTriplesGrouped.push(
+            ...kcTools.groupNquadsBySubject(privateHashTriples, true),
+        );
+
+        publicKnowledgeAssetsTriplesGrouped = publicKnowledgeAssetsTriplesGrouped
+            .map((t) => t.sort())
+            .flat();
+
         // Calculate proof
         const CHUNK_SIZE = 32; // Added constant definition
         const proof = kcTools.calculateMerkleProof(
-            data.public,
+            publicKnowledgeAssetsTriplesGrouped,
             CHUNK_SIZE,
             newChallenge.chunkNumber,
         );
+        console.log(publicKnowledgeAssetsTriplesGrouped);
         // Submit proof
         // How to validate result? (we do it in next iteration)
-        const chunk = kcTools.splitIntoChunks(data.public)[newChallenge.chunkNumber - 1];
+        const chunk = kcTools.splitIntoChunks(publicKnowledgeAssetsTriplesGrouped)[
+            newChallenge.chunkNumber
+        ];
+        console.log('chunk', kcTools.splitIntoChunks(publicKnowledgeAssetsTriplesGrouped).length);
         await this.blockchainModuleManager.submitProof(blockchainId, chunk, proof.proof);
         const score = await this.blockchainModuleManager.getNodeEpochProofPeriodScore(
             blockchainId,
@@ -329,6 +358,25 @@ class ProofingService {
             newChallenge.epoch,
             newChallenge.activeProofPeriodStartBlock,
         );
+        const kcToolsMR = kcTools.calculateMerkleRootFromProof(
+            kcTools.splitIntoChunks(publicKnowledgeAssetsTriplesGrouped),
+            newChallenge.chunkNumber,
+            proof.proof,
+        );
+        console.log('kcToolsMR', kcToolsMR);
+        const root = kcTools.calculateMerkleRoot(publicKnowledgeAssetsTriplesGrouped);
+        const onchainRoot =
+            await this.blockchainModuleManager.getKnowledgeCollectionLatestMerkleRoot(
+                blockchainId,
+                '0xd5724171c2b7f0aa717a324626050bd05767e2c6',
+                newChallenge.knowledgeCollectionId,
+            );
+        if (root !== onchainRoot) {
+            this.logger.error('Root mismatch', {
+                root,
+                onchainRoot,
+            });
+        }
         if (score.toNumber() > 0) {
             await this.repositoryModuleManager.setCompletedRandomSamplingChallengeRecord(
                 newChallenge.id,
