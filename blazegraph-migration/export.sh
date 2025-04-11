@@ -5,7 +5,13 @@ set -e
 # Configs
 BLAZEGRAPH_JAR="blazegraph.jar"
 PROPERTIES_FILE="./old.properties"
-BASE_DIR="/mnt/pegasus_node_06_volume/ot-node"
+if [ "$#" -lt 2 ]; then
+  echo "Usage: $0 <base_dir> <namespace1> [namespace2 ...]"
+  exit 1
+fi
+
+BASE_DIR="$1"
+shift
 
 log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
