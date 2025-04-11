@@ -2,7 +2,7 @@
 
 get_mysql_password() {
     local base_dir=$(dirname "$0")
-    grep ^REPOSITORY_PASSWORD= "$base_dir/current/.env" | cut -d '=' -f2
+    grep ^REPOSITORY_PASSWORD= "./current/.env" | cut -d '=' -f2
 }
 
 get_inserted_triples_count() {
@@ -17,12 +17,12 @@ get_blazegraph_count() {
       -H "Accept: text/tab-separated-values" \
       --data-urlencode 'query=SELECT (COUNT(*) AS ?total) WHERE { GRAPH ?g { ?s ?p ?o } }' \
       | tail -n 1)
-    
+
     if ! [[ "$QUAD_COUNT" =~ ^[0-9]+$ ]]; then
         echo "Error: Failed to get valid count from Blazegraph" >&2
         return 1
     fi
-    
+
     echo "$QUAD_COUNT"
     return 0
 }
@@ -39,12 +39,12 @@ get_old_count() {
 get_uninserted_count() {
     local namespace=$1
     local chunks_dir="${namespace}/chunks"
-    
+
     if [ ! -d "$chunks_dir" ]; then
         echo "Error: Chunks directory not found at $chunks_dir" >&2
         return 1
     fi
-    
+
     local total_lines=0
     for chunk_file in "$chunks_dir"/chunk*; do
         if [ -f "$chunk_file" ]; then
@@ -52,7 +52,7 @@ get_uninserted_count() {
             total_lines=$((total_lines + lines))
         fi
     done
-    
+
     echo "$total_lines"
     return 0
 }
@@ -60,12 +60,12 @@ get_uninserted_count() {
 check_quad_count() {
     local namespace=$1
     local old_count_file="OLD_QUAD_COUNT_${namespace}.txt"
-    
+
     local old_count=$(get_old_count "$old_count_file") || return 1
     local repo_pw=$(get_mysql_password)
     local current_count=$(get_blazegraph_count "$namespace")
     local inserted_triples=$(get_inserted_triples_count "$repo_pw")
-    
+
     local uninserted_count=0
     if uninserted=$(get_uninserted_count "$namespace"); then
         uninserted_count=$uninserted
@@ -73,10 +73,10 @@ check_quad_count() {
         echo "Feel free to run the import.sh script again."
         echo "*Note: Some chunks may need to be manually imported"
     fi
-    
+
     local actual_count=$((current_count - inserted_triples + uninserted_count))
     local expected_total=$((old_count))
-    
+
     if [ "$expected_total" -eq "$actual_count" ]; then
         if [ $uninserted_count -eq 0 ]; then
             echo "[SUCCESS] The migration has been completed successfully! There are no uninserted quads."
