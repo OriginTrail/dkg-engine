@@ -131,7 +131,7 @@ process_chunks() {
 
     log_message "INFO" "Chunk processing completed for namespace: $namespace"
 
-    if [ $remaining_chunks_count -eq 0 ]; then
+    if [ $remaining_chunks_count -eq 1 ]; then
         log_message "INFO" "All chunks processed successfully."
         return 0
     else
@@ -140,7 +140,7 @@ process_chunks() {
     fi
 }
 
-. ./current/blazegraph_migration/job_pool.sh
+. ./current/blazegraph-migration/job_pool.sh
 
 job_pool_init 5 0
 

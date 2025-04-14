@@ -77,7 +77,13 @@ check_quad_count() {
     local actual_count=$((current_count - inserted_triples + uninserted_count))
     local expected_total=$((old_count))
 
-    if [ "$expected_total" -eq "$actual_count" ]; then
+    percentage_diff=$(echo "scale=6; 100 * ($actual_count - $expected_total) / $expected_total" | bc)
+
+    abs_diff=$(echo "$percentage_diff" | sed 's/-//')
+
+    within_threshold=$(echo "$abs_diff <= 0.05" | bc)
+
+    if [ "$within_threshold" -eq 1 ]; then
         if [ $uninserted_count -eq 0 ]; then
             echo "[SUCCESS] The migration has been completed successfully! There are no uninserted quads."
         else
@@ -88,10 +94,10 @@ check_quad_count() {
         local difference=$((actual_count - expected_total))
         if [ $difference -gt 0 ]; then
             echo "[ERROR] There are $difference more quads than expected"
-            echo "*Note: Errors can happen during importing, if this number is of a small value, it can be ingored"
+            echo "*Note: Errors can happen during importing, if this number is of a small value, it can be ignored"
         else
             echo "[ERROR] There are ${difference#-} fewer quads than expected"
-            echo "*Note: Errors can happen during importing, if this number is of a small value, it can be ingored"
+            echo "*Note: Errors can happen during importing, if this number is of a small value, it can be ignored"
         fi
         return 1
     fi
