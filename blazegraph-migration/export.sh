@@ -33,7 +33,7 @@ sleep 10
 for NAMESPACE in "$@"; do
   FOLDER_NAME=$(echo "$NAMESPACE" | tr '-' '_')
   EXPORT_DIR="$BASE_DIR/$FOLDER_NAME"
-  EXPORT_FILE="$EXPORT_DIR/data.nq.gz"
+  EXPORT_FILE="$EXPORT_DIR/$FOLDER_NAME/data.nq.gz"
   QUAD_COUNT_FILE="OLD_QUAD_COUNT_${NAMESPACE}.txt"
   PROPERTIES_FILE="$EXPORT_DIR/${NAMESPACE}.properties"
   BLAZEGRAPH_URL="http://localhost:9999/blazegraph/namespace/$NAMESPACE/sparql"
