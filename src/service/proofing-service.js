@@ -269,7 +269,7 @@ class ProofingService {
         attempt = 0;
         do {
             // eslint-disable-next-line no-await-in-loop
-            await setTimeout(PROOFING_INTERVAL);
+            await setTimeout(500);
             // eslint-disable-next-line no-await-in-loop
             getResult = await this.operationIdService.getOperationIdRecord(getOperationId);
             attempt += 1;
@@ -347,9 +347,8 @@ class ProofingService {
         console.log(publicKnowledgeAssetsTriplesGrouped);
         // Submit proof
         // How to validate result? (we do it in next iteration)
-        const chunk = kcTools.splitIntoChunks(publicKnowledgeAssetsTriplesGrouped)[
-            newChallenge.chunkNumber
-        ];
+        const chunks = kcTools.splitIntoChunks(publicKnowledgeAssetsTriplesGrouped);
+        const chunk = chunks[newChallenge.chunkNumber];
         console.log('chunk', kcTools.splitIntoChunks(publicKnowledgeAssetsTriplesGrouped).length);
         await this.blockchainModuleManager.submitProof(blockchainId, chunk, proof.proof);
         const score = await this.blockchainModuleManager.getNodeEpochProofPeriodScore(
@@ -358,8 +357,8 @@ class ProofingService {
             newChallenge.epoch,
             newChallenge.activeProofPeriodStartBlock,
         );
-        const kcToolsMR = kcTools.calculateMerkleRootFromProof(
-            kcTools.splitIntoChunks(publicKnowledgeAssetsTriplesGrouped),
+        const kcToolsMR = kcTools.computeMerkleRootFromProof(
+            chunks,
             newChallenge.chunkNumber,
             proof.proof,
         );
