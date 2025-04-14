@@ -22,7 +22,7 @@ cleanup() {
   log "Ensuring Blazegraph service is running..."
   sudo systemctl start blazegraph.service
   log "Ensuring Otnode service is running..."
-  sudo systemctl start otnode.service
+  sudo systemctl restart otnode.service
 }
 trap cleanup EXIT
 
