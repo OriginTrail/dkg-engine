@@ -1162,10 +1162,21 @@ class Web3Service {
     }
 
     async submitProof(chunk, merkleProof) {
-        return this.queueTransaction(this.contracts.RandomSampling, 'submitProof', [
-            chunk,
-            merkleProof,
-        ]);
+        return new Promise((resolve, reject) => {
+            this.queueTransaction(
+                this.contracts.RandomSampling,
+                'submitProof',
+                [chunk, merkleProof],
+                (result) => {
+                    // callback
+                    if (result.error) {
+                        reject(result.error);
+                    } else {
+                        resolve(result.result);
+                    }
+                },
+            );
+        });
     }
 
     async getNodeEpochProofPeriodScore(nodeId, epoch, proofPeriodStartBlock) {

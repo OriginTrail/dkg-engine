@@ -87,13 +87,11 @@ class ProofingService {
     async runProofing(blockchainId) {
         // Implement your proofing logic here
         this.logger.debug(`Running proofing mechanism for ${blockchainId}`);
-        this.logger.trace('Fetching active proof period status');
 
         const nodeId = await this.blockchainModuleManager.getIdentityId(blockchainId);
         // Check what is current proof period {isValid, activeProofPeriodStartBlock}
         const activeProofPeriodStatus =
             await this.blockchainModuleManager.getActiveProofPeriodStatus(blockchainId);
-        this.logger.trace('Fetching latest challenge record');
         const latestChallenge =
             await this.repositoryModuleManager.getLatestRandomSamplingChallengeRecordForBlockchainId(
                 blockchainId,
@@ -104,16 +102,19 @@ class ProofingService {
             activeProofPeriodStartBlock: activeProofPeriodStatus.activeProofPeriodStartBlock,
             latestChallengeBlock: latestChallenge?.activeProofPeriodStartBlock,
             sentSuccessfully: latestChallenge?.sentSuccessfully,
+            blockchainId,
         });
 
         if (
             activeProofPeriodStatus.isValid &&
             latestChallenge?.activeProofPeriodStartBlock ===
-                activeProofPeriodStatus.activeProofPeriodStartBlock.toNumber()
-            // && latestChallenge?.sentSuccessfully
+                activeProofPeriodStatus.activeProofPeriodStartBlock.toNumber() &&
+            latestChallenge?.sentSuccessfully
         ) {
             if (!latestChallenge.finalized) {
-                this.logger.debug('Processing non-finalized challenge');
+                this.logger.debug('Processing non-finalized challenge for blockchain:', {
+                    blockchainId,
+                });
 
                 // We have latest challenge and we sent valid proof
                 // Check onchain if it has score
@@ -123,18 +124,18 @@ class ProofingService {
                     latestChallenge.epoch,
                     latestChallenge.activeProofPeriodStartBlock,
                 );
-                this.logger.debug('Retrieved node score', { nodeId, score });
+                this.logger.debug('Retrieved node score for blockchain:', {
+                    blockchainId,
+                    nodeId,
+                    score,
+                });
 
                 // If score is greater than 0 than proof was sent and was valid
                 // Ensure no reorgs happened by checking if it has score and enough time has passed and if possible mark it as finalized
                 if (score > 0) {
                     // Sent more than minute ago check onchain confirm it finalized and it's good
-                    console.log('latestChallenge.updatedAt', latestChallenge.updatedAt.getTime());
-                    console.log('Date.now()', Date.now());
-                    console.log('REORG_PROOFING_BUFFER', REORG_PROOFING_BUFFER);
-                    console.log(latestChallenge.updatedAt.getTime() - Date.now());
                     if (latestChallenge.updatedAt.getTime() + REORG_PROOFING_BUFFER <= Date.now()) {
-                        this.logger.info('Finalizing challenge', {
+                        this.logger.info('Finalizing challenge:', {
                             blockchainId,
                             challengeId: latestChallenge.id,
                         });
@@ -145,7 +146,13 @@ class ProofingService {
                             true,
                         );
                     } else {
-                        this.logger.debug('Waiting for reorg buffer to pass before finalizing');
+                        this.logger.info(
+                            'Waiting for reorg buffer to pass before finalizing for blockchain:',
+                            {
+                                blockchainId,
+                                challengeId: latestChallenge.id,
+                            },
+                        );
                     }
                 } else {
                     this.logger.warn('Zero score detected, resetting challenge status', {
@@ -162,7 +169,7 @@ class ProofingService {
             }
             // If finalized is do nothing, wait for next proof
         } else {
-            this.logger.info('Preparing new proof', { blockchainId });
+            this.logger.info('Preparing new proof for blockchain:', { blockchainId });
             // Node needs to get new challenge or Node sent wrong proof
             await this.prepareAndSendProof(blockchainId, latestChallenge, nodeId);
         }
@@ -183,14 +190,14 @@ class ProofingService {
 
             const ual = this.ualService.deriveUAL(
                 blockchainId,
-                '0xd5724171c2b7f0aa717a324626050bd05767e2c6', // newChallenge.contractAddress,
+                newChallenge.contractAddress,
                 newChallenge.knowledgeCollectionId,
             );
 
             this.logger.debug('New challenge created', {
                 challengeId: newChallenge.id,
                 epoch: newChallenge.epoch,
-                // contractAddress: newChallenge.contractAddress,
+                contractAddress: newChallenge.contractAddress,
                 knowledgeCollectionId: newChallenge.knowledgeCollectionId,
             });
 
@@ -348,12 +355,10 @@ class ProofingService {
             CHUNK_SIZE,
             newChallenge.chunkNumber,
         );
-        console.log(publicKnowledgeAssetsTriplesGrouped);
         // Submit proof
         // How to validate result? (we do it in next iteration)
         const chunks = kcTools.splitIntoChunks(publicKnowledgeAssetsTriplesGrouped);
         const chunk = chunks[newChallenge.chunkNumber];
-        console.log('chunk', kcTools.splitIntoChunks(publicKnowledgeAssetsTriplesGrouped).length);
         await this.blockchainModuleManager.submitProof(blockchainId, chunk, proof.proof);
         const score = await this.blockchainModuleManager.getNodeEpochProofPeriodScore(
             blockchainId,
@@ -361,25 +366,6 @@ class ProofingService {
             newChallenge.epoch,
             newChallenge.activeProofPeriodStartBlock,
         );
-        const kcToolsMR = kcTools.computeMerkleRootFromProof(
-            chunks,
-            newChallenge.chunkNumber,
-            proof.proof,
-        );
-        console.log('kcToolsMR', kcToolsMR);
-        const root = kcTools.calculateMerkleRoot(publicKnowledgeAssetsTriplesGrouped);
-        const onchainRoot =
-            await this.blockchainModuleManager.getKnowledgeCollectionLatestMerkleRoot(
-                blockchainId,
-                '0xd5724171c2b7f0aa717a324626050bd05767e2c6',
-                newChallenge.knowledgeCollectionId,
-            );
-        if (root !== onchainRoot) {
-            this.logger.error('Root mismatch', {
-                root,
-                onchainRoot,
-            });
-        }
         if (score.toNumber() > 0) {
             await this.repositoryModuleManager.setCompletedRandomSamplingChallengeRecord(
                 newChallenge.id,
