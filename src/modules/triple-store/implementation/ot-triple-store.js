@@ -397,8 +397,7 @@ class OtTripleStore {
 
         const buildSingleGraph = async (visibilityType) => {
             const graph = `${ual}/${knowledgeAssetId}/${visibilityType}`;
-            const query = getConstructQuery([graph]);
-            return this.construct(repository, query);
+            return getConstructQuery([graph]);
         };
 
         const buildAllGraphs = async (filter) => {
@@ -415,7 +414,8 @@ class OtTripleStore {
 
         if (visibility === TRIPLES_VISIBILITY.PUBLIC || visibility === TRIPLES_VISIBILITY.ALL) {
             if (knowledgeAssetId) {
-                assertion.public = await buildSingleGraph(TRIPLES_VISIBILITY.PUBLIC);
+                const singleGraph = await buildSingleGraph(TRIPLES_VISIBILITY.PUBLIC);
+                assertion.public = await this.construct(repository, singleGraph);
             } else {
                 const publicGraphs = await buildAllGraphs('/public');
                 assertion.public = publicGraphs.length
@@ -426,7 +426,8 @@ class OtTripleStore {
 
         if (visibility === TRIPLES_VISIBILITY.PRIVATE || visibility === TRIPLES_VISIBILITY.ALL) {
             if (knowledgeAssetId) {
-                assertion.private = await buildSingleGraph(TRIPLES_VISIBILITY.PRIVATE);
+                const singleGraph = await buildSingleGraph(TRIPLES_VISIBILITY.PRIVATE);
+                assertion.private = await this.construct(repository, singleGraph);
             } else {
                 const privateGraphs = await buildAllGraphs('/private');
                 assertion.private = privateGraphs.length

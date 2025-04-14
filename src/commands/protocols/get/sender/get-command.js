@@ -52,8 +52,9 @@ class GetCommand extends Command {
             contentType,
             includeMetadata,
             paranetNodesAccessPolicy,
+            knowledgeAssetId,
         } = command.data;
-        const { knowledgeAssetId } = command.data;
+
         await this.operationIdService.updateOperationIdStatus(
             operationId,
             blockchain,
@@ -436,7 +437,7 @@ class GetCommand extends Command {
         knowledgeCollectionId,
         knowledgeAssetId,
     ) {
-        if (responseData?.assertion?.public || responseData?.assertion?.private) {
+        if (responseData?.assertion?.public) {
             // We can only validate whole collection not particular KA
             if (
                 !knowledgeAssetId ||
@@ -485,6 +486,10 @@ class GetCommand extends Command {
                 }
             }
 
+            return true;
+        }
+        if (!responseData?.assertion?.public && responseData?.assertion?.private) {
+            // if there is only private part skip validation
             return true;
         }
 
