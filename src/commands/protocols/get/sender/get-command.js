@@ -53,7 +53,7 @@ class GetCommand extends Command {
             includeMetadata,
             paranetNodesAccessPolicy,
         } = command.data;
-        let { knowledgeAssetId } = command.data;
+        const { knowledgeAssetId } = command.data;
         await this.operationIdService.updateOperationIdStatus(
             operationId,
             blockchain,
@@ -152,14 +152,7 @@ class GetCommand extends Command {
             promises.push(metadataPromise);
         }
 
-        const [assertionResult, metadata] = await Promise.all(promises);
-
-        const assertion = assertionResult.nquads;
-        knowledgeAssetId = {
-            startTokenId: assertionResult.startTokenId,
-            endTokenId: assertionResult.endTokenId,
-            burned: [],
-        };
+        const [assertion, metadata] = await Promise.all(promises);
 
         const responseData = {
             assertion,

@@ -369,16 +369,15 @@ class OtTripleStore {
 
     async getKnowledgeCollectionNamedGraphs(repository, ual, knowledgeCollectionId, visibility) {
         const assertion = {};
-        const allGraphs = [];
 
-        const getNamedGraphsQuery = (visFilter) => `
+        const getNamedGraphsQuery = `
             PREFIX dkg: <https://ontology.origintrail.io/dkg/1.0#>
     
             SELECT ?g WHERE {
                 GRAPH <metadata:graph> {
                     <${ual}> dkg:hasNamedGraph ?g .
                 }
-                ${visFilter ? `FILTER(CONTAINS(STR(?g), "${visFilter}"))` : ''}
+               
             }
         `;
 
@@ -397,18 +396,19 @@ class OtTripleStore {
             }
         `;
 
-        if (visibility === TRIPLES_VISIBILITY.PUBLIC || visibility === TRIPLES_VISIBILITY.ALL) {
-            const publicGraphsResult = await this.select(
-                repository,
-                getNamedGraphsQuery('/public'),
-            );
+        const publicPrivateMetadataConnections = await this.select(repository, getNamedGraphsQuery);
 
-            const publicGraphs = publicGraphsResult
+        if (visibility === TRIPLES_VISIBILITY.PUBLIC || visibility === TRIPLES_VISIBILITY.ALL) {
+            const publicGraphs = publicPrivateMetadataConnections
                 .map((row) => row.g)
-                .filter((graph) =>
-                    knowledgeCollectionId ? graph.includes(`/${knowledgeCollectionId}/`) : true,
+                .filter(
+                    (graph) =>
+                        graph.includes('/public') &&
+                        (knowledgeCollectionId
+                            ? graph.includes(`/${knowledgeCollectionId}/`)
+                            : true),
                 );
-            allGraphs.push(...publicGraphs);
+
             if (publicGraphs.length) {
                 const query = getConstructQuery(publicGraphs);
                 assertion.public = await this.construct(repository, query);
@@ -418,18 +418,16 @@ class OtTripleStore {
         }
 
         if (visibility === TRIPLES_VISIBILITY.PRIVATE || visibility === TRIPLES_VISIBILITY.ALL) {
-            const privateGraphsResult = await this.select(
-                repository,
-                getNamedGraphsQuery('/private'),
-            );
-
-            const privateGraphs = privateGraphsResult
+            const privateGraphs = publicPrivateMetadataConnections
                 .map((row) => row.g)
-                .filter((graph) =>
-                    knowledgeCollectionId ? graph.includes(`/${knowledgeCollectionId}/`) : true,
+                .filter(
+                    (graph) =>
+                        graph.includes('/private') &&
+                        (knowledgeCollectionId
+                            ? graph.includes(`/${knowledgeCollectionId}/`)
+                            : true),
                 );
 
-            allGraphs.push(...privateGraphs);
             if (privateGraphs.length) {
                 const query = getConstructQuery(privateGraphs);
                 assertion.private = await this.construct(repository, query);
@@ -438,21 +436,7 @@ class OtTripleStore {
             }
         }
 
-        const kaIds = allGraphs
-            .map((g) => {
-                const match = g.match(/\/(\d+)\/(public|private)$/);
-                return match ? parseInt(match[1], 10) : null;
-            })
-            .filter((id) => id !== null);
-
-        const minKnowledgeAssetId = kaIds.length ? Math.min(...kaIds) : null;
-        const maxKnowledgeAssetId = kaIds.length ? Math.max(...kaIds) : null;
-
-        return {
-            assertion,
-            minKnowledgeAssetId,
-            maxKnowledgeAssetId,
-        };
+        return assertion;
     }
 
     async knowledgeCollectionNamedGraphsExist(repository, ual) {
