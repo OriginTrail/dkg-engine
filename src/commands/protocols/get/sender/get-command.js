@@ -436,7 +436,7 @@ class GetCommand extends Command {
         knowledgeCollectionId,
         knowledgeAssetId,
     ) {
-        if (responseData?.assertion?.public) {
+        if (responseData?.assertion?.public || responseData?.assertion?.private) {
             // We can only validate whole collection not particular KA
             if (
                 !knowledgeAssetId ||
