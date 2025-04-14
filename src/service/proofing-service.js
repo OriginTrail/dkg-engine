@@ -129,7 +129,11 @@ class ProofingService {
                 // Ensure no reorgs happened by checking if it has score and enough time has passed and if possible mark it as finalized
                 if (score > 0) {
                     // Sent more than minute ago check onchain confirm it finalized and it's good
-                    if (latestChallenge.updatedAt.getTime() + REORG_PROOFING_BUFFER >= Date.now()) {
+                    console.log('latestChallenge.updatedAt', latestChallenge.updatedAt.getTime());
+                    console.log('Date.now()', Date.now());
+                    console.log('REORG_PROOFING_BUFFER', REORG_PROOFING_BUFFER);
+                    console.log(latestChallenge.updatedAt.getTime() - Date.now());
+                    if (latestChallenge.updatedAt.getTime() + REORG_PROOFING_BUFFER <= Date.now()) {
                         this.logger.info('Finalizing challenge', {
                             blockchainId,
                             challengeId: latestChallenge.id,
