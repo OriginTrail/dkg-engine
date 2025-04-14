@@ -473,6 +473,8 @@ class TripleStoreService {
         let ual = `did:dkg:${blockchain}/${contract}/${knowledgeCollectionId}`;
 
         let nquads;
+        let startTokenId;
+        let endTokenId;
         if (typeof knowledgeAssetId === 'string') {
             ual = `${ual}/${knowledgeAssetId}`;
             this.logger.debug(`Getting Assertion with the UAL: ${ual}.`);
@@ -486,13 +488,18 @@ class TripleStoreService {
             );
         } else {
             this.logger.debug(`Getting Assertion with the UAL: ${ual}.`);
-            nquads = await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphs(
+
+            const result = await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphs(
                 this.repositoryImplementations[repository],
                 repository,
                 ual,
                 knowledgeAssetId,
                 visibility,
             );
+
+            nquads = result.assertion;
+            startTokenId = result.minKnowledgeAssetId;
+            endTokenId = result.maxKnowledgeAssetId;
         }
         if (nquads?.public) {
             nquads.public = nquads.public.split('\n').filter((line) => line !== '');
@@ -515,7 +522,11 @@ class TripleStoreService {
             );
         }
 
-        return nquads;
+        return {
+            nquads,
+            startTokenId,
+            endTokenId,
+        };
     }
 
     async getV6Assertion(repository, assertionId) {

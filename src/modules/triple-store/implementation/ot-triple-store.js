@@ -367,52 +367,92 @@ class OtTripleStore {
         await this.queryVoid(repository, query);
     }
 
-    async getKnowledgeCollectionNamedGraphs(repository, tokenIds, ual, visibility) {
-        const namedGraphs = Array.from(
-            { length: tokenIds.endTokenId - tokenIds.startTokenId + 1 },
-            (_, i) => tokenIds.startTokenId + i,
-        )
-            .filter((id) => !tokenIds.burned.includes(id))
-            .map((id) => `${ual}/${id}`);
+    async getKnowledgeCollectionNamedGraphs(repository, ual, knowledgeCollectionId, visibility) {
         const assertion = {};
+        const allGraphs = [];
+
+        const getNamedGraphsQuery = (visFilter) => `
+            PREFIX dkg: <https://ontology.origintrail.io/dkg/1.0#>
+    
+            SELECT ?g WHERE {
+                GRAPH <metadata:graph> {
+                    <${ual}> dkg:hasNamedGraph ?g .
+                }
+                ${visFilter ? `FILTER(CONTAINS(STR(?g), "${visFilter}"))` : ''}
+            }
+        `;
+
+        const getConstructQuery = (graphList) => `
+            PREFIX schema: <http://schema.org/>
+            CONSTRUCT {
+                ?s ?p ?o .
+            }
+            WHERE {
+                GRAPH ?g {
+                    ?s ?p ?o .
+                }
+                VALUES ?g {
+                    ${graphList.map((g) => `<${g}>`).join('\n')}
+                }
+            }
+        `;
+
         if (visibility === TRIPLES_VISIBILITY.PUBLIC || visibility === TRIPLES_VISIBILITY.ALL) {
-            const query = `
-            PREFIX schema: <http://schema.org/>
-            CONSTRUCT {
-                ?s ?p ?o .
-              }
-              WHERE {
-                GRAPH ?g {
-                  ?s ?p ?o .
-                }
-                VALUES ?g {
-                    ${namedGraphs
-                        .map((graph) => `<${graph}/${TRIPLES_VISIBILITY.PUBLIC}>`)
-                        .join('\n')}
-                }
-              }`;
-            assertion.public = await this.construct(repository, query);
-        }
-        if (visibility === TRIPLES_VISIBILITY.PRIVATE || visibility === TRIPLES_VISIBILITY.ALL) {
-            const query = `
-            PREFIX schema: <http://schema.org/>
-            CONSTRUCT {
-                ?s ?p ?o .
-              }
-              WHERE {
-                GRAPH ?g {
-                  ?s ?p ?o .
-                }
-                VALUES ?g {
-                    ${namedGraphs
-                        .map((graph) => `<${graph}/${TRIPLES_VISIBILITY.PRIVATE}>`)
-                        .join('\n')}
-                }
-              }`;
-            assertion.private = await this.construct(repository, query);
+            const publicGraphsResult = await this.select(
+                repository,
+                getNamedGraphsQuery('/public'),
+            );
+
+            const publicGraphs = publicGraphsResult
+                .map((row) => row.g)
+                .filter((graph) =>
+                    knowledgeCollectionId ? graph.includes(`/${knowledgeCollectionId}/`) : true,
+                );
+            allGraphs.push(...publicGraphs);
+            if (publicGraphs.length) {
+                const query = getConstructQuery(publicGraphs);
+                assertion.public = await this.construct(repository, query);
+            } else {
+                assertion.public = '';
+            }
         }
 
-        return assertion;
+        if (visibility === TRIPLES_VISIBILITY.PRIVATE || visibility === TRIPLES_VISIBILITY.ALL) {
+            const privateGraphsResult = await this.select(
+                repository,
+                getNamedGraphsQuery('/private'),
+            );
+
+            const privateGraphs = privateGraphsResult
+                .map((row) => row.g)
+                .filter((graph) =>
+                    knowledgeCollectionId ? graph.includes(`/${knowledgeCollectionId}/`) : true,
+                );
+
+            allGraphs.push(...privateGraphs);
+            if (privateGraphs.length) {
+                const query = getConstructQuery(privateGraphs);
+                assertion.private = await this.construct(repository, query);
+            } else {
+                assertion.private = '';
+            }
+        }
+
+        const kaIds = allGraphs
+            .map((g) => {
+                const match = g.match(/\/(\d+)\/(public|private)$/);
+                return match ? parseInt(match[1], 10) : null;
+            })
+            .filter((id) => id !== null);
+
+        const minKnowledgeAssetId = kaIds.length ? Math.min(...kaIds) : null;
+        const maxKnowledgeAssetId = kaIds.length ? Math.max(...kaIds) : null;
+
+        return {
+            assertion,
+            minKnowledgeAssetId,
+            maxKnowledgeAssetId,
+        };
     }
 
     async knowledgeCollectionNamedGraphsExist(repository, ual) {
