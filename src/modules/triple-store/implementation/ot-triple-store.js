@@ -367,17 +367,16 @@ class OtTripleStore {
         await this.queryVoid(repository, query);
     }
 
-    async getKnowledgeCollectionNamedGraphs(repository, ual, knowledgeCollectionId, visibility) {
+    async getKnowledgeCollectionNamedGraphs(repository, ual, knowledgeAssetId, visibility) {
         const assertion = {};
+        let publicPrivateMetadataConnections = null;
 
         const getNamedGraphsQuery = `
             PREFIX dkg: <https://ontology.origintrail.io/dkg/1.0#>
-    
             SELECT ?g WHERE {
                 GRAPH <metadata:graph> {
                     <${ual}> dkg:hasNamedGraph ?g .
                 }
-               
             }
         `;
 
@@ -396,43 +395,43 @@ class OtTripleStore {
             }
         `;
 
-        const publicPrivateMetadataConnections = await this.select(repository, getNamedGraphsQuery);
+        const buildSingleGraph = async (visibilityType) => {
+            const graph = `${ual}/${knowledgeAssetId}/${visibilityType}`;
+            const query = getConstructQuery([graph]);
+            return this.construct(repository, query);
+        };
+
+        const buildAllGraphs = async (filter) => {
+            if (!publicPrivateMetadataConnections) {
+                publicPrivateMetadataConnections = await this.select(
+                    repository,
+                    getNamedGraphsQuery,
+                );
+            }
+            return publicPrivateMetadataConnections
+                .map((row) => row.g)
+                .filter((graph) => graph.includes(filter));
+        };
 
         if (visibility === TRIPLES_VISIBILITY.PUBLIC || visibility === TRIPLES_VISIBILITY.ALL) {
-            const publicGraphs = publicPrivateMetadataConnections
-                .map((row) => row.g)
-                .filter(
-                    (graph) =>
-                        graph.includes('/public') &&
-                        (knowledgeCollectionId
-                            ? graph.includes(`/${knowledgeCollectionId}/`)
-                            : true),
-                );
-
-            if (publicGraphs.length) {
-                const query = getConstructQuery(publicGraphs);
-                assertion.public = await this.construct(repository, query);
+            if (knowledgeAssetId) {
+                assertion.public = await buildSingleGraph(TRIPLES_VISIBILITY.PUBLIC);
             } else {
-                assertion.public = '';
+                const publicGraphs = await buildAllGraphs('/public');
+                assertion.public = publicGraphs.length
+                    ? await this.construct(repository, getConstructQuery(publicGraphs))
+                    : '';
             }
         }
 
         if (visibility === TRIPLES_VISIBILITY.PRIVATE || visibility === TRIPLES_VISIBILITY.ALL) {
-            const privateGraphs = publicPrivateMetadataConnections
-                .map((row) => row.g)
-                .filter(
-                    (graph) =>
-                        graph.includes('/private') &&
-                        (knowledgeCollectionId
-                            ? graph.includes(`/${knowledgeCollectionId}/`)
-                            : true),
-                );
-
-            if (privateGraphs.length) {
-                const query = getConstructQuery(privateGraphs);
-                assertion.private = await this.construct(repository, query);
+            if (knowledgeAssetId) {
+                assertion.private = await buildSingleGraph(TRIPLES_VISIBILITY.PRIVATE);
             } else {
-                assertion.private = '';
+                const privateGraphs = await buildAllGraphs('/private');
+                assertion.private = privateGraphs.length
+                    ? await this.construct(repository, getConstructQuery(privateGraphs))
+                    : '';
             }
         }
 
