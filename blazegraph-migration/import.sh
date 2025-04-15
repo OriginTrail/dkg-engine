@@ -42,6 +42,9 @@ split_into_chunks() {
     log_message "INFO" "Starting file split for $input_file"
     gunzip -c "$input_file" | split -l "$chunk_size" --additional-suffix=.nq - "${output_dir}/chunk_"
     log_message "INFO" "File split completed. Output directory: $output_dir"
+    
+    namespace=$(basename "$input_dir")
+    echo $(ls "$output_dir"/*.nq | wc -l) > "./${namespace}.total_chunks"
 }
 
 process_chunk() {

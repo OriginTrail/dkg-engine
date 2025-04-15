@@ -18,6 +18,18 @@ Import script:
 ./current/blazegraph-migrations/import.sh
 ```
 
+Monitor import progress:
+
+```bash
+./current/blazegraph-migrations/monitor_import_progress.sh <namespace>
+```
+
+e.g.
+
+```bash
+./current/blazegraph-migrations/monitor_import_progress.sh dkg
+```
+
 Check quad number:
 
 ```bash
