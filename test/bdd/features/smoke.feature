@@ -6,3 +6,7 @@ Feature: Smoke related tests
   @smoke
   Scenario: Setting up and tearing down infrastucture
   Given infrastucture is functional
+  And I setup 2 aditional nodes
+  And I wait for 5 seconds
+  Given Node 1 responds to info route
+  And Node 2 responds to info route

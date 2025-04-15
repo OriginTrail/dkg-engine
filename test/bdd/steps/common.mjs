@@ -1,6 +1,7 @@
 import { Given, Then } from '@cucumber/cucumber';
 import { expect, assert } from 'chai';
 import fs from 'fs';
+import path from 'path';
 import { setTimeout as sleep } from 'timers/promises';
 
 import DkgClientHelper from '../../utilities/dkg-client-helper.mjs';
@@ -108,7 +109,7 @@ Given(
 
 Given(
     /^(\d+) bootstrap is running$/,
-    { timeout: 50000 },
+    { timeout: 30000 },
     function bootstrapRunning(nodeCount, done) {
         expect(this.state.bootstraps).to.have.length(0);
         expect(nodeCount).to.be.equal(1); // Currently not supported more.
@@ -139,12 +140,10 @@ Given(
             nodeName,
             rpcPort,
             networkPort,
-           // sharesTokenName,
-            // sharesTokenSymbol,
-           // sharesTokenName,
-            // sharesTokenSymbol,
-            true,
         );
+        
+        const appDataPath = path.join(process.cwd(), nodeConfiguration.appDataPath);
+        fs.rmSync(appDataPath, { recursive: true, force: true });
         const forkedNode = stepsUtils.forkNode(nodeConfiguration);
 
         const logFileStream = fs.createWriteStream(`${this.state.scenarionLogDir}/${nodeName}.log`);
@@ -338,4 +337,13 @@ Given(
 
 Given(/^infrastucture is functional$/, { timeout: 1000 }, async function checkInfrastructure() {
     this.logger.log('Checking if infrastructure is functional');
+});
+
+Given(/^Node (\d+) responds to info route$/, { timeout: 20000 }, async function (nodeNumber) {
+    const nodeIndex = parseInt(nodeNumber, 10) - 1;
+    const response = await this.state.nodes[nodeIndex].client.info();
+
+    this.logger.log(`Node ${nodeNumber} info response: ${JSON.stringify(response)}`);
+
+    assert.ok(response && response.version, 'Expected node info to contain "version" field');
 });
