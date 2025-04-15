@@ -7,6 +7,7 @@ import {
     PROOFING_MAX_ATTEMPTS,
     REORG_PROOFING_BUFFER,
     PRIVATE_HASH_SUBJECT_PREFIX,
+    CHUNK_SIZE,
 } from '../constants/constants.js';
 
 class ProofingService {
@@ -52,7 +53,7 @@ class ProofingService {
                 isRunning = true;
                 this.logger.debug(`Starting proofing cycle for blockchain ${blockchainId}`);
 
-                // Your proofing logic here
+                // Proofing logic
                 await this.runProofing(blockchainId);
                 this.logger.debug(`Completed proofing cycle for blockchain ${blockchainId}`);
             } catch (error) {
@@ -85,9 +86,7 @@ class ProofingService {
     }
 
     async runProofing(blockchainId) {
-        // Implement your proofing logic here
         this.logger.debug(`Running proofing mechanism for ${blockchainId}`);
-
         const nodeId = await this.blockchainModuleManager.getIdentityId(blockchainId);
         // Check what is current proof period {isValid, activeProofPeriodStartBlock}
         const activeProofPeriodStatus =
@@ -224,7 +223,17 @@ class ProofingService {
     async getAndPersistNewChallenge(blockchainId, latestChallenge, nodeId) {
         // Node has challenge for previous period need to get new one
         // Get new challenge
-        await this.blockchainModuleManager.createChallenge(blockchainId);
+        const createChallengeResult = await this.blockchainModuleManager.createChallenge(
+            blockchainId,
+        );
+        if (
+            !createChallengeResult.success &&
+            !createChallengeResult.error.message.includes(
+                'An unsolved challenge already exists for this node in the current proof period',
+            )
+        ) {
+            throw new Error(createChallengeResult.error);
+        }
         const newChallenge = await this.blockchainModuleManager.getNodeChallenge(
             blockchainId,
             nodeId,
@@ -242,7 +251,7 @@ class ProofingService {
             blockchainId,
             epoch: newChallenge.epoch.toNumber(),
             activeProofPeriodStartBlock: newChallenge.activeProofPeriodStartBlock.toNumber(),
-            contractAddress: '0xd5724171c2b7f0aa717a324626050bd05767e2c6',
+            contractAddress: newChallenge.knowledgeCollectionStorageContract,
             knowledgeCollectionId: newChallenge.knowledgeCollectionId.toNumber(),
             chunkNumber: newChallenge.chunkId.toNumber(),
             sentSuccessfully: false,
@@ -260,7 +269,6 @@ class ProofingService {
         const getOperationId = await this.operationIdService.generateOperationId(
             OPERATION_ID_STATUS.GET.GET_START,
         );
-        // TODO: Add flag for disabling local GET as it has already been done above
         await this.commandExecutor.add({
             name: 'getCommand',
             sequence: [],
@@ -268,7 +276,7 @@ class ProofingService {
             data: {
                 operationId: getOperationId,
                 blockchain: blockchainId,
-                contract: '0xd5724171c2b7f0aa717a324626050bd05767e2c6', // contractAddress: latestChallenge.contractAddress,
+                contract: latestChallenge.contractAddress,
                 knowledgeCollectionId: latestChallenge.knowledgeCollectionId, // latestChallenge.knowledgeCollectionId,
                 state: 0,
                 ual,
@@ -349,7 +357,6 @@ class ProofingService {
             .flat();
 
         // Calculate proof
-        const CHUNK_SIZE = 32; // Added constant definition
         const proof = kcTools.calculateMerkleProof(
             publicKnowledgeAssetsTriplesGrouped,
             CHUNK_SIZE,

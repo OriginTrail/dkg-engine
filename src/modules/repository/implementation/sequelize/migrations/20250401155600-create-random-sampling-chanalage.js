@@ -17,6 +17,10 @@ export const up = async ({ context: { queryInterface, Sequelize } }) => {
         //     allowNull: false,
         //     type: Sequelize.DATE,
         // },
+        contract_address: {
+            allowNull: false,
+            type: Sequelize.STRING,
+        },
         knowledge_collection_id: {
             allowNull: false,
             type: Sequelize.INTEGER,

@@ -14,7 +14,7 @@ class RandomSamplingChallengeRepository {
 
     async setCompletedRandomSamplingChallengeRecord(randomSamplingChallengeId, completed, options) {
         return this.model.update(
-            { completed },
+            { sentSuccessfully: completed },
             { where: { id: randomSamplingChallengeId }, ...options },
         );
     }

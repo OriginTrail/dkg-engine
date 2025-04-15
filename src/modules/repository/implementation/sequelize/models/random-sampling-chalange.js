@@ -10,6 +10,7 @@ export default (sequelize, DataTypes) => {
             blockchainId: DataTypes.STRING,
             // startDate: DataTypes.DATE,
             // endDate: DataTypes.DATE,
+            contractAddress: DataTypes.STRING,
             knowledgeCollectionId: DataTypes.INTEGER,
             chunkNumber: DataTypes.INTEGER,
             epoch: DataTypes.INTEGER,

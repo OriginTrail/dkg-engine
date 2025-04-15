@@ -1152,7 +1152,26 @@ class Web3Service {
     }
 
     async createChallenge() {
-        return this.queueTransaction(this.contracts.RandomSampling, 'createChallenge', []);
+        return new Promise((resolve) => {
+            this.queueTransaction(
+                this.contracts.RandomSampling,
+                'createChallenge',
+                [],
+                (result) => {
+                    if (result.error) {
+                        resolve({
+                            success: false,
+                            error: result.error,
+                        });
+                    } else {
+                        resolve({
+                            success: true,
+                            result: result.result,
+                        });
+                    }
+                },
+            );
+        });
     }
 
     async getNodeChallenge(nodeId) {
@@ -1168,11 +1187,13 @@ class Web3Service {
                 'submitProof',
                 [chunk, merkleProof],
                 (result) => {
-                    // callback
                     if (result.error) {
                         reject(result.error);
                     } else {
-                        resolve(result.result);
+                        resolve({
+                            success: true,
+                            result: result.result,
+                        });
                     }
                 },
             );
