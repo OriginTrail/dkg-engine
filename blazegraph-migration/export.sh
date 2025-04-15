@@ -6,12 +6,22 @@ set -e
 BLAZEGRAPH_JAR="blazegraph.jar"
 
 if [ "$#" -lt 2 ]; then
-  echo "Usage: $0 <base_dir> <namespace1> [namespace2 ...]"
+  echo "Usage: $0 <base_dir> <namespace1> [namespace2 ...] [--keep-journal]"
   exit 1
 fi
 
 BASE_DIR="$1"
 shift
+
+# Check for --keep-journal flag
+KEEP_JOURNAL=false
+for arg in "$@"; do
+  if [ "$arg" == "--keep-journal" ]; then
+    KEEP_JOURNAL=true
+    # Remove the flag from the namespace list
+    set -- "${@/--keep-journal/}"
+  fi
+done
 
 log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
@@ -110,14 +120,18 @@ EOF
   done
 done
 
-log "Stopping blazegraph service to remove old journal..."
-sudo systemctl stop blazegraph.service
-sleep 10
-log "Removing old Blazegraph journal..."
-rm -f "${BASE_DIR}/blazegraph.jnl"
+if [ "$KEEP_JOURNAL" = false ]; then
+  log "Stopping blazegraph service to remove old journal..."
+  sudo systemctl stop blazegraph.service
+  sleep 10
+  log "Removing old Blazegraph journal..."
+  rm -f "${BASE_DIR}/blazegraph.jnl"
 
-log "Creating new journal on blazegraph start..."
-sudo systemctl start blazegraph.service
+  log "Creating new journal on blazegraph start..."
+  sudo systemctl start blazegraph.service
+else
+  log "🟡 Skipping Blazegraph journal deletion due to --keep-journal flag."
+fi
 
 log "Resetting triple log in MySQL..."
 REPO_PW=$(grep ^REPOSITORY_PASSWORD= "$BASE_DIR/current/.env" | cut -d '=' -f2)
