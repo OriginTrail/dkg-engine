@@ -326,6 +326,17 @@ class OtTripleStore {
         }
     }
 
+    async createParanetKnoledgeCollectionConnection(repository, kcUAL, paranetUAL) {
+        const query = `
+        INSERT DATA {
+            GRAPH <${paranetUAL}> {
+                   <${paranetUAL}> <${DKG_PREDICATE}${HAS_NAMED_GRAPH_SUFFIX}> <${kcUAL}> .
+            }
+        }
+        `;
+        await this.queryVoid(repository, query);
+    }
+
     async insertMetadataTriples(repository, kcUAL, kaUALs, visibility) {
         const currentTriples = kaUALs
             .map(

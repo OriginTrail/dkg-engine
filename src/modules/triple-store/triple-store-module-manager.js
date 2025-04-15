@@ -129,6 +129,23 @@ class TripleStoreModuleManager extends BaseModuleManager {
         }
     }
 
+    async createParanetKnoledgeCollectionConnection(
+        implementationName,
+        repository,
+        knowledgeCollectionUal,
+        paranetUAL,
+    ) {
+        if (this.getImplementation(implementationName)) {
+            return this.getImplementation(
+                implementationName,
+            ).module.createParanetKnoledgeCollectionConnection(
+                repository,
+                knowledgeCollectionUal,
+                paranetUAL,
+            );
+        }
+    }
+
     async insertMetadataTriples(implementationName, repository, kcUal, uals, visibility) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(implementationName).module.insertMetadataTriples(

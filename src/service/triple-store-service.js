@@ -42,6 +42,7 @@ class TripleStoreService {
         triples,
         retries = 5,
         retryDelay = 50,
+        paranetUAL = '',
     ) {
         this.logger.info(
             `Inserting Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
@@ -115,6 +116,16 @@ class TripleStoreService {
                     TRIPLES_VISIBILITY.PUBLIC,
                 ),
             );
+
+            if (paranetUAL) {
+                this.tripleStoreModuleManager.createParanetKnoledgeCollectionConnection(
+                    this.repositoryImplementations[repository],
+                    repository,
+                    knowledgeCollectionUAL,
+                    paranetUAL,
+                );
+                totalNumberOfTriplesInserted += 1; // one triple will be created for each Knowledge Collection inserted into paranet
+            }
             // current metadata triple relates to which named graph that represents Knowledge Asset hold the lates(current) data
             // so for each Knowledge Asset there will be one current metadata triple
             // in this case there are publicKnowledgeAssetsUALs.length number of named graphs created so for each there will be one current metadata triple

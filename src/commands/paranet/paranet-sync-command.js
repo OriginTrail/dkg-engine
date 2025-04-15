@@ -13,6 +13,7 @@ import {
     PARANET_NODES_ACCESS_POLICIES,
     PARANET_ACCESS_POLICY,
     TRIPLES_VISIBILITY,
+    TRIPLE_STORE_REPOSITORIES,
 } from '../../constants/constants.js';
 
 class ParanetSyncCommand extends Command {
@@ -222,11 +223,13 @@ class ParanetSyncCommand extends Command {
             } nquads found for asset with ual: ${ual}, state index: ${stateIndex}, assertionId: ${assertionId}`,
         );
 
-        const paranetRepository = this.paranetService.getParanetRepositoryName(paranetUAL);
         await this.tripleStoreService.insertKnowledgeCollection(
-            paranetRepository,
+            TRIPLE_STORE_REPOSITORIES.DKG,
             ual,
             data.assertion,
+            5,
+            50,
+            paranetUAL,
         );
     }
 
