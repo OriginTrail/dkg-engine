@@ -9,6 +9,9 @@ import {
     BASE_NAMED_GRAPHS,
     TRIPLE_ANNOTATION_LABEL_PREDICATE,
     TRIPLES_VISIBILITY,
+    DKG_PREDICATE,
+    HAS_KNOWLEDGE_ASSET_SUFFIX,
+    HAS_NAMED_GRAPH_SUFFIX,
 } from '../../../constants/constants.js';
 
 class OtTripleStore {
@@ -308,17 +311,52 @@ class OtTripleStore {
                     this.logger.warn(
                         `Batch insert failed for ${uals[0]
                             .split('/')
-                            .pop()
+                            .slice(0, -1)
                             .join(
                                 '/',
                             )} graphs. Attempt ${attempts}/${retries}. Retrying in ${retryDelay}ms.`,
                     );
                     await setTimeout(retryDelay);
                 } else {
-                    throw new Error(`Failed to perform batch insert after ${retries} attempts.`);
+                    throw new Error(
+                        `Failed to perform batch insert after ${retries} attempts. Error: ${error.message}`,
+                    );
                 }
             }
         }
+    }
+
+    async insertMetadataTriples(repository, kcUAL, kaUALs, visibility) {
+        const currentTriples = kaUALs
+            .map(
+                (ual) =>
+                    `<current:graph> <${DKG_PREDICATE}${HAS_NAMED_GRAPH_SUFFIX}> <${ual}/${visibility}> .`,
+            )
+            .join('\n');
+
+        const connectionTriples = kaUALs
+            .map((ual) => {
+                const graphWithVisibility = `${ual}/${visibility}`;
+                return [
+                    `<${kcUAL}> <${DKG_PREDICATE}${HAS_KNOWLEDGE_ASSET_SUFFIX}> <${ual}> .`,
+                    `<${kcUAL}> <${DKG_PREDICATE}${HAS_NAMED_GRAPH_SUFFIX}> <${graphWithVisibility}> .`,
+                ].join('\n');
+            })
+            .join('\n');
+
+        const query = `
+            INSERT DATA {
+                GRAPH <${BASE_NAMED_GRAPHS.CURRENT}> {
+                    ${currentTriples}
+                }
+
+                GRAPH <${BASE_NAMED_GRAPHS.METADATA}> {
+                    ${connectionTriples}
+                }
+            }
+        `;
+
+        await this.queryVoid(repository, query);
     }
 
     async deleteKnowledgeCollectionNamedGraphs(repository, namedGraphs) {

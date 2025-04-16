@@ -1088,8 +1088,8 @@ class Web3Service {
         );
     }
 
-    async isCuratedNode(paranetId, identityId) {
-        return this.callContractFunction(this.contracts.ParanetsRegistry, 'isCuratedNode', [
+    async isPermissionedNode(paranetId, identityId) {
+        return this.callContractFunction(this.contracts.ParanetsRegistry, 'isPermissionedNode', [
             paranetId,
             identityId,
         ]);
@@ -1101,10 +1101,10 @@ class Web3Service {
         ]);
     }
 
-    async getParanetCuratedNodes(paranetId) {
+    async getPermissionedNodes(paranetId) {
         return this.callContractFunction(
             this.contracts.ParanetsRegistry,
-            'getCuratedNodes',
+            'getPermissionedNodes',
             [paranetId],
             CONTRACTS.PARANETS_REGISTRY,
         );
@@ -1134,8 +1134,16 @@ class Web3Service {
     async getEpochLength() {
         return this.callContractFunction(this.contracts.Chronos, 'epochLength', []);
     }
-    // SUPPORT FOR OLD CONTRACTS
 
+    async isKnowledgeCollectionRegistered(paranetId, knowledgeCollectionId) {
+        return this.callContractFunction(
+            this.contracts.ParanetsRegistry,
+            'isKnowledgeCollectionRegistered',
+            [paranetId, knowledgeCollectionId],
+        );
+    }
+
+    // SUPPORT FOR OLD CONTRACTS
     async getLatestAssertionId(assetContractAddress, tokenId) {
         const assetStorageContractInstance =
             this.assetStorageContracts[assetContractAddress.toString().toLowerCase()];

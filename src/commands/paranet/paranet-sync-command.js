@@ -11,6 +11,8 @@ import {
     PARANET_SYNC_RETRY_DELAY_MS,
     OPERATION_STATUS,
     PARANET_NODES_ACCESS_POLICIES,
+    PARANET_ACCESS_POLICY,
+    TRIPLES_VISIBILITY,
 } from '../../constants/constants.js';
 
 class ParanetSyncCommand extends Command {
@@ -102,7 +104,13 @@ class ParanetSyncCommand extends Command {
 
         const syncResults = await Promise.all(
             syncBatch.map(({ ual }) =>
-                this.syncKc(paranetUAL, ual, paranetId, paranetNodesAccessPolicy, operationId),
+                this.syncKc(
+                    paranetUAL,
+                    ual,
+                    paranetId,
+                    paranetMetadata.nodesAccessPolicy,
+                    operationId,
+                ),
             ),
         );
 
@@ -164,7 +172,7 @@ class ParanetSyncCommand extends Command {
         let getResult;
 
         await this.commandExecutor.add({
-            name: 'getFindShardCommand',
+            name: 'getCommand',
             sequence: [],
             delay: 0,
             data: {
@@ -174,6 +182,11 @@ class ParanetSyncCommand extends Command {
                 contract,
                 knowledgeCollectionId,
                 state: assertionId,
+                ual: this.ualService.deriveUAL(blockchain, contract, knowledgeCollectionId),
+                contentType:
+                    paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED
+                        ? TRIPLES_VISIBILITY.ALL
+                        : TRIPLES_VISIBILITY.PUBLIC,
                 paranetId,
                 paranetUAL,
                 paranetNodesAccessPolicy,
@@ -215,35 +228,6 @@ class ParanetSyncCommand extends Command {
             ual,
             data.assertion,
         );
-        // TODO: Curated paranets, paranetNodesAccessPolicy
-
-        /*
-            this doesnt work for v8
-            await this.tripleStoreService.localStoreAsset(
-                repository,
-                assertionId,
-                data.assertion,
-                blockchain,
-                contract,
-                tokenId,
-                LOCAL_INSERT_FOR_CURATED_PARANET_MAX_ATTEMPTS,
-                LOCAL_INSERT_FOR_CURATED_PARANET_RETRY_DELAY,
-            );
-            if (paranetNodesAccessPolicy === 'CURATED' && data.privateAssertion) {
-                await this.tripleStoreService.localStoreAsset(
-                    repository,
-                    data.syncedAssetRecord.privateAssertionId,
-                    data.privateAssertion,
-                    blockchain,
-                    contract,
-                    tokenId,
-                );
-            }
-            const privateAssertionId =
-                paranetNodesAccessPolicy === 'CURATED'
-                    ? data.syncedAssetRecord?.privateAssertionId
-                    : null;
-            */
     }
 
     /**
@@ -252,7 +236,7 @@ class ParanetSyncCommand extends Command {
      * @param {string} paranetUAL Universal Asset Locator of the paranet
      * @param {string} ual Universal Asset Locator of the Knowledge Collection
      * @param {string} paranetId Id of paranet, stored on-chain. Provided in command options.
-     * @param {'OPEN'|'CURATED'} paranetNodesAccessPolicy Node access policy, enum string indicating paranet type.
+     * @param {'OPEN'|'PERMISSIONED'} paranetNodesAccessPolicy Node access policy, enum string indicating paranet type.
      * @param {string} operationId Local database id of sync operation. Needed for logging.
      *
      * @returns {Promise<null|Error>} Returns `null` if sync of all states was successful, otherwise `Error` which broke the operation.
