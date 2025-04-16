@@ -475,6 +475,10 @@ class RepositoryModuleManager extends BaseModuleManager {
             options,
         );
     }
+
+    async incrementInsertedTriples(count) {
+        return this.getRepository('inserted_triples').increment(count);
+    }
 }
 
 export default RepositoryModuleManager;
