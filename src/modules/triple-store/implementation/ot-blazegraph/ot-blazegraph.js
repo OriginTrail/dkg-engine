@@ -107,6 +107,14 @@ class OtBlazegraph extends OtTripleStore {
         }
     }
 
+    async queryVoid(repository, query) {
+        return axios.post(this.repositories[repository].sparqlEndpoint, query, {
+            headers: {
+                'Content-Type': 'application/sparql-update; charset=UTF-8',
+            },
+        });
+    }
+
     async deleteRepository(repository) {
         const { url, name } = this.repositories[repository];
         this.logger.info(
