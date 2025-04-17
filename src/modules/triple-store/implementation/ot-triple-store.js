@@ -367,49 +367,73 @@ class OtTripleStore {
         await this.queryVoid(repository, query);
     }
 
-    async getKnowledgeCollectionNamedGraphs(repository, tokenIds, ual, visibility) {
-        const namedGraphs = Array.from(
-            { length: tokenIds.endTokenId - tokenIds.startTokenId + 1 },
-            (_, i) => tokenIds.startTokenId + i,
-        )
-            .filter((id) => !tokenIds.burned.includes(id))
-            .map((id) => `${ual}/${id}`);
+    async getKnowledgeCollectionNamedGraphs(repository, ual, knowledgeAssetId, visibility) {
         const assertion = {};
+        let publicPrivateMetadataConnections = null;
+
+        const getNamedGraphsQuery = `
+            PREFIX dkg: <https://ontology.origintrail.io/dkg/1.0#>
+            SELECT ?g WHERE {
+                GRAPH <metadata:graph> {
+                    <${ual}> dkg:hasNamedGraph ?g .
+                }
+            }
+        `;
+
+        const getConstructQuery = (graphList) => `
+            PREFIX schema: <http://schema.org/>
+            CONSTRUCT {
+                ?s ?p ?o .
+            }
+            WHERE {
+                GRAPH ?g {
+                    ?s ?p ?o .
+                }
+                VALUES ?g {
+                    ${graphList.map((g) => `<${g}>`).join('\n')}
+                }
+            }
+        `;
+
+        const buildSingleGraph = async (visibilityType) => {
+            const graph = `${ual}/${knowledgeAssetId}/${visibilityType}`;
+            return getConstructQuery([graph]);
+        };
+
+        const buildAllGraphs = async (filter) => {
+            if (!publicPrivateMetadataConnections) {
+                publicPrivateMetadataConnections = await this.select(
+                    repository,
+                    getNamedGraphsQuery,
+                );
+            }
+            return publicPrivateMetadataConnections
+                .map((row) => row.g)
+                .filter((graph) => graph.includes(filter));
+        };
+
         if (visibility === TRIPLES_VISIBILITY.PUBLIC || visibility === TRIPLES_VISIBILITY.ALL) {
-            const query = `
-            PREFIX schema: <http://schema.org/>
-            CONSTRUCT {
-                ?s ?p ?o .
-              }
-              WHERE {
-                GRAPH ?g {
-                  ?s ?p ?o .
-                }
-                VALUES ?g {
-                    ${namedGraphs
-                        .map((graph) => `<${graph}/${TRIPLES_VISIBILITY.PUBLIC}>`)
-                        .join('\n')}
-                }
-              }`;
-            assertion.public = await this.construct(repository, query);
+            if (knowledgeAssetId) {
+                const singleGraph = await buildSingleGraph(TRIPLES_VISIBILITY.PUBLIC);
+                assertion.public = await this.construct(repository, singleGraph);
+            } else {
+                const publicGraphs = await buildAllGraphs('/public');
+                assertion.public = publicGraphs.length
+                    ? await this.construct(repository, getConstructQuery(publicGraphs))
+                    : '';
+            }
         }
+
         if (visibility === TRIPLES_VISIBILITY.PRIVATE || visibility === TRIPLES_VISIBILITY.ALL) {
-            const query = `
-            PREFIX schema: <http://schema.org/>
-            CONSTRUCT {
-                ?s ?p ?o .
-              }
-              WHERE {
-                GRAPH ?g {
-                  ?s ?p ?o .
-                }
-                VALUES ?g {
-                    ${namedGraphs
-                        .map((graph) => `<${graph}/${TRIPLES_VISIBILITY.PRIVATE}>`)
-                        .join('\n')}
-                }
-              }`;
-            assertion.private = await this.construct(repository, query);
+            if (knowledgeAssetId) {
+                const singleGraph = await buildSingleGraph(TRIPLES_VISIBILITY.PRIVATE);
+                assertion.private = await this.construct(repository, singleGraph);
+            } else {
+                const privateGraphs = await buildAllGraphs('/private');
+                assertion.private = privateGraphs.length
+                    ? await this.construct(repository, getConstructQuery(privateGraphs))
+                    : '';
+            }
         }
 
         return assertion;

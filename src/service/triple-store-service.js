@@ -486,6 +486,7 @@ class TripleStoreService {
             );
         } else {
             this.logger.debug(`Getting Assertion with the UAL: ${ual}.`);
+
             nquads = await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphs(
                 this.repositoryImplementations[repository],
                 repository,

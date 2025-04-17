@@ -52,8 +52,9 @@ class GetCommand extends Command {
             contentType,
             includeMetadata,
             paranetNodesAccessPolicy,
+            knowledgeAssetId,
         } = command.data;
-        let { knowledgeAssetId } = command.data;
+
         await this.operationIdService.updateOperationIdStatus(
             operationId,
             blockchain,
@@ -124,30 +125,6 @@ class GetCommand extends Command {
             OPERATION_ID_STATUS.GET.GET_LOCAL_START,
         );
 
-        if (!knowledgeAssetId) {
-            try {
-                knowledgeAssetId = await this.blockchainModuleManager.getKnowledgeAssetsRange(
-                    blockchain,
-                    contract,
-                    knowledgeCollectionId,
-                );
-            } catch (error) {
-                // Asset created on old content asset storage contract
-                knowledgeAssetId = {
-                    startTokenId: 1,
-                    endTokenId: 1,
-                    burned: [],
-                };
-            }
-        } else {
-            // kaId is number, so transform it to range
-            knowledgeAssetId = {
-                startTokenId: knowledgeAssetId,
-                endTokenId: knowledgeAssetId,
-                burned: [],
-            };
-        }
-
         let repository;
         const promises = [];
         if (paranetUAL && !paranetSync) {
@@ -164,6 +141,7 @@ class GetCommand extends Command {
             repository,
         );
         promises.push(assertionPromise);
+
         if (includeMetadata) {
             const metadataPromise = this.tripleStoreService.getAssertionMetadata(
                 blockchain,
@@ -508,6 +486,10 @@ class GetCommand extends Command {
                 }
             }
 
+            return true;
+        }
+        if (!responseData?.assertion?.public && responseData?.assertion?.private) {
+            // if there is only private part skip validation
             return true;
         }
 
