@@ -17,6 +17,7 @@ export default (sequelize, DataTypes) => {
             activeProofPeriodStartBlock: DataTypes.BIGINT,
             finalized: DataTypes.BOOLEAN,
             sentSuccessfully: DataTypes.BOOLEAN,
+            score: DataTypes.INTEGER,
             createdAt: DataTypes.DATE,
             updatedAt: DataTypes.DATE,
         },

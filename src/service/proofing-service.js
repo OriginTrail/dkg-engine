@@ -437,9 +437,10 @@ class ProofingService {
             newChallenge.activeProofPeriodStartBlock,
         );
         if (score.toNumber() > 0) {
-            await this.repositoryModuleManager.setCompletedRandomSamplingChallengeRecord(
+            await this.repositoryModuleManager.setCompletedAndScoreRandomSamplingChallengeRecord(
                 newChallenge.id,
                 true,
+                score.toNumber(),
             );
             this.operationStatusService.emitChangeEvent(
                 'PROOF_SUBMITTED_SUCCESSFULLY',

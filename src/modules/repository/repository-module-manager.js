@@ -487,7 +487,11 @@ class RepositoryModuleManager extends BaseModuleManager {
         );
     }
 
-    async setCompletedRandomSamplingChallengeRecord(randomSamplingChallengeId, completed, options) {
+    async setCompletedAndScoreRandomSamplingChallengeRecord(
+        randomSamplingChallengeId,
+        completed,
+        options,
+    ) {
         return this.getRepository(
             'random_sampling_challenge',
         ).setCompletedRandomSamplingChallengeRecord(randomSamplingChallengeId, completed, options);

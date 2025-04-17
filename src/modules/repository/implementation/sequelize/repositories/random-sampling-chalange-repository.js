@@ -12,9 +12,14 @@ class RandomSamplingChallengeRepository {
         return this.model.update(randomSamplingChallenge, options);
     }
 
-    async setCompletedRandomSamplingChallengeRecord(randomSamplingChallengeId, completed, options) {
+    async setCompletedAndScoreRandomSamplingChallengeRecord(
+        randomSamplingChallengeId,
+        completed,
+        score,
+        options,
+    ) {
         return this.model.update(
-            { sentSuccessfully: completed },
+            { sentSuccessfully: completed, score },
             { where: { id: randomSamplingChallengeId }, ...options },
         );
     }
