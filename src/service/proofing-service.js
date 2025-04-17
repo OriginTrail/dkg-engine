@@ -21,6 +21,7 @@ class ProofingService {
         this.validationService = ctx.validationService;
         this.commandExecutor = ctx.commandExecutor;
         this.operationIdService = ctx.operationIdService;
+        this.operationStatusService = ctx.operationStatusService;
     }
 
     async initialize() {
@@ -79,6 +80,13 @@ class ProofingService {
             this.logger.error(
                 `Error in initial proofing run for ${blockchainId}: ${error.message}`,
                 { error, blockchainId },
+            );
+            this.operationStatusService.emitChangeEvent(
+                'PROOFING_ERROR',
+                this.generateOperationId(blockchainId, 0, 0),
+                blockchainId,
+                error.message,
+                error.stack,
             );
         } finally {
             isRunning = false;
@@ -143,6 +151,17 @@ class ProofingService {
                             latestChallenge.id,
                             true,
                             true,
+                        );
+                        this.operationStatusService.emitChangeEvent(
+                            'PROOF_CHALANGE_FINALIZED',
+                            this.generateOperationId(
+                                blockchainId,
+                                latestChallenge.epoch,
+                                latestChallenge.activeProofPeriodStartBlock,
+                            ),
+                            blockchainId,
+                            null,
+                            null,
                         );
                     } else {
                         this.logger.info(
@@ -234,6 +253,18 @@ class ProofingService {
         ) {
             throw new Error(createChallengeResult.error);
         }
+
+        this.operationStatusService.emitChangeEvent(
+            'PROOF_NEW_CHALANGE_GENERATED',
+            this.generateOperationId(
+                blockchainId,
+                createChallengeResult.epoch,
+                createChallengeResult.activeProofPeriodStartBlock,
+            ),
+            blockchainId,
+            null,
+            null,
+        );
         const newChallenge = await this.blockchainModuleManager.getNodeChallenge(
             blockchainId,
             nodeId,
@@ -259,6 +290,17 @@ class ProofingService {
         };
         const newRecord = await this.repositoryModuleManager.createRandomSamplingChallengeRecord(
             newChallengeRecord,
+        );
+        this.operationStatusService.emitChangeEvent(
+            'PROOF_NEW_CHALANGE_PERSISTED',
+            this.generateOperationId(
+                blockchainId,
+                newChallenge.epoch,
+                newChallenge.activeProofPeriodStartBlock,
+            ),
+            blockchainId,
+            null,
+            null,
         );
         return newRecord;
     }
@@ -327,7 +369,17 @@ class ProofingService {
         //     ual,
         //     data.assertion,
         // );
-
+        this.operationStatusService.emitChangeEvent(
+            'PROOF_ASSERTION_FETCHED',
+            this.generateOperationId(
+                blockchainId,
+                latestChallenge.epoch,
+                latestChallenge.activeProofPeriodStartBlock,
+            ),
+            blockchainId,
+            null,
+            null,
+        );
         return data.assertion;
     }
 
@@ -367,6 +419,17 @@ class ProofingService {
         const chunks = kcTools.splitIntoChunks(publicKnowledgeAssetsTriplesGrouped);
         const chunk = chunks[newChallenge.chunkNumber];
         await this.blockchainModuleManager.submitProof(blockchainId, chunk, proof.proof);
+        this.operationStatusService.emitChangeEvent(
+            'PROOF_SUBMITTED',
+            this.generateOperationId(
+                blockchainId,
+                newChallenge.epoch,
+                newChallenge.activeProofPeriodStartBlock,
+            ),
+            blockchainId,
+            null,
+            null,
+        );
         const score = await this.blockchainModuleManager.getNodeEpochProofPeriodScore(
             blockchainId,
             await this.blockchainModuleManager.getIdentityId(blockchainId),
@@ -378,9 +441,24 @@ class ProofingService {
                 newChallenge.id,
                 true,
             );
+            this.operationStatusService.emitChangeEvent(
+                'PROOF_SUBMITTED_SUCCESSFULLY',
+                this.generateOperationId(
+                    blockchainId,
+                    newChallenge.epoch,
+                    newChallenge.activeProofPeriodStartBlock,
+                ),
+                blockchainId,
+                null,
+                null,
+            );
         }
 
         return proof;
+    }
+
+    generateOperationId(blockchainId, epoch, activeProofPeriodStartBlock) {
+        return `${blockchainId}-${epoch}-${activeProofPeriodStartBlock}`;
     }
 
     // Add cleanup method to stop intervals
