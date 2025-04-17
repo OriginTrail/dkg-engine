@@ -172,6 +172,10 @@ class ParanetSyncCommand extends Command {
         let attempt = 0;
         let getResult;
 
+        const contentType =
+            paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED
+                ? TRIPLES_VISIBILITY.ALL
+                : TRIPLES_VISIBILITY.PUBLIC;
         await this.commandExecutor.add({
             name: 'getCommand',
             sequence: [],
@@ -184,10 +188,7 @@ class ParanetSyncCommand extends Command {
                 knowledgeCollectionId,
                 state: assertionId,
                 ual: this.ualService.deriveUAL(blockchain, contract, knowledgeCollectionId),
-                contentType:
-                    paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED
-                        ? TRIPLES_VISIBILITY.ALL
-                        : TRIPLES_VISIBILITY.PUBLIC,
+                contentType,
                 paranetId,
                 paranetUAL,
                 paranetNodesAccessPolicy,
@@ -230,6 +231,7 @@ class ParanetSyncCommand extends Command {
             5,
             50,
             paranetUAL,
+            contentType,
         );
     }
 

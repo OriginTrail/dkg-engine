@@ -306,6 +306,8 @@ export const COMMAND_TX_GAS_INCREASE_FACTORS = {
     SUBMIT_PROOFS: 1.2,
 };
 
+export const MIGRATION_FLAG_PATH = '.enrichment_migration_done_dkg';
+
 export const CONTRACT_FUNCTION_GAS_LIMIT_INCREASE_FACTORS = {};
 
 export const GNOSIS_DEFAULT_GAS_PRICE = {

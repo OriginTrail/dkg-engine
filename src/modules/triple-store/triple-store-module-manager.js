@@ -134,6 +134,7 @@ class TripleStoreModuleManager extends BaseModuleManager {
         repository,
         knowledgeCollectionUal,
         paranetUAL,
+        contentType,
     ) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(
@@ -142,6 +143,7 @@ class TripleStoreModuleManager extends BaseModuleManager {
                 repository,
                 knowledgeCollectionUal,
                 paranetUAL,
+                contentType,
             );
         }
     }
@@ -181,6 +183,20 @@ class TripleStoreModuleManager extends BaseModuleManager {
                 knowledgeAssetId,
                 visibility,
             );
+        }
+    }
+
+    async getKnowledgeCollectionNamedGraphsOld(
+        implementationName,
+        repository,
+        ual,
+        tokenIds,
+        visibility,
+    ) {
+        if (this.getImplementation(implementationName)) {
+            return this.getImplementation(
+                implementationName,
+            ).module.getKnowledgeCollectionNamedGraphsOld(repository, ual, tokenIds, visibility);
         }
     }
 
