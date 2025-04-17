@@ -1,6 +1,6 @@
 {
     "name": "origintrail_node",
-    "version": "8.0.4+hotfix.2",
+    "version": "8.0.5",
     "description": "OTNode V8",
     "main": "index.js",
     "type": "module",
@@ -74,7 +74,7 @@
         "@polkadot/util-crypto": "^10.1.7",
         "@questdb/nodejs-client": "^3.0.0",
         "app-root-path": "^3.1.0",
-        "assertion-tools": "^8.0.3",
+        "assertion-tools": "8.0.2",
         "async": "^3.2.4",
         "async-mutex": "^0.3.2",
         "awilix": "^7.0.3",
