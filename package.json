@@ -15,7 +15,7 @@
         "start:local_blockchain:v1": "npm explore dkg-evm-module -- npm run dev:v1 -- --port",
         "start:local_blockchain:v2": "npm explore dkg-evm-module -- npm run dev:v2 -- --port",
         "kill:local_blockchain": "npx kill-port --port",
-        "test:bdd": "cucumber-js  --tags \"not @ignore\" --fail-fast --format progress --format-options '{\"colorsEnabled\": true}' test/bdd/ --import test/bdd/steps/ --exit",
+        "test:bdd": "cucumber-js --config cucumber.js --tags \"not @ignore\" --format progress --format-options '{\"colorsEnabled\": true}' test/bdd/ --import test/bdd/steps/ --exit",
         "test:unit": "nyc --all mocha --exit $(find test/unit -name '*.js')",
         "test:modules": "nyc --all mocha --exit $(find test/unit/modules -name '*.js')",
         "test:bdd:release": "cucumber-js --tags=@release --fail-fast --format progress --format-options '{\"colorsEnabled\": true}' test/bdd/ --import test/bdd/steps/",
