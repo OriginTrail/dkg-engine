@@ -47,6 +47,11 @@ export const up = async ({ context: { queryInterface, Sequelize } }) => {
             type: Sequelize.BOOLEAN,
             defaultValue: false,
         },
+        score: {
+            allowNull: false,
+            type: Sequelize.INTEGER,
+            defaultValue: 0,
+        },
         created_at: {
             allowNull: false,
             type: Sequelize.DATE,

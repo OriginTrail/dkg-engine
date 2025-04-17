@@ -21,7 +21,7 @@ class ProofingService {
         this.validationService = ctx.validationService;
         this.commandExecutor = ctx.commandExecutor;
         this.operationIdService = ctx.operationIdService;
-        this.operationStatusService = ctx.operationStatusService;
+        this.operationIdService = ctx.operationIdService;
     }
 
     async initialize() {
@@ -81,7 +81,7 @@ class ProofingService {
                 `Error in initial proofing run for ${blockchainId}: ${error.message}`,
                 { error, blockchainId },
             );
-            this.operationStatusService.emitChangeEvent(
+            this.operationIdService.emitChangeEvent(
                 'PROOFING_ERROR',
                 this.generateOperationId(blockchainId, 0, 0),
                 blockchainId,
@@ -95,6 +95,7 @@ class ProofingService {
 
     async runProofing(blockchainId) {
         this.logger.debug(`Running proofing mechanism for ${blockchainId}`);
+        // TODO:rename to identityId
         const nodeId = await this.blockchainModuleManager.getIdentityId(blockchainId);
         // Check what is current proof period {isValid, activeProofPeriodStartBlock}
         const activeProofPeriodStatus =
@@ -152,8 +153,8 @@ class ProofingService {
                             true,
                             true,
                         );
-                        this.operationStatusService.emitChangeEvent(
-                            'PROOF_CHALLENGE_FINALIZED',
+                        this.operationIdService.emitChangeEvent(
+                            'PROOF_CHALANGE_FINALIZED',
                             this.generateOperationId(
                                 blockchainId,
                                 latestChallenge.epoch,
@@ -239,6 +240,7 @@ class ProofingService {
         }
     }
 
+    // TODO: It doesn't persist anything
     async getAndPersistNewChallenge(blockchainId, latestChallenge, nodeId) {
         // Node has challenge for previous period need to get new one
         // Get new challenge
@@ -254,8 +256,8 @@ class ProofingService {
             throw new Error(createChallengeResult.error);
         }
 
-        this.operationStatusService.emitChangeEvent(
-            'PROOF_NEW_CHALLENGE_GENERATED',
+        this.operationIdService.emitChangeEvent(
+            'PROOF_NEW_CHALANGE_GENERATED',
             this.generateOperationId(
                 blockchainId,
                 createChallengeResult.epoch,
@@ -276,6 +278,7 @@ class ProofingService {
                 newChallenge.activeProofPeriodStartBlock
         ) {
             // Delete old challenge before inserting new one
+            // TODO Does this delete?????
             await this.repositoryModuleManager.deleteRandomSamplingChallengeRecord(latestChallenge);
         }
         const newChallengeRecord = {
@@ -291,8 +294,8 @@ class ProofingService {
         const newRecord = await this.repositoryModuleManager.createRandomSamplingChallengeRecord(
             newChallengeRecord,
         );
-        this.operationStatusService.emitChangeEvent(
-            'PROOF_NEW_CHALLENGE_PERSISTED',
+        this.operationIdService.emitChangeEvent(
+            'PROOF_NEW_CHALANGE_PERSISTED',
             this.generateOperationId(
                 blockchainId,
                 newChallenge.epoch,
@@ -369,7 +372,7 @@ class ProofingService {
         //     ual,
         //     data.assertion,
         // );
-        this.operationStatusService.emitChangeEvent(
+        this.operationIdService.emitChangeEvent(
             'PROOF_ASSERTION_FETCHED',
             this.generateOperationId(
                 blockchainId,
@@ -419,7 +422,7 @@ class ProofingService {
         const chunks = kcTools.splitIntoChunks(publicKnowledgeAssetsTriplesGrouped);
         const chunk = chunks[newChallenge.chunkNumber];
         await this.blockchainModuleManager.submitProof(blockchainId, chunk, proof.proof);
-        this.operationStatusService.emitChangeEvent(
+        this.operationIdService.emitChangeEvent(
             'PROOF_SUBMITTED',
             this.generateOperationId(
                 blockchainId,
@@ -437,12 +440,13 @@ class ProofingService {
             newChallenge.activeProofPeriodStartBlock,
         );
         if (score.toNumber() > 0) {
+            // Move score persistence to finalization
             await this.repositoryModuleManager.setCompletedAndScoreRandomSamplingChallengeRecord(
                 newChallenge.id,
                 true,
                 score.toNumber(),
             );
-            this.operationStatusService.emitChangeEvent(
+            this.operationIdService.emitChangeEvent(
                 'PROOF_SUBMITTED_SUCCESSFULLY',
                 this.generateOperationId(
                     blockchainId,
