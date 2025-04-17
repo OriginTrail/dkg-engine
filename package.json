@@ -74,7 +74,7 @@
         "@polkadot/util-crypto": "^10.1.7",
         "@questdb/nodejs-client": "^3.0.0",
         "app-root-path": "^3.1.0",
-        "assertion-tools": "git+https://github.com/OriginTrail/assertion-tools.git#feature/calculate-merkle-root-from-proof",
+        "assertion-tools": "^8.0.3",
         "async": "^3.2.4",
         "async-mutex": "^0.3.2",
         "awilix": "^7.0.3",
