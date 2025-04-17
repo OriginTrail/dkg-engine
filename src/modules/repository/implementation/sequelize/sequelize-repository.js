@@ -19,7 +19,7 @@ import UserRepository from './repositories/user-repository.js';
 // import MissedParanetAssetRepository from './repositories/missed-paranet-asset-repository.js';
 // import ParanetSyncedAssetRepository from './repositories/paranet-synced-asset-repository.js';
 import FinalityStatusRepository from './repositories/finality-status-repository.js';
-import RandomSamplingChallengeRepository from './repositories/random-sampling-chalange-repository.js';
+import RandomSamplingChallengeRepository from './repositories/random-sampling-challenge-repository.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 

@@ -49,7 +49,7 @@ class RandomSamplingChallengeRepository {
         return this.model.destroy(randomSamplingChallenge, options);
     }
 
-    async deleteRandomSamplingChalangeForBlockchainIdEpoch(blockchainId, epoch) {
+    async deleteRandomSamplingChallengeForBlockchainIdEpoch(blockchainId, epoch) {
         return this.model.destroy({
             where: {
                 blockchainId,

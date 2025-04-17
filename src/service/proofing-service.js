@@ -153,7 +153,7 @@ class ProofingService {
                             true,
                         );
                         this.operationStatusService.emitChangeEvent(
-                            'PROOF_CHALANGE_FINALIZED',
+                            'PROOF_CHALLENGE_FINALIZED',
                             this.generateOperationId(
                                 blockchainId,
                                 latestChallenge.epoch,
@@ -255,7 +255,7 @@ class ProofingService {
         }
 
         this.operationStatusService.emitChangeEvent(
-            'PROOF_NEW_CHALANGE_GENERATED',
+            'PROOF_NEW_CHALLENGE_GENERATED',
             this.generateOperationId(
                 blockchainId,
                 createChallengeResult.epoch,
@@ -292,7 +292,7 @@ class ProofingService {
             newChallengeRecord,
         );
         this.operationStatusService.emitChangeEvent(
-            'PROOF_NEW_CHALANGE_PERSISTED',
+            'PROOF_NEW_CHALLENGE_PERSISTED',
             this.generateOperationId(
                 blockchainId,
                 newChallenge.epoch,
