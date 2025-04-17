@@ -294,9 +294,12 @@ class GetCommand extends Command {
             contract,
             knowledgeCollectionId,
             knowledgeAssetId,
+            tokenIds,
             includeMetadata,
             ual,
             paranetUAL,
+            migrationFlag,
+            repository,
         };
         const BATCH_SIZE = 5;
         let index = 0;

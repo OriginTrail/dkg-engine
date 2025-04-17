@@ -490,7 +490,6 @@ class OtTripleStore {
                     getNamedGraphsQuery,
                 );
             }
-            console.log(getNamedGraphsQuery);
             return publicPrivateMetadataConnections
                 .map((row) => row.g)
                 .filter((graph) => graph.includes(filter));
@@ -502,7 +501,6 @@ class OtTripleStore {
                 assertion.public = await this.construct(repository, singleGraph);
             } else {
                 const publicGraphs = await buildAllGraphs('/public');
-                console.log(publicGraphs);
                 assertion.public = publicGraphs.length
                     ? await this.construct(repository, getConstructQuery(publicGraphs))
                     : '';
