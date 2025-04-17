@@ -20,17 +20,21 @@ class OtBlazegraph extends OtTripleStore {
             await axios.post(
                 `${url}/blazegraph/namespace`,
                 `com.bigdata.rdf.sail.truthMaintenance=false\n` +
-                    `com.bigdata.namespace.${name}.lex.com.bigdata.btree.BTree.branchingFactor=400\n` +
+                    `com.bigdata.namespace.${name}.spo.com.bigdata.btree.BTree.branchingFactor=1024\n` +
                     `com.bigdata.rdf.store.AbstractTripleStore.textIndex=false\n` +
                     `com.bigdata.rdf.store.AbstractTripleStore.justify=false\n` +
-                    `com.bigdata.namespace.${name}.spo.com.bigdata.btree.BTree.branchingFactor=1024\n` +
                     `com.bigdata.rdf.store.AbstractTripleStore.statementIdentifiers=false\n` +
                     `com.bigdata.rdf.store.AbstractTripleStore.axiomsClass=com.bigdata.rdf.axioms.NoAxioms\n` +
                     `com.bigdata.rdf.sail.namespace=${name}\n` +
                     `com.bigdata.rdf.store.AbstractTripleStore.quads=true\n` +
+                    `com.bigdata.namespace.${name}.lex.com.bigdata.btree.BTree.branchingFactor=400\n` +
                     `com.bigdata.rdf.store.AbstractTripleStore.geoSpatial=false\n` +
                     `com.bigdata.journal.Journal.groupCommit=false\n` +
-                    `com.bigdata.rdf.sail.isolatableIndices=false\n`,
+                    `com.bigdata.rdf.sail.isolatableIndices=false\n` +
+                    `com.bigdata.rdf.store.AbstractTripleStore.enableRawRecordsSupport=false\n` +
+                    `com.bigdata.rdf.store.AbstractTripleStore.Options.inlineTextLiterals=true\n` +
+                    `com.bigdata.rdf.store.AbstractTripleStore.Options.maxInlineTextLength=128\n` +
+                    `com.bigdata.rdf.store.AbstractTripleStore.Options.blobsThreshold=256\n`,
                 {
                     headers: {
                         'Content-Type': 'text/plain',
@@ -101,6 +105,14 @@ class OtBlazegraph extends OtTripleStore {
         } catch (e) {
             return false;
         }
+    }
+
+    async queryVoid(repository, query) {
+        return axios.post(this.repositories[repository].sparqlEndpoint, query, {
+            headers: {
+                'Content-Type': 'application/sparql-update; charset=UTF-8',
+            },
+        });
     }
 
     async deleteRepository(repository) {

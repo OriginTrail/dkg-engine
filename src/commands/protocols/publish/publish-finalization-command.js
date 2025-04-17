@@ -70,11 +70,14 @@ class PublishFinalizationCommand extends Command {
                 OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_STORE_ASSERTION_START,
             );
 
-            await this.tripleStoreService.insertKnowledgeCollection(
+            const totalTriples = await this.tripleStoreService.insertKnowledgeCollection(
                 TRIPLE_STORE_REPOSITORIES.DKG,
                 ual,
                 assertion,
             );
+
+            await this.repositoryModuleManager.incrementInsertedTriples(totalTriples ?? 0);
+            this.logger.info(`Number of triples added to the database +${totalTriples}`);
 
             await this.operationIdService.updateOperationIdStatus(
                 operationId,
