@@ -1,3 +1,4 @@
+import Command from '../../../command.js';
 import NetworkProtocolCommand from '../../common/network-protocol-command.js';
 import {
     COMMAND_PRIORITY,
@@ -12,8 +13,18 @@ class NetworkFinalityCommand extends NetworkProtocolCommand {
         this.ualService = ctx.ualService;
 
         this.errorType = ERROR_TYPE.FINALITY.FINALITY_NETWORK_ERROR;
-        this.operationStartEvent = OPERATION_ID_STATUS.FINALITY.FINALITY_NETWORK_START;
-        this.operationEndEvent = OPERATION_ID_STATUS.FINALITY.FINALITY_NETWORK_END;
+    }
+
+    async execute(command) {
+        await super.execute(command);
+
+        const { operationId, blockchain } = command.data;
+
+        await this.operationService.markOperationAsCompleted(operationId, blockchain, null, [
+            OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_END,
+        ]);
+
+        return Command.empty();
     }
 
     /**

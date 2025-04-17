@@ -1,5 +1,5 @@
 import NetworkProtocolCommand from '../../common/network-protocol-command.js';
-import { ERROR_TYPE, OPERATION_ID_STATUS } from '../../../../constants/constants.js';
+import { ERROR_TYPE } from '../../../../constants/constants.js';
 
 class NetworkUpdateCommand extends NetworkProtocolCommand {
     constructor(ctx) {
@@ -8,8 +8,6 @@ class NetworkUpdateCommand extends NetworkProtocolCommand {
         this.ualService = ctx.ualService; // can we remove this
 
         this.errorType = ERROR_TYPE.UPDATE.UPDATE_NETWORK_START_ERROR;
-        this.operationStartEvent = OPERATION_ID_STATUS.UPDATE.UPDATE_NETWORK_START;
-        this.operationEndEvent = OPERATION_ID_STATUS.UPDATE.UPDATE_NETWORK_END;
     }
 
     /**

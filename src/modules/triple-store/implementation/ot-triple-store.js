@@ -9,6 +9,9 @@ import {
     BASE_NAMED_GRAPHS,
     TRIPLE_ANNOTATION_LABEL_PREDICATE,
     TRIPLES_VISIBILITY,
+    DKG_PREDICATE,
+    HAS_KNOWLEDGE_ASSET_SUFFIX,
+    HAS_NAMED_GRAPH_SUFFIX,
 } from '../../../constants/constants.js';
 
 class OtTripleStore {
@@ -278,43 +281,88 @@ class OtTripleStore {
         retries = 5,
         retryDelay = 10,
     ) {
-        const queries = uals.map(
-            (ual, index) => `
-                PREFIX schema: <${SCHEMA_CONTEXT}>
-                INSERT DATA {
-                    GRAPH <${ual}/${visibility}> {
-                        ${assetsNQuads[index].join('\n')}
-                    }
+        const graphInserts = uals
+            .map(
+                (ual, index) => `
+                GRAPH <${ual}/${visibility}> {
+                    ${assetsNQuads[index].join('\n')}
                 }
             `,
-        );
-        for (const [index, query] of queries.entries()) {
-            let attempts = 0;
-            let success = false;
+            )
+            .join('\n');
 
-            while (attempts < retries && !success) {
-                try {
-                    await this.queryVoid(repository, query);
-                    success = true;
-                } catch (error) {
-                    attempts += 1;
-                    if (attempts <= retries) {
-                        this.logger.warn(
-                            `Insert failed for GRAPH <${uals[index]}/${visibility}>. Attempt ${attempts}/${retries}. Retrying in ${retryDelay}ms.`,
-                        );
-                        await setTimeout(retryDelay);
-                    } else {
-                        throw new Error(
-                            `Failed to insert into GRAPH <${uals[index]}/${visibility}> after ${retries} attempts.`,
-                        );
-                    }
+        const query = `
+            PREFIX schema: <${SCHEMA_CONTEXT}>
+            INSERT DATA {
+                ${graphInserts}
+            }
+        `;
+
+        let attempts = 0;
+        let success = false;
+
+        while (attempts < retries && !success) {
+            try {
+                await this.queryVoid(repository, query);
+                success = true;
+            } catch (error) {
+                attempts += 1;
+                if (attempts <= retries) {
+                    this.logger.warn(
+                        `Batch insert failed for ${uals[0]
+                            .split('/')
+                            .slice(0, -1)
+                            .join(
+                                '/',
+                            )} graphs. Attempt ${attempts}/${retries}. Retrying in ${retryDelay}ms.`,
+                    );
+                    await setTimeout(retryDelay);
+                } else {
+                    throw new Error(
+                        `Failed to perform batch insert after ${retries} attempts. Error: ${error.message}`,
+                    );
                 }
             }
         }
     }
 
-    async deleteKnowledgeCollectionNamedGraphs(repository, uals) {
-        const query = `${uals.map((ual) => `DROP GRAPH <${ual}>`).join(';\n')};`;
+    async insertMetadataTriples(repository, kcUAL, kaUALs, visibility) {
+        const currentTriples = kaUALs
+            .map(
+                (ual) =>
+                    `<current:graph> <${DKG_PREDICATE}${HAS_NAMED_GRAPH_SUFFIX}> <${ual}/${visibility}> .`,
+            )
+            .join('\n');
+
+        const connectionTriples = kaUALs
+            .map((ual) => {
+                const graphWithVisibility = `${ual}/${visibility}`;
+                return [
+                    `<${kcUAL}> <${DKG_PREDICATE}${HAS_KNOWLEDGE_ASSET_SUFFIX}> <${ual}> .`,
+                    `<${kcUAL}> <${DKG_PREDICATE}${HAS_NAMED_GRAPH_SUFFIX}> <${graphWithVisibility}> .`,
+                ].join('\n');
+            })
+            .join('\n');
+
+        const query = `
+            INSERT DATA {
+                GRAPH <${BASE_NAMED_GRAPHS.CURRENT}> {
+                    ${currentTriples}
+                }
+
+                GRAPH <${BASE_NAMED_GRAPHS.METADATA}> {
+                    ${connectionTriples}
+                }
+            }
+        `;
+
+        await this.queryVoid(repository, query);
+    }
+
+    async deleteKnowledgeCollectionNamedGraphs(repository, namedGraphs) {
+        if (!namedGraphs || namedGraphs.length === 0) return;
+
+        const query = `${namedGraphs.map((graph) => `DROP GRAPH <${graph}>`).join(';\n')};`;
 
         await this.queryVoid(repository, query);
     }
@@ -456,16 +504,12 @@ class OtTripleStore {
         await this.queryVoid(repository, query);
     }
 
-    async deleteKnowledgeCollectionMetadata(repository, ual) {
-        const query = `
-            DELETE
-            WHERE {
-                GRAPH <${BASE_NAMED_GRAPHS.METADATA}> {
-                    ?ual ?p ?o .
-                    FILTER(STRSTARTS(STR(?ual), "${ual}/"))
-                }
-            }
-        `;
+    async deleteKnowledgeCollectionMetadata(repository, uals) {
+        const cleanedUals = [...new Set(uals.map((ual) => ual.replace(/\/(public|private)$/, '')))];
+
+        const query = `${cleanedUals
+            .map((ual) => `DELETE WHERE { <${ual}> ?p ?o . }`)
+            .join(';\n')};`;
 
         await this.queryVoid(repository, query);
     }

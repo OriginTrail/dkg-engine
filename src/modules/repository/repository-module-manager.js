@@ -68,6 +68,14 @@ class RepositoryModuleManager extends BaseModuleManager {
         return this.getRepository('command').findFinalizedCommands(timestamp, limit, options);
     }
 
+    async findAndRemoveFinalizedCommands(timestamp, limit, options = {}) {
+        return this.getRepository('command').findAndRemoveFinalizedCommands(
+            timestamp,
+            limit,
+            options,
+        );
+    }
+
     async findUnfinalizedCommandsByName(limit, options = {}) {
         return this.getRepository('command').findUnfinalizedCommandsByName(limit, options);
     }
@@ -126,6 +134,15 @@ class RepositoryModuleManager extends BaseModuleManager {
         );
     }
 
+    async findAndRemoveProcessedOperationRecords(operation, timestamp, limit, options = {}) {
+        return this.getRepository('operation').findAndRemoveProcessedOperationRecords(
+            operation,
+            timestamp,
+            limit,
+            options,
+        );
+    }
+
     async getOperationStatus(operation, operationId, options = {}) {
         return this.getRepository('operation').getOperationStatus(operation, operationId, options);
     }
@@ -166,6 +183,15 @@ class RepositoryModuleManager extends BaseModuleManager {
         );
     }
 
+    async findAndRemoveProcessedOperationResponse(operation, timestamp, limit, options = {}) {
+        return this.getRepository('operation_response').findAndRemoveProcessedOperationResponse(
+            operation,
+            timestamp,
+            limit,
+            options,
+        );
+    }
+
     async removeOperationResponse(ids, operation, options = {}) {
         return this.getRepository('operation_response').removeOperationResponse(
             ids,
@@ -198,8 +224,8 @@ class RepositoryModuleManager extends BaseModuleManager {
         return this.getRepository('shard').getPeerRecord(peerId, blockchain, options);
     }
 
-    async getAllPeerRecords(blockchain, options = {}) {
-        return this.getRepository('shard').getAllPeerRecords(blockchain, options);
+    async getAllPeerRecords(blockchain, filterInactive = false, options = {}) {
+        return this.getRepository('shard').getAllPeerRecords(blockchain, filterInactive, options);
     }
 
     async getPeerRecordsByIds(blockchain, peerIds, options = {}) {
@@ -325,6 +351,14 @@ class RepositoryModuleManager extends BaseModuleManager {
         );
     }
 
+    async findAndRemoveProcessedEvents(timestamp, limit, options = {}) {
+        return this.getRepository('blockchain_event').findAndRemoveProcessedEvents(
+            timestamp,
+            limit,
+            options,
+        );
+    }
+
     async getLastCheckedBlock(blockchain, options = {}) {
         return this.getRepository('blockchain').getLastCheckedBlock(blockchain, options);
     }
@@ -440,6 +474,10 @@ class RepositoryModuleManager extends BaseModuleManager {
             peerId,
             options,
         );
+    }
+
+    async incrementInsertedTriples(count) {
+        return this.getRepository('inserted_triples').increment(count);
     }
 }
 

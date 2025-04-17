@@ -9,13 +9,6 @@ class AskFindShardCommand extends FindShardCommand {
         this.errorType = ERROR_TYPE.FIND_SHARD.ASK_FIND_SHARD_ERROR;
         this.operationStartEvent = OPERATION_ID_STATUS.ASK.ASK_FIND_NODES_START;
         this.operationEndEvent = OPERATION_ID_STATUS.ASK.ASK_FIND_NODES_END;
-        this.findShardNodesStartEvent =
-            OPERATION_ID_STATUS.ASK.ASK_FIND_NODES_FIND_SHARD_NODES_START;
-        this.findShardNodesEndEvent = OPERATION_ID_STATUS.ASK.ASK_FIND_NODES_FIND_SHARD_NODES_END;
-        this.processFoundNodesStartEvent =
-            OPERATION_ID_STATUS.ASK.ASK_FIND_NODES_PROCESS_FOUND_NODES_START;
-        this.processFoundNodesEndEvent =
-            OPERATION_ID_STATUS.ASK.ASK_FIND_NODES_PROCESS_FOUND_NODES_END;
     }
 
     // eslint-disable-next-line no-unused-vars
