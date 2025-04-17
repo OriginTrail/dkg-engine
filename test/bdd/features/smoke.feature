@@ -1,10 +1,10 @@
-Feature: Check Nodes Uptime By Info API Call
+Feature: Check Nodes Uptime
   Background: Setup local blockchain, bootstraps and nodes
     Given the blockchains are set up
     And 1 bootstrap is running
 
   @smoke
-  Scenario: Setting up and tearing down infrastucture
+  Scenario: Setting up and Checking Uptime of Nodes by Info API Calls
   Given infrastucture is functional
   And I setup 2 aditional nodes
   And I wait for 5 seconds

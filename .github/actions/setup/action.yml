@@ -33,6 +33,7 @@ runs:
       shell: bash
       run: |
         npm install
+        npm install --save-dev rollup@4.40.0
         npm explore dkg-evm-module -- npm run compile
     
     - if: steps.cache-blazegraph.outputs.cache-hit != 'true'
