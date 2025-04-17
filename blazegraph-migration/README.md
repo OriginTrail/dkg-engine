@@ -4,22 +4,22 @@ After finishing both export and import processes, the check_quad_num.sh should b
 
 We recommend migrating before the 8.0.6 release, as it will add more data and increase future migration time. The process removes blazegraph.jnl and rebuilds it from exported DKG and paranet repositories — so if you have custom data, review the script and back up your journal file first.
 
-Before running the migration, move the blazegraph.jnl that you are migrating from to the ot-node directory and make sure blazegraph is running.
+Before running the migration, make sure the blazegraph.jnl you are migrating is in the ot-node directory and that blazegraph is running.
 
 Export script (to export dkg and paranet namespaces):
 
 ```bash
-nohup ./current/blazegraph-migrations/export.sh /path_to_ot_node/ot-node dkg $(curl -s http://localhost:9999/blazegraph/namespace | grep -oP '<Namespace[^>]*>\K[^<]+' | grep '^paranet-') | tee export_migration.log &
+nohup ./current/blazegraph-migration/export.sh /path_to_ot_node/ot-node dkg $(curl -s http://localhost:9999/blazegraph/namespace | grep -oP '<Namespace[^>]*>\K[^<]+' | grep '^paranet-') | tee export_migration.log &
 ```
 
 Import script:
 
 ```bash
-./current/blazegraph-migrations/import.sh
+./current/blazegraph-migration/import.sh
 ```
 
 Check quad number:
 
 ```bash
-./current/blazegraph-migrations/check_quad_num.sh
+./current/blazegraph-migration/check_quad_num.sh
 ```
