@@ -314,7 +314,6 @@ class OTNode {
     async initializeParanets() {
         const blockchainModuleManager = this.container.resolve('blockchainModuleManager');
         const tripleStoreService = this.container.resolve('tripleStoreService');
-        const tripleStoreModuleManager = this.container.resolve('tripleStoreModuleManager');
         const paranetService = this.container.resolve('paranetService');
         const ualService = this.container.resolve('ualService');
         const validParanets = [];
@@ -387,9 +386,7 @@ class OTNode {
             }
 
             validParanets.push(paranetUAL);
-            const repository = paranetService.getParanetRepositoryName(paranetUAL);
             // eslint-disable-next-line no-await-in-loop
-            await tripleStoreModuleManager.initializeParanetRepository(repository);
             // eslint-disable-next-line no-await-in-loop
             await paranetService.initializeParanetRecord(blockchain, paranetId);
         }

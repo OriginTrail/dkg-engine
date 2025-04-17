@@ -326,6 +326,40 @@ class OtTripleStore {
         }
     }
 
+    async createParanetKnoledgeCollectionConnection(repository, kcUAL, paranetUAL, contentType) {
+        const getNamedGraphsQuery = `
+            PREFIX dkg: <https://ontology.origintrail.io/dkg/1.0#>
+            SELECT ?g WHERE {
+                GRAPH <metadata:graph> {
+                    <${kcUAL}> dkg:hasNamedGraph ?g .
+                }
+            }
+        `;
+
+        let metadataConnections = await this.select(repository, getNamedGraphsQuery);
+
+        if (contentType === 'public') {
+            metadataConnections = metadataConnections.filter((row) => !row.g.includes('/private'));
+        }
+
+        const paranetConnectionTriples = metadataConnections
+            .map(
+                (row) =>
+                    ` <${paranetUAL}> <${DKG_PREDICATE}${HAS_NAMED_GRAPH_SUFFIX}> <${row.g}> .`,
+            )
+            .join('\n');
+
+        const query = `
+        INSERT DATA {
+            GRAPH <${paranetUAL}> {
+                   ${paranetConnectionTriples}
+            }
+        }
+        `;
+
+        await this.queryVoid(repository, query);
+    }
+
     async insertMetadataTriples(repository, kcUAL, kaUALs, visibility) {
         const currentTriples = kaUALs
             .map(
@@ -365,6 +399,55 @@ class OtTripleStore {
         const query = `${namedGraphs.map((graph) => `DROP GRAPH <${graph}>`).join(';\n')};`;
 
         await this.queryVoid(repository, query);
+    }
+
+    async getKnowledgeCollectionNamedGraphsOld(repository, ual, tokenIds, visibility) {
+        const namedGraphs = Array.from(
+            { length: tokenIds.endTokenId - tokenIds.startTokenId + 1 },
+            (_, i) => tokenIds.startTokenId + i,
+        )
+            .filter((id) => !tokenIds.burned.includes(id))
+            .map((id) => `${ual}/${id}`);
+
+        const assertion = {};
+        if (visibility === TRIPLES_VISIBILITY.PUBLIC || visibility === TRIPLES_VISIBILITY.ALL) {
+            const query = `
+            PREFIX schema: <http://schema.org/>
+            CONSTRUCT {
+                ?s ?p ?o .
+              }
+              WHERE {
+                GRAPH ?g {
+                  ?s ?p ?o .
+                }
+                VALUES ?g {
+                    ${namedGraphs
+                        .map((graph) => `<${graph}/${TRIPLES_VISIBILITY.PUBLIC}>`)
+                        .join('\n')}
+                }
+              }`;
+            assertion.public = await this.construct(repository, query);
+        }
+        if (visibility === TRIPLES_VISIBILITY.PRIVATE || visibility === TRIPLES_VISIBILITY.ALL) {
+            const query = `
+            PREFIX schema: <http://schema.org/>
+            CONSTRUCT {
+                ?s ?p ?o .
+              }
+              WHERE {
+                GRAPH ?g {
+                  ?s ?p ?o .
+                }
+                VALUES ?g {
+                    ${namedGraphs
+                        .map((graph) => `<${graph}/${TRIPLES_VISIBILITY.PRIVATE}>`)
+                        .join('\n')}
+                }
+              }`;
+            assertion.private = await this.construct(repository, query);
+        }
+
+        return assertion;
     }
 
     async getKnowledgeCollectionNamedGraphs(repository, ual, knowledgeAssetId, visibility) {

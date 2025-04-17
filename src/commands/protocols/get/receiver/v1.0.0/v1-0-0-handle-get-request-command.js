@@ -30,10 +30,13 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
             contract,
             knowledgeCollectionId,
             knowledgeAssetId,
+            tokenIds,
             ual,
             includeMetadata,
             paranetUAL,
             remotePeerId,
+            migrationFlag,
+            repository,
         } = commandData;
 
         if (paranetUAL) {
@@ -100,7 +103,10 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
                     contract,
                     knowledgeCollectionId,
                     knowledgeAssetId,
+                    tokenIds,
+                    migrationFlag,
                     TRIPLES_VISIBILITY.ALL,
+                    repository,
                 );
 
                 if (assertion?.public?.length) {
@@ -126,7 +132,10 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
             contract,
             knowledgeCollectionId,
             knowledgeAssetId,
+            tokenIds,
+            migrationFlag,
             TRIPLES_VISIBILITY.PUBLIC,
+            repository,
         );
 
         promises.push(assertionPromise);
