@@ -49,7 +49,7 @@ export const up = async ({ context: { queryInterface, Sequelize } }) => {
         },
         score: {
             allowNull: false,
-            type: Sequelize.INTEGER,
+            type: Sequelize.BIGINT,
             defaultValue: 0,
         },
         created_at: {
