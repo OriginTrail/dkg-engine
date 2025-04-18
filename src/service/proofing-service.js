@@ -285,7 +285,7 @@ class ProofingService {
             blockchainId,
             epoch: newChallenge.epoch.toNumber(),
             activeProofPeriodStartBlock: newChallenge.activeProofPeriodStartBlock.toNumber(),
-            contractAddress: newChallenge.knowledgeCollectionStorageContract,
+            contractAddress: newChallenge.knowledgeCollectionStorageContract.toLowerCase(),
             knowledgeCollectionId: newChallenge.knowledgeCollectionId.toNumber(),
             chunkNumber: newChallenge.chunkId.toNumber(),
             sentSuccessfully: false,
