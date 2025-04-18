@@ -321,7 +321,7 @@ class ProofingService {
             data: {
                 operationId: getOperationId,
                 blockchain: blockchainId,
-                contract: latestChallenge.contractAddress,
+                contract: latestChallenge.contractAddress.toLowerCase(),
                 knowledgeCollectionId: latestChallenge.knowledgeCollectionId, // latestChallenge.knowledgeCollectionId,
                 state: 0,
                 ual,
@@ -330,7 +330,6 @@ class ProofingService {
             transactional: false,
         });
 
-        attempt = 0;
         do {
             // eslint-disable-next-line no-await-in-loop
             await setTimeout(500);
