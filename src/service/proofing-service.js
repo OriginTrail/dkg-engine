@@ -330,6 +330,7 @@ class ProofingService {
             transactional: false,
         });
 
+        attempt = 0;
         do {
             // eslint-disable-next-line no-await-in-loop
             await setTimeout(500);
