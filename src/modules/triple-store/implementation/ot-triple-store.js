@@ -501,6 +501,8 @@ class OtTripleStore {
             }
         `;
 
+        console.log('query', query);
+
         await this.queryVoid(repository, query);
     }
 

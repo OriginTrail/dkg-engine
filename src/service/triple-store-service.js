@@ -40,6 +40,7 @@ class TripleStoreService {
         repository,
         knowledgeCollectionUAL,
         triples,
+        metadata,
         retries = 5,
         retryDelay = 50,
     ) {
@@ -215,13 +216,23 @@ class TripleStoreService {
         }
 
         // TODO: add new metadata triples and move to function insertMetadataTriples
-        const metadataTriples = publicKnowledgeAssetsUALs
+        let metadataTriples = publicKnowledgeAssetsUALs
             .map(
                 (publicKnowledgeAssetUAL) =>
                     `<${publicKnowledgeAssetUAL}> <http://schema.org/states> "${publicKnowledgeAssetUAL}:0" .`,
             )
             .join('\n');
-        totalNumberOfTriplesInserted += publicKnowledgeAssetsUALs.length; // one metadata triple for each public KA
+
+        metadataTriples +=
+            `\n<${knowledgeCollectionUAL}> <https://ontology.origintrail.io/dkg/1.0/#publishedBy> <did:dkg:publisherKey:${metadata.publisherKey}> .` +
+            `\n<${knowledgeCollectionUAL}> <https://ontology.origintrail.io/dkg/1.0/#publishedAtBlock> "${metadata.blockNumber}" .` +
+            `\n<${knowledgeCollectionUAL}> <https://ontology.origintrail.io/dkg/1.0/#publishTx> "${metadata.txHash}" .` +
+            `\n<${knowledgeCollectionUAL}> <https://ontology.origintrail.io/dkg/1.0/#publishTime> "${new Date().toISOString()}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .` +
+            `\n<${knowledgeCollectionUAL}> <https://ontology.origintrail.io/dkg/1.0/#blockTime> "${new Date(
+                metadata.blockTimestamp * 1000,
+            ).toISOString()}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`;
+
+        totalNumberOfTriplesInserted += publicKnowledgeAssetsUALs.length + 5; // one metadata triple for each public KA
 
         promises.push(
             this.tripleStoreModuleManager.insertKnowledgeCollectionMetadata(

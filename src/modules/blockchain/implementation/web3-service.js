@@ -1208,6 +1208,15 @@ class Web3Service {
         );
     }
 
+    async getTransaction(txHash) {
+        return this.provider.getTransaction(txHash);
+    }
+
+    async getBlockTimestamp(blockNumber) {
+        const block = await this.provider.getBlock(blockNumber);
+        return block.timestamp;
+    }
+
     // SUPPORT FOR OLD CONTRACTS
     async getLatestAssertionId(assetContractAddress, tokenId) {
         const assetStorageContractInstance =
