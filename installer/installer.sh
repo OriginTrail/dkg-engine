@@ -165,14 +165,30 @@ install_blazegraph() {
 }
 
 check_neptune() {
-    response=$(curl -s -G "$NEPTUNE_ENDPOINT/status")
-    status=$(echo "$response" | jq -r '.status')
-    if [[ "$status" == "healthy" ]]; then
-	echo "The Neptune service is running and healthy."
-    else
-        echo "The service is not healthy or not running."
-        exit 1
-    fi
+    local max_attempts=3
+    local attempt=1
+
+    while (( attempt <= max_attempts )); do
+        read -p "Enter the Neptune endpoint: " NEPTUNE_ENDPOINT
+
+        echo "Checking health for: $NEPTUNE_ENDPOINT"
+
+        response=$(curl -s -G "$NEPTUNE_ENDPOINT/status")
+        status=$(echo "$response" | jq -r '.status')
+
+        if [[ "$status" == "healthy" ]]; then
+            echo "The Neptune service is running and healthy."
+            tripleStoreUrl=$NEPTUNE_ENDPOINT
+            return 0
+        else
+            echo "The service is not healthy or not running. Attempt $attempt of $max_attempts."
+        fi
+
+        ((attempt++))
+    done
+
+    echo "Failed to connect to a healthy Neptune service after $max_attempts attempts. Exiting."
+    exit 1
 }
 
 install_sql() {
