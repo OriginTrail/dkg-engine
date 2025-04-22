@@ -61,6 +61,7 @@ class OTNode {
         await this.initializeRouters();
         await this.startNetworkModule();
         this.resumeCommandExecutor();
+        await this.initializeProofing();
         this.logger.info('Node is up and running!');
     }
 
@@ -395,6 +396,11 @@ class OTNode {
         }
         this.config.assetSync.syncParanets = validParanets;
         tripleStoreService.initializeRepositories();
+    }
+
+    async initializeProofing() {
+        const proofingService = this.container.resolve('proofingService');
+        await proofingService.initialize();
     }
 
     stop(code = 0) {
