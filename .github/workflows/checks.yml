@@ -5,7 +5,7 @@ on:
     types: [opened, reopened, synchronize]
   push:
     branches:
-      - bdd-tests
+      - '**'
 
 env:
   REPOSITORY_PASSWORD: password
