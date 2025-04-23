@@ -95,18 +95,33 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
                         },
                     };
                 }
-                const assertion = await this.tripleStoreService.getAssertion(
-                    blockchain,
-                    contract,
-                    knowledgeCollectionId,
-                    knowledgeAssetId,
-                    TRIPLES_VISIBILITY.ALL,
+                const promises = [];
+                promises.push(
+                    this.tripleStoreService.getAssertion(
+                        blockchain,
+                        contract,
+                        knowledgeCollectionId,
+                        knowledgeAssetId,
+                        TRIPLES_VISIBILITY.ALL,
+                    ),
                 );
+
+                if (includeMetadata) {
+                    const metadataPromise = this.tripleStoreService.getAssertionMetadata(
+                        blockchain,
+                        contract,
+                        knowledgeCollectionId,
+                        knowledgeAssetId,
+                    );
+                    promises.push(metadataPromise);
+                }
+
+                const [assertion, metadata] = await Promise.all(promises);
 
                 if (assertion?.public?.length) {
                     return {
                         messageType: NETWORK_MESSAGE_TYPES.RESPONSES.ACK,
-                        messageData: { assertion },
+                        messageData: { assertion, metadata },
                     };
                 }
 

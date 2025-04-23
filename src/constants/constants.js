@@ -57,6 +57,14 @@ export const TRIPLE_ANNOTATION_LABEL_PREDICATE = 'https://ontology.origintrail.i
 export const PRIVATE_RESOURCE_PREDICATE =
     'https://ontology.origintrail.io/dkg/1.0#representsPrivateResource';
 
+export const DKG_METADATA_PREDICATES = {
+    PUBLISHED_BY: 'https://ontology.origintrail.io/dkg/1.0/#publishedBy',
+    PUBLISHED_AT_BLOCK: 'https://ontology.origintrail.io/dkg/1.0/#publishedAtBlock',
+    PUBLISH_TX: 'https://ontology.origintrail.io/dkg/1.0/#publishTx',
+    PUBLISH_TIME: 'https://ontology.origintrail.io/dkg/1.0/#publishTime',
+    BLOCK_TIME: 'https://ontology.origintrail.io/dkg/1.0/#blockTime',
+};
+
 export const PRIVATE_HASH_SUBJECT_PREFIX = 'https://ontology.origintrail.io/dkg/1.0#metadata-hash:';
 
 export const UAL_PREDICATE = '<https://ontology.origintrail.io/dkg/1.0#UAL>';

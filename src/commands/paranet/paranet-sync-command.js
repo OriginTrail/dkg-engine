@@ -13,6 +13,7 @@ import {
     PARANET_NODES_ACCESS_POLICIES,
     PARANET_ACCESS_POLICY,
     TRIPLES_VISIBILITY,
+    DKG_METADATA_PREDICATES,
 } from '../../constants/constants.js';
 
 class ParanetSyncCommand extends Command {
@@ -187,6 +188,7 @@ class ParanetSyncCommand extends Command {
                     paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED
                         ? TRIPLES_VISIBILITY.ALL
                         : TRIPLES_VISIBILITY.PUBLIC,
+                includeMetadata: true,
                 paranetId,
                 paranetUAL,
                 paranetNodesAccessPolicy,
@@ -223,10 +225,47 @@ class ParanetSyncCommand extends Command {
         );
 
         const paranetRepository = this.paranetService.getParanetRepositoryName(paranetUAL);
+        const metadata = {};
+        data.metadata.forEach((line) => {
+            for (const predicate of Object.values(DKG_METADATA_PREDICATES)) {
+                if (line.includes(predicate)) {
+                    switch (predicate) {
+                        case DKG_METADATA_PREDICATES.PUBLISHED_BY:
+                            metadata.publisherKey = line
+                                .split(' ')[2]
+                                .split('/')[1]
+                                .replaceAll('>', '');
+                            break;
+                        case DKG_METADATA_PREDICATES.PUBLISHED_AT_BLOCK:
+                            metadata.blockNumber = line.split(' ')[2].trim().replaceAll('"', '');
+                            break;
+                        case DKG_METADATA_PREDICATES.PUBLISH_TX:
+                            metadata.txHash = line.split(' ')[2].trim().replaceAll('"', '');
+                            break;
+                        case DKG_METADATA_PREDICATES.BLOCK_TIME:
+                            metadata.blockTimestamp =
+                                new Date(
+                                    line
+                                        .split(' ')[2]
+                                        .trim()
+                                        .replaceAll('"', '')
+                                        .replaceAll(
+                                            '^^<http://www.w3.org/2001/XMLSchema#dateTime>',
+                                            '',
+                                        ),
+                                ).getTime() / 1000;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+        });
         await this.tripleStoreService.insertKnowledgeCollection(
             paranetRepository,
             ual,
             data.assertion,
+            metadata,
         );
     }
 

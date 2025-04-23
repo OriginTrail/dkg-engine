@@ -9,6 +9,7 @@ import {
     DKG_PREDICATE,
     HAS_KNOWLEDGE_ASSET_SUFFIX,
     HAS_NAMED_GRAPH_SUFFIX,
+    DKG_METADATA_PREDICATES,
 } from '../constants/constants.js';
 
 class TripleStoreService {
@@ -223,11 +224,13 @@ class TripleStoreService {
             .join('\n');
 
         metadataTriples +=
-            `\n<${knowledgeCollectionUAL}> <https://ontology.origintrail.io/dkg/1.0/#publishedBy> <did:dkg:publisherKey/${metadata.publisherKey}> .` +
-            `\n<${knowledgeCollectionUAL}> <https://ontology.origintrail.io/dkg/1.0/#publishedAtBlock> "${metadata.blockNumber}" .` +
-            `\n<${knowledgeCollectionUAL}> <https://ontology.origintrail.io/dkg/1.0/#publishTx> "${metadata.txHash}" .` +
-            `\n<${knowledgeCollectionUAL}> <https://ontology.origintrail.io/dkg/1.0/#publishTime> "${new Date().toISOString()}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .` +
-            `\n<${knowledgeCollectionUAL}> <https://ontology.origintrail.io/dkg/1.0/#blockTime> "${new Date(
+            `\n<${knowledgeCollectionUAL}> <${DKG_METADATA_PREDICATES.PUBLISHED_BY}> <did:dkg:publisherKey/${metadata.publisherKey}> .` +
+            `\n<${knowledgeCollectionUAL}> <${DKG_METADATA_PREDICATES.PUBLISHED_AT_BLOCK}> "${metadata.blockNumber}" .` +
+            `\n<${knowledgeCollectionUAL}> <${DKG_METADATA_PREDICATES.PUBLISH_TX}> "${metadata.txHash}" .` +
+            `\n<${knowledgeCollectionUAL}> <${
+                DKG_METADATA_PREDICATES.PUBLISH_TIME
+            }> "${new Date().toISOString()}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .` +
+            `\n<${knowledgeCollectionUAL}> <${DKG_METADATA_PREDICATES.BLOCK_TIME}> "${new Date(
                 metadata.blockTimestamp * 1000,
             ).toISOString()}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`;
 
