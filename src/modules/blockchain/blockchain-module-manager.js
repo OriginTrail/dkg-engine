@@ -235,8 +235,8 @@ class BlockchainModuleManager extends BaseModuleManager {
         return this.callImplementationFunction(blockchain, 'paranetExists', [paranetId]);
     }
 
-    async isCuratedNode(blockchain, paranetId, identityId) {
-        return this.callImplementationFunction(blockchain, 'isCuratedNode', [
+    async isPermissionedNode(blockchain, paranetId, identityId) {
+        return this.callImplementationFunction(blockchain, 'isPermissionedNode', [
             paranetId,
             identityId,
         ]);
@@ -246,8 +246,8 @@ class BlockchainModuleManager extends BaseModuleManager {
         return this.callImplementationFunction(blockchain, 'getNodesAccessPolicy', [paranetId]);
     }
 
-    async getParanetCuratedNodes(blockchain, paranetId) {
-        return this.callImplementationFunction(blockchain, 'getParanetCuratedNodes', [paranetId]);
+    async getPermissionedNodes(blockchain, paranetId) {
+        return this.callImplementationFunction(blockchain, 'getPermissionedNodes', [paranetId]);
     }
 
     async getNodeId(blockchain, identityId) {
@@ -268,6 +268,37 @@ class BlockchainModuleManager extends BaseModuleManager {
 
     async getEpochLength(blockchain) {
         return this.callImplementationFunction(blockchain, 'getEpochLength', []);
+    }
+
+    async isKnowledgeCollectionRegistered(blockchain, paranetId, knowledgeCollectionId) {
+        return this.callImplementationFunction(blockchain, 'isKnowledgeCollectionRegistered', [
+            paranetId,
+            knowledgeCollectionId,
+        ]);
+    }
+
+    async getActiveProofPeriodStatus(blockchain) {
+        return this.callImplementationFunction(blockchain, 'getActiveProofPeriodStatus');
+    }
+
+    async createChallenge(blockchain) {
+        return this.callImplementationFunction(blockchain, 'createChallenge', []);
+    }
+
+    async getNodeChallenge(blockchain, nodeId) {
+        return this.callImplementationFunction(blockchain, 'getNodeChallenge', [nodeId]);
+    }
+
+    async submitProof(blockchain, chunk, merkleProof) {
+        return this.callImplementationFunction(blockchain, 'submitProof', [chunk, merkleProof]);
+    }
+
+    async getNodeEpochProofPeriodScore(blockchain, nodeId, epoch, proofPeriodStartBlock) {
+        return this.callImplementationFunction(blockchain, 'getNodeEpochProofPeriodScore', [
+            nodeId,
+            epoch,
+            proofPeriodStartBlock,
+        ]);
     }
 
     // SUPPORT FOR OLD CONTRACTS

@@ -61,6 +61,7 @@ class OTNode {
         await this.initializeRouters();
         await this.startNetworkModule();
         this.resumeCommandExecutor();
+        await this.initializeProofing();
         this.logger.info('Node is up and running!');
     }
 
@@ -369,18 +370,18 @@ class OTNode {
                 blockchain,
                 paranetId,
             );
-            if (nodesAccessPolicy === PARANET_ACCESS_POLICY.CURATED) {
+            if (nodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED) {
                 // eslint-disable-next-line no-await-in-loop
                 const identityId = await blockchainModuleManager.getIdentityId(blockchain);
                 // eslint-disable-next-line no-await-in-loop
-                const isCuratedNode = await blockchainModuleManager.isCuratedNode(
+                const isPermissionedNode = await blockchainModuleManager.isPermissionedNode(
                     blockchain,
                     paranetId,
                     identityId,
                 );
-                if (!isCuratedNode) {
+                if (!isPermissionedNode) {
                     this.logger.warn(
-                        `Unable to initialize Paranet with id ${paranetUAL} because node with id ${identityId} is not a curated node`,
+                        `Unable to initialize Paranet with id ${paranetUAL} because node with id ${identityId} is not a permissioned node`,
                     );
                     continue;
                 }
@@ -395,6 +396,11 @@ class OTNode {
         }
         this.config.assetSync.syncParanets = validParanets;
         tripleStoreService.initializeRepositories();
+    }
+
+    async initializeProofing() {
+        const proofingService = this.container.resolve('proofingService');
+        await proofingService.initialize();
     }
 
     stop(code = 0) {

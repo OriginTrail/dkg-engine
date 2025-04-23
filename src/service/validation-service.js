@@ -1,4 +1,10 @@
-import { ZERO_ADDRESS, PRIVATE_ASSERTION_PREDICATE, ZERO_BYTES32 } from '../constants/constants.js';
+import { kcTools } from 'assertion-tools';
+import {
+    ZERO_ADDRESS,
+    PRIVATE_ASSERTION_PREDICATE,
+    ZERO_BYTES32,
+    PRIVATE_HASH_SUBJECT_PREFIX,
+} from '../constants/constants.js';
 
 class ValidationService {
     constructor(ctx) {
@@ -116,13 +122,64 @@ class ValidationService {
 
         if (privateAssertionTriple) {
             const privateAssertionRoot = privateAssertionTriple.split(' ')[2].replace(/['"]/g, '');
-
-            await this.validateDatasetRoot(privateAssertion, privateAssertionRoot);
+            const privateAssertionSorted = privateAssertion.sort();
+            await this.validateDatasetRoot(privateAssertionSorted, privateAssertionRoot);
         } else {
             throw new Error(
                 `Merkle Root validation failed. Private Merkle Root not present in public assertion.`,
             );
         }
+    }
+
+    async validateGetResponse(
+        assertion,
+        blockchain,
+        contract,
+        knowledgeCollectionId,
+        knowledgeAssetId,
+    ) {
+        if (assertion.public) {
+            // We can only validate whole collection not particular KA
+            if (knowledgeAssetId) {
+                const publicAssertion = assertion?.public;
+
+                const filteredPublic = [];
+                const privateHashTriples = [];
+                publicAssertion.forEach((triple) => {
+                    if (triple.startsWith(`<${PRIVATE_HASH_SUBJECT_PREFIX}`)) {
+                        privateHashTriples.push(triple);
+                    } else {
+                        filteredPublic.push(triple);
+                    }
+                });
+
+                const publicKnowledgeAssetsTriplesGrouped = kcTools.groupNquadsBySubject(
+                    filteredPublic,
+                    true,
+                );
+                publicKnowledgeAssetsTriplesGrouped.push(
+                    ...kcTools.groupNquadsBySubject(privateHashTriples, true),
+                );
+
+                try {
+                    await this.validateDatasetOnBlockchain(
+                        publicKnowledgeAssetsTriplesGrouped.map((t) => t.sort()).flat(),
+                        blockchain,
+                        contract,
+                        knowledgeCollectionId,
+                    );
+
+                    if (assertion?.private?.length)
+                        await this.validatePrivateMerkleRoot(assertion.public, assertion.private);
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return false;
     }
 }
 

@@ -1088,8 +1088,8 @@ class Web3Service {
         );
     }
 
-    async isCuratedNode(paranetId, identityId) {
-        return this.callContractFunction(this.contracts.ParanetsRegistry, 'isCuratedNode', [
+    async isPermissionedNode(paranetId, identityId) {
+        return this.callContractFunction(this.contracts.ParanetsRegistry, 'isPermissionedNode', [
             paranetId,
             identityId,
         ]);
@@ -1101,10 +1101,10 @@ class Web3Service {
         ]);
     }
 
-    async getParanetCuratedNodes(paranetId) {
+    async getPermissionedNodes(paranetId) {
         return this.callContractFunction(
             this.contracts.ParanetsRegistry,
-            'getCuratedNodes',
+            'getPermissionedNodes',
             [paranetId],
             CONTRACTS.PARANETS_REGISTRY,
         );
@@ -1134,8 +1134,81 @@ class Web3Service {
     async getEpochLength() {
         return this.callContractFunction(this.contracts.Chronos, 'epochLength', []);
     }
-    // SUPPORT FOR OLD CONTRACTS
 
+    async isKnowledgeCollectionRegistered(paranetId, knowledgeCollectionId) {
+        return this.callContractFunction(
+            this.contracts.ParanetsRegistry,
+            'isKnowledgeCollectionRegistered',
+            [paranetId, knowledgeCollectionId],
+        );
+    }
+
+    async getActiveProofPeriodStatus() {
+        return this.callContractFunction(
+            this.contracts.RandomSamplingStorage,
+            'getActiveProofPeriodStatus',
+            [],
+        );
+    }
+
+    async createChallenge() {
+        return new Promise((resolve) => {
+            this.queueTransaction(
+                this.contracts.RandomSampling,
+                'createChallenge',
+                [],
+                (result) => {
+                    if (result.error) {
+                        resolve({
+                            success: false,
+                            error: result.error,
+                        });
+                    } else {
+                        resolve({
+                            success: true,
+                            result: result.result,
+                        });
+                    }
+                },
+            );
+        });
+    }
+
+    async getNodeChallenge(nodeId) {
+        return this.callContractFunction(this.contracts.RandomSamplingStorage, 'getNodeChallenge', [
+            nodeId,
+        ]);
+    }
+
+    async submitProof(chunk, merkleProof) {
+        return new Promise((resolve, reject) => {
+            this.queueTransaction(
+                this.contracts.RandomSampling,
+                'submitProof',
+                [chunk, merkleProof],
+                (result) => {
+                    if (result.error) {
+                        reject(result.error);
+                    } else {
+                        resolve({
+                            success: true,
+                            result: result.result,
+                        });
+                    }
+                },
+            );
+        });
+    }
+
+    async getNodeEpochProofPeriodScore(nodeId, epoch, proofPeriodStartBlock) {
+        return this.callContractFunction(
+            this.contracts.RandomSamplingStorage,
+            'getNodeEpochProofPeriodScore',
+            [nodeId, epoch, proofPeriodStartBlock],
+        );
+    }
+
+    // SUPPORT FOR OLD CONTRACTS
     async getLatestAssertionId(assetContractAddress, tokenId) {
         const assetStorageContractInstance =
             this.assetStorageContracts[assetContractAddress.toString().toLowerCase()];

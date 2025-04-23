@@ -137,7 +137,7 @@ export const PARANET_SYNC_RETRY_DELAY_MS = 60 * 1000;
 
 export const PARANET_ACCESS_POLICY = {
     OPEN: 0,
-    CURATED: 1,
+    PERMISSIONED: 1,
 };
 
 export const TRIPLE_STORE_REPOSITORIES = {
@@ -150,6 +150,7 @@ export const BASE_NAMED_GRAPHS = {
     UNIFIED: 'unified:graph',
     HISTORICAL_UNIFIED: 'historical-unified:graph',
     METADATA: 'metadata:graph',
+    CURRENT: 'current:graph',
 };
 
 export const REQUIRED_MODULES = [
@@ -260,6 +261,10 @@ export const TRANSACTION_PRIORITY = {
 export const V0_PRIVATE_ASSERTION_PREDICATE =
     'https://ontology.origintrail.io/dkg/1.0#privateAssertionID';
 
+export const DKG_PREDICATE = 'https://ontology.origintrail.io/dkg/1.0#';
+export const HAS_NAMED_GRAPH_SUFFIX = 'hasNamedGraph';
+export const HAS_KNOWLEDGE_ASSET_SUFFIX = 'hasKnowledgeAsset';
+
 const require = createRequire(import.meta.url);
 
 export const ABIs = {
@@ -279,6 +284,8 @@ export const ABIs = {
     AskStorage: require('dkg-evm-module/abi/AskStorage.json'),
     Chronos: require('dkg-evm-module/abi/Chronos.json'),
     Paranet: require('dkg-evm-module/abi/Paranet.json'),
+    RandomSampling: require('dkg-evm-module/abi/RandomSampling.json'),
+    RandomSamplingStorage: require('dkg-evm-module/abi/RandomSamplingStorage.json'),
 };
 
 export const CONTRACT_FUNCTION_PRIORITY = {};
@@ -345,7 +352,7 @@ export const NETWORK_MESSAGE_TYPES = {
     },
 };
 
-export const PARANET_NODES_ACCESS_POLICIES = ['OPEN', 'CURATED'];
+export const PARANET_NODES_ACCESS_POLICIES = ['OPEN', 'PERMISSIONED'];
 
 export const NETWORK_MESSAGE_TIMEOUT_MILLS = {
     PUBLISH: {
@@ -355,7 +362,7 @@ export const NETWORK_MESSAGE_TIMEOUT_MILLS = {
         REQUEST: 60 * 1000,
     },
     GET: {
-        REQUEST: 5 * 60 * 1000,
+        REQUEST: 15 * 1000,
     },
     ASK: {
         REQUEST: 60 * 1000,
@@ -742,11 +749,11 @@ export const GET_LATEST_SERVICE_AGREEMENT_EXCLUDE_LATEST_TOKEN_ID = 1;
  */
 export const HTTP_API_ROUTES = {
     v0: {
-        publish: {
-            method: 'post',
-            path: '/publish',
-            options: { rateLimit: true },
-        },
+        // publish: {
+        //     method: 'post',
+        //     path: '/publish',
+        //     options: { rateLimit: true },
+        // },
         // update: {
         //     method: 'post',
         //     path: '/update',
@@ -757,11 +764,11 @@ export const HTTP_API_ROUTES = {
             path: '/query',
             options: {},
         },
-        'local-store': {
-            method: 'post',
-            path: '/local-store',
-            options: {},
-        },
+        // 'local-store': {
+        //     method: 'post',
+        //     path: '/local-store',
+        //     options: {},
+        // },
         get: {
             method: 'post',
             path: '/get',
@@ -1019,3 +1026,8 @@ export const V6_CONTENT_STORAGE_MAP = {
     OTP_TESTNET: '0x1A061136Ed9f5eD69395f18961a0a535EF4B3E5f',
     OTP_DEVNET: '0xABd59A9aa71847F499d624c492d3903dA953d67a',
 };
+
+export const PROOFING_INTERVAL = 12 * 1000;
+export const PROOFING_MAX_ATTEMPTS = 120;
+export const REORG_PROOFING_BUFFER = 60 * 1000;
+export const CHUNK_SIZE = 32;
