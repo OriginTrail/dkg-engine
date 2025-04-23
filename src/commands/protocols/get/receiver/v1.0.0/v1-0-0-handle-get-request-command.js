@@ -98,7 +98,9 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
                         },
                     };
                 }
-                const assertion = await this.tripleStoreService.getAssertion(
+                const promises = [];
+                promises.push(
+                    this.tripleStoreService.getAssertion(
                     blockchain,
                     contract,
                     knowledgeCollectionId,
@@ -109,10 +111,22 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
                     repository,
                 );
 
+                if (includeMetadata) {
+                    const metadataPromise = this.tripleStoreService.getAssertionMetadata(
+                        blockchain,
+                        contract,
+                        knowledgeCollectionId,
+                        knowledgeAssetId,
+                    );
+                    promises.push(metadataPromise);
+                }
+
+                const [assertion, metadata] = await Promise.all(promises);
+
                 if (assertion?.public?.length) {
                     return {
                         messageType: NETWORK_MESSAGE_TYPES.RESPONSES.ACK,
-                        messageData: { assertion },
+                        messageData: { assertion, metadata },
                     };
                 }
 

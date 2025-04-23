@@ -623,14 +623,15 @@ class OtTripleStore {
 
     async getKnowledgeCollectionMetadata(repository, ual) {
         const query = `
-            CONSTRUCT { ?ual ?p ?o . }
-            WHERE {
-                GRAPH <${BASE_NAMED_GRAPHS.METADATA}> {
-                    ?ual ?p ?o .
-                    FILTER(STRSTARTS(STR(?ual), "${ual}/"))
-                }
+        CONSTRUCT {
+            <${ual}> ?p ?o .
+        }
+        WHERE {
+            GRAPH <${BASE_NAMED_GRAPHS.METADATA}> {
+                <${ual}> ?p ?o .
             }
-        `;
+        }
+    `;
 
         return this.construct(repository, query);
     }
