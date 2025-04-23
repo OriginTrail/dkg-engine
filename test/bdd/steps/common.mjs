@@ -7,6 +7,7 @@ import { setTimeout as sleep } from 'timers/promises';
 import DkgClientHelper from '../../utilities/dkg-client-helper.mjs';
 import StepsUtils from '../../utilities/steps-utils.mjs';
 import FileService from '../../../src/service/file-service.js';
+import MockOTNode from '../../utilities/MockOTNode.mjs';
 
 const stepsUtils = new StepsUtils();
 
@@ -109,74 +110,59 @@ Given(
 
 Given(
     /^(\d+) bootstrap is running$/,
-    { timeout: 30000 },
-    function bootstrapRunning(nodeCount, done) {
+    { timeout: 60000 },
+    async function bootstrapRunning(nodeCount) {
         expect(this.state.bootstraps).to.have.length(0);
-        expect(nodeCount).to.be.equal(1); // Currently not supported more.
+        expect(nodeCount).to.be.equal(1); // only one supported currently
+
         this.logger.log('Initializing bootstrap node');
         const nodeIndex = Object.keys(this.state.nodes).length;
 
         const blockchains = [];
-        Object.keys(this.state.localBlockchains).forEach((blockchainId) => {
+        for (const blockchainId of Object.keys(this.state.localBlockchains)) {
             const blockchain = this.state.localBlockchains[blockchainId];
             const wallets = blockchain.getWallets();
             blockchains.push({
                 blockchainId,
                 operationalWallet: wallets[0],
                 managementWallet: wallets[Math.floor(wallets.length / 2)],
-                port: this.state.localBlockchains[blockchainId].port
-            })
-        });
+                port: blockchain.port,
+            });
+        }
+
         const rpcPort = 8900;
         const networkPort = 9000;
         const nodeName = 'origintrail-test-bootstrap';
-        // const sharesTokenName = `${nodeName}-${nodeIndex}`;
-        // const sharesTokenSymbol = `OT-B-${nodeIndex}`;
-        // const sharesTokenName = `${nodeName}-${nodeIndex}`;
-        // const sharesTokenSymbol = `OT-B-${nodeIndex}`;
         const nodeConfiguration = stepsUtils.createNodeConfiguration(
             blockchains,
             nodeIndex,
             nodeName,
             rpcPort,
-            networkPort,
+            networkPort
         );
-        
+
         const appDataPath = path.join(process.cwd(), nodeConfiguration.appDataPath);
         fs.rmSync(appDataPath, { recursive: true, force: true });
-        const forkedNode = stepsUtils.forkNode(nodeConfiguration);
 
-        const logFileStream = fs.createWriteStream(`${this.state.scenarionLogDir}/${nodeName}.log`);
-        forkedNode.stdout.setEncoding('utf8');
-        forkedNode.stdout.on('data', (data) => {
-            // Here is where the output goes
-            logFileStream.write(data);
+        const nodeInstance = new MockOTNode(nodeConfiguration);
+        await nodeInstance.start(); // This will skip startNetworkModule
+
+        const client = new DkgClientHelper({
+            endpoint: 'http://localhost',
+            port: rpcPort,
+            useSSL: false,
+            timeout: 25,
+            loglevel: 'trace',
         });
-        forkedNode.on('message', async (response) => {
-            if (response.error) {
-                this.logger.debug(`Error while initializing bootstrap node: ${response.error}`);
-            } else {
-                const client = new DkgClientHelper({
-                    endpoint: 'http://localhost',
-                    port: 8900,
-                    useSSL: false,
-                    timeout: 25,
-                    loglevel: 'trace',
-                });
-                this.state.bootstraps.push({
-                    client,
-                    forkedNode,
-                    configuration: nodeConfiguration,
-                    nodeRpcUrl: `http://localhost:${rpcPort}`,
-                    fileService: new FileService({
-                        config: nodeConfiguration,
-                        logger: this.logger,
-                    }),
-                });
-            }
-            done();
+
+        this.state.bootstraps.push({
+            client,
+            otNodeInstance: nodeInstance,
+            configuration: nodeConfiguration,
+            nodeRpcUrl: `http://localhost:${rpcPort}`,
+            fileService: nodeInstance.fileService,
         });
-    },
+    }
 );
 //
 // Given(
