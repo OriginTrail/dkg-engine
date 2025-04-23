@@ -30,10 +30,13 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
             contract,
             knowledgeCollectionId,
             knowledgeAssetId,
+            tokenIds,
             ual,
             includeMetadata,
             paranetUAL,
             remotePeerId,
+            migrationFlag,
+            repository,
         } = commandData;
 
         if (paranetUAL) {
@@ -98,12 +101,14 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
                 const promises = [];
                 promises.push(
                     this.tripleStoreService.getAssertion(
-                        blockchain,
-                        contract,
-                        knowledgeCollectionId,
-                        knowledgeAssetId,
-                        TRIPLES_VISIBILITY.ALL,
-                    ),
+                    blockchain,
+                    contract,
+                    knowledgeCollectionId,
+                    knowledgeAssetId,
+                    tokenIds,
+                    migrationFlag,
+                    TRIPLES_VISIBILITY.ALL,
+                    repository,
                 );
 
                 if (includeMetadata) {
@@ -141,7 +146,10 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
             contract,
             knowledgeCollectionId,
             knowledgeAssetId,
+            tokenIds,
+            migrationFlag,
             TRIPLES_VISIBILITY.PUBLIC,
+            repository,
         );
 
         promises.push(assertionPromise);

@@ -43,6 +43,8 @@ class TripleStoreService {
         metadata,
         retries = 5,
         retryDelay = 50,
+        paranetUAL = '',
+        contentType = '',
     ) {
         this.logger.info(
             `Inserting Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
@@ -116,6 +118,7 @@ class TripleStoreService {
                     TRIPLES_VISIBILITY.PUBLIC,
                 ),
             );
+
             // current metadata triple relates to which named graph that represents Knowledge Asset hold the lates(current) data
             // so for each Knowledge Asset there will be one current metadata triple
             // in this case there are publicKnowledgeAssetsUALs.length number of named graphs created so for each there will be one current metadata triple
@@ -213,6 +216,18 @@ class TripleStoreService {
                     ...privateKnowledgeAssetsUALs.map((ual) => `${ual}/private`),
                 );
             }
+        }
+
+        if (paranetUAL) {
+            await this.tripleStoreModuleManager.createParanetKnoledgeCollectionConnection(
+                this.repositoryImplementations[repository],
+                repository,
+                knowledgeCollectionUAL,
+                paranetUAL,
+                contentType,
+            );
+            totalNumberOfTriplesInserted += allPossibleNamedGraphs.length; // one triple will be created for each Knowledge Asset inserted into paranet
+            this.logger.info(`Adding connection triples for paranet: ${paranetUAL}`);
         }
 
         // TODO: add new metadata triples and move to function insertMetadataTriples
@@ -479,6 +494,8 @@ class TripleStoreService {
         contract,
         knowledgeCollectionId,
         knowledgeAssetId,
+        tokenIds,
+        migrationFlag,
         visibility = TRIPLES_VISIBILITY.PUBLIC,
         repository = TRIPLE_STORE_REPOSITORY.DKG,
     ) {
@@ -499,13 +516,24 @@ class TripleStoreService {
             );
         } else {
             this.logger.debug(`Getting Assertion with the UAL: ${ual}.`);
-            nquads = await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphs(
-                this.repositoryImplementations[repository],
-                repository,
-                ual,
-                knowledgeAssetId,
-                visibility,
-            );
+
+            if (migrationFlag === '1') {
+                nquads = await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphs(
+                    this.repositoryImplementations[repository],
+                    repository,
+                    ual,
+                    knowledgeAssetId,
+                    visibility,
+                );
+            } else {
+                nquads = await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphsOld(
+                    this.repositoryImplementations[repository],
+                    repository,
+                    ual,
+                    tokenIds,
+                    visibility,
+                );
+            }
         }
         if (nquads?.public) {
             nquads.public = nquads.public.split('\n').filter((line) => line !== '');

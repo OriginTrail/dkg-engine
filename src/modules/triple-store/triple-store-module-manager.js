@@ -129,6 +129,25 @@ class TripleStoreModuleManager extends BaseModuleManager {
         }
     }
 
+    async createParanetKnoledgeCollectionConnection(
+        implementationName,
+        repository,
+        knowledgeCollectionUal,
+        paranetUAL,
+        contentType,
+    ) {
+        if (this.getImplementation(implementationName)) {
+            return this.getImplementation(
+                implementationName,
+            ).module.createParanetKnoledgeCollectionConnection(
+                repository,
+                knowledgeCollectionUal,
+                paranetUAL,
+                contentType,
+            );
+        }
+    }
+
     async insertMetadataTriples(implementationName, repository, kcUal, uals, visibility) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(implementationName).module.insertMetadataTriples(
@@ -152,14 +171,32 @@ class TripleStoreModuleManager extends BaseModuleManager {
         implementationName,
         repository,
         ual,
-        tokenIds,
+        knowledgeAssetId,
         visibility,
-        sort,
     ) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(
                 implementationName,
-            ).module.getKnowledgeCollectionNamedGraphs(repository, tokenIds, ual, visibility, sort);
+            ).module.getKnowledgeCollectionNamedGraphs(
+                repository,
+                ual,
+                knowledgeAssetId,
+                visibility,
+            );
+        }
+    }
+
+    async getKnowledgeCollectionNamedGraphsOld(
+        implementationName,
+        repository,
+        ual,
+        tokenIds,
+        visibility,
+    ) {
+        if (this.getImplementation(implementationName)) {
+            return this.getImplementation(
+                implementationName,
+            ).module.getKnowledgeCollectionNamedGraphsOld(repository, ual, tokenIds, visibility);
         }
     }
 
