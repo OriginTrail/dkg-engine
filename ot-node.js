@@ -387,7 +387,7 @@ class OTNode {
             }
 
             validParanets.push(paranetUAL);
-            // eslint-disable-next-line no-await-in-loop
+
             // eslint-disable-next-line no-await-in-loop
             await paranetService.initializeParanetRecord(blockchain, paranetId);
         }

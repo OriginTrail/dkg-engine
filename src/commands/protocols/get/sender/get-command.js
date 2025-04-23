@@ -28,6 +28,7 @@ class GetCommand extends Command {
         this.shardingTableService = ctx.shardingTableService;
         this.cryptoService = ctx.cryptoService;
         this.messagingService = ctx.messagingService;
+        this.tripleStoreModuleManager = ctx.tripleStoreModuleManager;
     }
 
     async handleError(operationId, blockchain, errorMessage, errorType) {
@@ -115,6 +116,12 @@ class GetCommand extends Command {
             if (!paranetSync && migrationFlag === '0') {
                 // query the paranet repository if the migration is not yet finished
                 repository = this.paranetService.getParanetRepositoryName(paranetUAL);
+                const repositoryExists =
+                    this.tripleStoreModuleManager.repositoryInitilized(repository);
+
+                if (!repositoryExists) {
+                    repository = TRIPLE_STORE_REPOSITORIES.DKG;
+                }
             }
 
             const { isValid: paranetIsValid, errorMessage: paranetErrorMessage } =

@@ -44,6 +44,10 @@ class OtTripleStore {
         await this.createRepository(repository);
     }
 
+    repositoryInitilized(repository) {
+        return Boolean(this.repositories && this.repositories[repository]);
+    }
+
     async createRepository() {
         throw Error('CreateRepository not implemented');
     }
