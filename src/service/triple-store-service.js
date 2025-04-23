@@ -1,7 +1,6 @@
 /* eslint-disable no-await-in-loop */
 import { setTimeout } from 'timers/promises';
 import { kcTools } from 'assertion-tools';
-
 import {
     BASE_NAMED_GRAPHS,
     TRIPLE_STORE_REPOSITORY,
@@ -562,11 +561,11 @@ class TripleStoreService {
         repository = TRIPLE_STORE_REPOSITORY.DKG,
     ) {
         const ual = `did:dkg:${blockchain}/${contract}/${knowledgeCollectionId}${
-            knowledgeAssetId ? `/${knowledgeAssetId}` : ''
+            Number.isInteger(knowledgeAssetId) ? `/${knowledgeAssetId}` : ''
         }`;
         this.logger.debug(`Getting Assertion Metadata with the UAL: ${ual}.`);
         let nquads;
-        if (knowledgeAssetId) {
+        if (Number.isInteger(knowledgeAssetId)) {
             nquads = await this.tripleStoreModuleManager.getKnowledgeAssetMetadata(
                 this.repositoryImplementations[repository],
                 repository,
