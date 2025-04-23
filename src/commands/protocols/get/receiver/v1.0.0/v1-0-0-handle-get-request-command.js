@@ -101,14 +101,15 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
                 const promises = [];
                 promises.push(
                     this.tripleStoreService.getAssertion(
-                    blockchain,
-                    contract,
-                    knowledgeCollectionId,
-                    knowledgeAssetId,
-                    tokenIds,
-                    migrationFlag,
-                    TRIPLES_VISIBILITY.ALL,
-                    repository,
+                        blockchain,
+                        contract,
+                        knowledgeCollectionId,
+                        knowledgeAssetId,
+                        tokenIds,
+                        migrationFlag,
+                        TRIPLES_VISIBILITY.ALL,
+                        repository,
+                    ),
                 );
 
                 if (includeMetadata) {
