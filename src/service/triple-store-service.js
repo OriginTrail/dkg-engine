@@ -224,7 +224,7 @@ class TripleStoreService {
             .join('\n');
 
         metadataTriples +=
-            `\n<${knowledgeCollectionUAL}> <https://ontology.origintrail.io/dkg/1.0/#publishedBy> <did:dkg:publisherKey:${metadata.publisherKey}> .` +
+            `\n<${knowledgeCollectionUAL}> <https://ontology.origintrail.io/dkg/1.0/#publishedBy> <did:dkg:publisherKey/${metadata.publisherKey}> .` +
             `\n<${knowledgeCollectionUAL}> <https://ontology.origintrail.io/dkg/1.0/#publishedAtBlock> "${metadata.blockNumber}" .` +
             `\n<${knowledgeCollectionUAL}> <https://ontology.origintrail.io/dkg/1.0/#publishTx> "${metadata.txHash}" .` +
             `\n<${knowledgeCollectionUAL}> <https://ontology.origintrail.io/dkg/1.0/#publishTime> "${new Date().toISOString()}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .` +
