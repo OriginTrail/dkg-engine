@@ -59,8 +59,7 @@ class ProofingService {
                 this.logger.debug(`Completed proofing cycle for blockchain ${blockchainId}`);
             } catch (error) {
                 this.logger.error(
-                    `Error in proofing mechanism for ${blockchainId}: ${error.message}`,
-                    { error, blockchainId },
+                    `Error in proofing mechanism for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
                 );
             } finally {
                 isRunning = false;
@@ -78,8 +77,7 @@ class ProofingService {
             await this.runProofing(blockchainId);
         } catch (error) {
             this.logger.error(
-                `Error in initial proofing run for ${blockchainId}: ${error.message}`,
-                { error, blockchainId },
+                `Error in initial proofing run for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
             );
             this.operationIdService.emitChangeEvent(
                 'PROOFING_ERROR',
@@ -105,13 +103,9 @@ class ProofingService {
                 blockchainId,
             );
 
-        this.logger.debug('Checking proof period validity', {
-            isValid: activeProofPeriodStatus.isValid,
-            activeProofPeriodStartBlock: activeProofPeriodStatus.activeProofPeriodStartBlock,
-            latestChallengeBlock: latestChallenge?.activeProofPeriodStartBlock,
-            sentSuccessfully: latestChallenge?.sentSuccessfully,
-            blockchainId,
-        });
+        this.logger.debug(
+            `Checking proof period validity: isValid=${activeProofPeriodStatus.isValid}, activeProofPeriodStartBlock=${activeProofPeriodStatus.activeProofPeriodStartBlock}, latestChallengeBlock=${latestChallenge?.activeProofPeriodStartBlock}, sentSuccessfully=${latestChallenge?.sentSuccessfully}, blockchainId=${blockchainId}`,
+        );
 
         if (
             activeProofPeriodStatus.isValid &&
@@ -120,9 +114,9 @@ class ProofingService {
             latestChallenge?.sentSuccessfully
         ) {
             if (!latestChallenge.finalized) {
-                this.logger.debug('Processing non-finalized challenge for blockchain:', {
-                    blockchainId,
-                });
+                this.logger.debug(
+                    `Processing non-finalized challenge for blockchain: ${blockchainId}`,
+                );
 
                 // We have latest challenge and we sent valid proof
                 // Check onchain if it has score
@@ -132,21 +126,18 @@ class ProofingService {
                     latestChallenge.epoch,
                     latestChallenge.activeProofPeriodStartBlock,
                 );
-                this.logger.debug('Retrieved node score for blockchain:', {
-                    blockchainId,
-                    nodeId,
-                    score,
-                });
+                this.logger.debug(
+                    `Retrieved node score for blockchain: ${blockchainId}, nodeId: ${nodeId}, score: ${score}`,
+                );
 
                 // If score is greater than 0 than proof was sent and was valid
                 // Ensure no reorgs happened by checking if it has score and enough time has passed and if possible mark it as finalized
                 if (score > 0) {
                     // Sent more than minute ago check onchain confirm it finalized and it's good
                     if (latestChallenge.updatedAt.getTime() + REORG_PROOFING_BUFFER <= Date.now()) {
-                        this.logger.info('Finalizing challenge:', {
-                            blockchainId,
-                            challengeId: latestChallenge.id,
-                        });
+                        this.logger.info(
+                            `Finalizing challenge for blockchainId: ${blockchainId}, challengeId: ${latestChallenge.id}`,
+                        );
                         latestChallenge.finalized = true;
                         await this.repositoryModuleManager.setCompletedAndFinalizedRandomSamplingChallengeRecord(
                             latestChallenge.id,
@@ -166,18 +157,13 @@ class ProofingService {
                         );
                     } else {
                         this.logger.info(
-                            'Waiting for reorg buffer to pass before finalizing for blockchain:',
-                            {
-                                blockchainId,
-                                challengeId: latestChallenge.id,
-                            },
+                            `Waiting for reorg buffer to pass before finalizing for blockchain: ${blockchainId}, challengeId: ${latestChallenge.id}`,
                         );
                     }
                 } else {
-                    this.logger.warn('Zero score detected, resetting challenge status', {
-                        blockchainId,
-                        challengeId: latestChallenge.id,
-                    });
+                    this.logger.warn(
+                        `Zero score detected, resetting challenge status for blockchain: ${blockchainId}, challengeId: ${latestChallenge.id}`,
+                    );
                     latestChallenge.sentSuccessfully = false;
                     latestChallenge.finalized = false;
                     await this.repositoryModuleManager.setCompletedAndFinalizedRandomSamplingChallengeRecord(
@@ -195,10 +181,9 @@ class ProofingService {
     }
 
     async prepareAndSendProof(blockchainId, latestChallenge, nodeId) {
-        this.logger.debug('Starting proof preparation', {
-            blockchainId,
-            challengeId: latestChallenge?.id,
-        });
+        this.logger.debug(
+            `Starting proof preparation for blockchain: ${blockchainId}, challengeId: ${latestChallenge?.id}`,
+        );
 
         try {
             const newChallenge = await this.getAndPersistNewChallenge(
@@ -213,29 +198,22 @@ class ProofingService {
                 newChallenge.knowledgeCollectionId,
             );
 
-            this.logger.debug('New challenge created', {
-                challengeId: newChallenge.id,
-                epoch: newChallenge.epoch,
-                contractAddress: newChallenge.contractAddress,
-                knowledgeCollectionId: newChallenge.knowledgeCollectionId,
-            });
+            this.logger.debug(
+                `New challenge created: challengeId=${newChallenge.id}, epoch=${newChallenge.epoch}, contractAddress=${newChallenge.contractAddress}, knowledgeCollectionId=${newChallenge.knowledgeCollectionId}`,
+            );
 
             const data = await this.fetchAndProcessAssertion(blockchainId, ual, latestChallenge);
 
             const proof = await this.calculateAndSubmitProof(data, newChallenge, blockchainId);
-            this.logger.info('Proof calculated and submitted successfully', {
-                blockchainId,
-                challengeId: newChallenge.id,
-            });
+            this.logger.info(
+                `Proof calculated and submitted successfully for blockchain: ${blockchainId}, challengeId: ${newChallenge.id}`,
+            );
 
             return proof;
         } catch (error) {
-            this.logger.error('Failed to prepare and send proof', {
-                error: error.message,
-                blockchainId,
-                challengeId: latestChallenge.id,
-                stack: error.stack,
-            });
+            this.logger.error(
+                `Failed to prepare and send proof for blockchain: ${blockchainId}, challengeId: ${latestChallenge?.id}. Error: ${error.message}, stack: ${error.stack}`,
+            );
             throw error;
         }
     }
