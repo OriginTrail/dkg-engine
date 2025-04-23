@@ -526,9 +526,7 @@ class OtTripleStore {
         }
     `;
 
-        const r = await this.construct(repository, query);
-
-        return r;
+        return this.construct(repository, query);
     }
 
     async getKnowledgeAssetMetadata(repository, ual) {
