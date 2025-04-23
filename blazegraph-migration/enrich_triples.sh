@@ -44,7 +44,7 @@ generate_enriched_chunks() {
 
         IFS='/' read -ra parts <<< "$graph_iri"
         if [[ ${#parts[@]} -ge 5 ]]; then
-            network_prefix="${parts[0]}"                         # did:dkg:otp:2043
+            network_prefix="${parts[0]}"
             contract="${parts[1]}"
             collection_id="${parts[2]}"
             asset_id="${parts[3]}"
@@ -170,6 +170,23 @@ for folder in "${target_folders[@]}"; do
     log_message "INFO" "Processing folder: $folder"
 
     done_marker=".enrichment_migration_done_$(basename "$folder")"
+    chunk_dir="$folder/chunks"
+
+    retry_mode=false
+    if [ -f "$done_marker" ]; then
+        marker_val=$(cat "$done_marker")
+        if [ "$marker_val" == "0" ]; then
+            shopt -s nullglob
+            remaining_chunks=("$chunk_dir"/enriched_chunk_*.nq)
+            shopt -u nullglob
+            if [ ${#remaining_chunks[@]} -gt 0 ]; then
+                retry_mode=true
+                log_message "INFO" "Retry mode enabled — retrying failed chunks"
+                process_chunks "$folder"
+                continue
+            fi
+        fi
+    fi
 
     if [ ! -f "$folder/$folder/data.nq.gz" ]; then
         log_message "ERROR" "Missing file: $folder/$folder/data.nq.gz"
@@ -178,7 +195,10 @@ for folder in "${target_folders[@]}"; do
         continue
     fi
 
-    generate_enriched_chunks "$folder"
+    if [ "$retry_mode" = false ]; then
+        generate_enriched_chunks "$folder"
+    fi
+
     process_chunks "$folder"
 
     total_chunks=$(cat "$folder/.total_chunks_created" 2>/dev/null)
@@ -209,6 +229,7 @@ for folder in "${target_folders[@]}"; do
         echo "1" > "$done_marker"
         log_message "INFO" "Migration success marker written to $done_marker"
     fi
+
 done
 
 job_pool_shutdown
