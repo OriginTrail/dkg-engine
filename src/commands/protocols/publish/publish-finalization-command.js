@@ -41,7 +41,7 @@ class PublishFinalizationCommand extends Command {
             this.blockchainModuleManager.getBlockTimestamp(blockchain, blockNumber),
         ]);
         const metadata = {
-            publisherKey: transaction.from,
+            publisherKey: transaction.from.toLowerCase(),
             blockNumber,
             txHash,
             blockTimestamp,
