@@ -25,18 +25,22 @@ class ProofingService {
     }
 
     async initialize() {
-        this.logger.info('Initializing ProofingService');
+        this.logger.info('[PROOFING] Initializing ProofingService');
         const promises = [];
         for (const blockchainId of this.blockchainModuleManager.getImplementationNames()) {
-            this.logger.info(`Initializing proofing service for blockchain ${blockchainId}`);
+            this.logger.info(
+                `[PROOFING] Initializing proofing service for blockchain ${blockchainId}`,
+            );
             promises.push(this.proofingMechanism(blockchainId));
         }
         await Promise.all(promises);
-        this.logger.info('ProofingService initialization completed');
+        this.logger.info('[PROOFING]P roofingService initialization completed');
     }
 
     async proofingMechanism(blockchainId) {
-        this.logger.debug(`Setting up proofing mechanism for blockchain ${blockchainId}`);
+        this.logger.debug(
+            `[PROOFING] Setting up proofing mechanism for blockchain ${blockchainId}`,
+        );
         // Flag to track if mechanism is running
         let isRunning = false;
 
@@ -45,21 +49,25 @@ class ProofingService {
             // Skip if already running
             if (isRunning) {
                 this.logger.debug(
-                    `Proofing mechanism for ${blockchainId} still running, skipping this interval`,
+                    `[PROOFING] Proofing mechanism for ${blockchainId} still running, skipping this interval`,
                 );
                 return;
             }
 
             try {
                 isRunning = true;
-                this.logger.debug(`Starting proofing cycle for blockchain ${blockchainId}`);
+                this.logger.debug(
+                    `[PROOFING] Starting proofing cycle for blockchain ${blockchainId}`,
+                );
 
                 // Proofing logic
                 await this.runProofing(blockchainId);
-                this.logger.debug(`Completed proofing cycle for blockchain ${blockchainId}`);
+                this.logger.debug(
+                    `[PROOFING] Completed proofing cycle for blockchain ${blockchainId}`,
+                );
             } catch (error) {
                 this.logger.error(
-                    `Error in proofing mechanism for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
+                    `[PROOFING] Error in proofing mechanism for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
                 );
             } finally {
                 isRunning = false;
@@ -68,16 +76,20 @@ class ProofingService {
 
         // Store interval reference for cleanup
         this[`${blockchainId}Interval`] = interval;
-        this.logger.info(`Proofing mechanism initialized for blockchain ${blockchainId}`);
+        this.logger.info(
+            `[PROOFING] Proofing mechanism initialized for blockchain ${blockchainId}`,
+        );
 
         // Run immediately on startup
         try {
             isRunning = true;
-            this.logger.debug(`Running initial proofing cycle for blockchain ${blockchainId}`);
+            this.logger.debug(
+                `[PROOFING] Running initial proofing cycle for blockchain ${blockchainId}`,
+            );
             await this.runProofing(blockchainId);
         } catch (error) {
             this.logger.error(
-                `Error in initial proofing run for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
+                `[PROOFING] Error in initial proofing run for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
             );
             this.operationIdService.emitChangeEvent(
                 'PROOFING_ERROR',
@@ -92,7 +104,7 @@ class ProofingService {
     }
 
     async runProofing(blockchainId) {
-        this.logger.debug(`Running proofing mechanism for ${blockchainId}`);
+        this.logger.debug(`[PROOFING] Running proofing mechanism for ${blockchainId}`);
         // TODO:rename to identityId
         const nodeId = await this.blockchainModuleManager.getIdentityId(blockchainId);
         // Check what is current proof period {isValid, activeProofPeriodStartBlock}
@@ -104,7 +116,7 @@ class ProofingService {
             );
 
         this.logger.debug(
-            `Checking proof period validity: isValid=${activeProofPeriodStatus.isValid}, activeProofPeriodStartBlock=${activeProofPeriodStatus.activeProofPeriodStartBlock}, latestChallengeBlock=${latestChallenge?.activeProofPeriodStartBlock}, sentSuccessfully=${latestChallenge?.sentSuccessfully}, blockchainId=${blockchainId}`,
+            `[PROOFING] Checking proof period validity: isValid=${activeProofPeriodStatus.isValid}, activeProofPeriodStartBlock=${activeProofPeriodStatus.activeProofPeriodStartBlock}, latestChallengeBlock=${latestChallenge?.activeProofPeriodStartBlock}, sentSuccessfully=${latestChallenge?.sentSuccessfully}, blockchainId=${blockchainId}`,
         );
 
         if (
@@ -115,7 +127,7 @@ class ProofingService {
         ) {
             if (!latestChallenge.finalized) {
                 this.logger.debug(
-                    `Processing non-finalized challenge for blockchain: ${blockchainId}`,
+                    `[PROOFING] Processing non-finalized challenge for blockchain: ${blockchainId}`,
                 );
 
                 // We have latest challenge and we sent valid proof
@@ -127,7 +139,7 @@ class ProofingService {
                     latestChallenge.activeProofPeriodStartBlock,
                 );
                 this.logger.debug(
-                    `Retrieved node score for blockchain: ${blockchainId}, nodeId: ${nodeId}, score: ${score}`,
+                    `[PROOFING] Retrieved node score for blockchain: ${blockchainId}, nodeId: ${nodeId}, score: ${score}`,
                 );
 
                 // If score is greater than 0 than proof was sent and was valid
@@ -136,7 +148,7 @@ class ProofingService {
                     // Sent more than minute ago check onchain confirm it finalized and it's good
                     if (latestChallenge.updatedAt.getTime() + REORG_PROOFING_BUFFER <= Date.now()) {
                         this.logger.info(
-                            `Finalizing challenge for blockchainId: ${blockchainId}, challengeId: ${latestChallenge.id}`,
+                            `[PROOFING] Finalizing challenge for blockchainId: ${blockchainId}, challengeId: ${latestChallenge.id}`,
                         );
                         latestChallenge.finalized = true;
                         await this.repositoryModuleManager.setCompletedAndFinalizedRandomSamplingChallengeRecord(
@@ -157,12 +169,12 @@ class ProofingService {
                         );
                     } else {
                         this.logger.info(
-                            `Waiting for reorg buffer to pass before finalizing for blockchain: ${blockchainId}, challengeId: ${latestChallenge.id}`,
+                            `[PROOFING] Waiting for reorg buffer to pass before finalizing for blockchain: ${blockchainId}, challengeId: ${latestChallenge.id}`,
                         );
                     }
                 } else {
                     this.logger.warn(
-                        `Zero score detected, resetting challenge status for blockchain: ${blockchainId}, challengeId: ${latestChallenge.id}`,
+                        `[PROOFING] Zero score detected, resetting challenge status for blockchain: ${blockchainId}, challengeId: ${latestChallenge.id}`,
                     );
                     latestChallenge.sentSuccessfully = false;
                     latestChallenge.finalized = false;
@@ -174,7 +186,7 @@ class ProofingService {
             }
             // If finalized is do nothing, wait for next proof
         } else {
-            this.logger.info('Preparing new proof for blockchain:', { blockchainId });
+            this.logger.info(`[PROOFING] Preparing new proof for blockchain: ${blockchainId}`);
             // Node needs to get new challenge or Node sent wrong proof
             await this.prepareAndSendProof(blockchainId, latestChallenge, nodeId);
         }
@@ -182,7 +194,7 @@ class ProofingService {
 
     async prepareAndSendProof(blockchainId, latestChallenge, nodeId) {
         this.logger.debug(
-            `Starting proof preparation for blockchain: ${blockchainId}, challengeId: ${latestChallenge?.id}`,
+            `[PROOFING] Starting proof preparation for blockchain: ${blockchainId}, challengeId: ${latestChallenge?.id}`,
         );
 
         try {
@@ -199,20 +211,20 @@ class ProofingService {
             );
 
             this.logger.debug(
-                `New challenge created: challengeId=${newChallenge.id}, epoch=${newChallenge.epoch}, contractAddress=${newChallenge.contractAddress}, knowledgeCollectionId=${newChallenge.knowledgeCollectionId}`,
+                `[PROOFING] New challenge created: challengeId=${newChallenge.id}, epoch=${newChallenge.epoch}, contractAddress=${newChallenge.contractAddress}, knowledgeCollectionId=${newChallenge.knowledgeCollectionId}`,
             );
 
             const data = await this.fetchAndProcessAssertion(blockchainId, ual, latestChallenge);
 
             const proof = await this.calculateAndSubmitProof(data, newChallenge, blockchainId);
             this.logger.info(
-                `Proof calculated and submitted successfully for blockchain: ${blockchainId}, challengeId: ${newChallenge.id}`,
+                `[PROOFING] Proof calculated and submitted successfully for blockchain: ${blockchainId}, challengeId: ${newChallenge.id}`,
             );
 
             return proof;
         } catch (error) {
             this.logger.error(
-                `Failed to prepare and send proof for blockchain: ${blockchainId}, challengeId: ${latestChallenge?.id}. Error: ${error.message}, stack: ${error.stack}`,
+                `[PROOFING] Failed to prepare and send proof for blockchain: ${blockchainId}, challengeId: ${latestChallenge?.id}. Error: ${error.message}, stack: ${error.stack}`,
             );
             throw error;
         }
@@ -324,7 +336,7 @@ class ProofingService {
         if (getResult?.status !== OPERATION_ID_STATUS.COMPLETED) {
             // We need to return here and retry later
             throw new Error(
-                `Unable to Proofing GET Knowledge Collection for proof Id: ${
+                `[PROOFING] Unable to Proofing GET Knowledge Collection for proof Id: ${
                     latestChallenge.knowledgeCollectionId
                 }, for contract: ${latestChallenge.contractAddress}, state index: ${
                     latestChallenge.stateIndex
@@ -334,7 +346,7 @@ class ProofingService {
 
         const data = await this.operationIdService.getCachedOperationIdData(getOperationId);
         this.logger.debug(
-            `Proofing GET: ${
+            `[PROOFING] Proofing GET: ${
                 data.assertion.public.length + (data.assertion?.private?.length || 0)
             } nquads found for asset with ual: ${ual}`,
         );
@@ -446,7 +458,7 @@ class ProofingService {
 
     // Add cleanup method to stop intervals
     cleanup() {
-        this.logger.info('Starting ProofingService cleanup');
+        this.logger.info('[PROOFING] Starting ProofingService cleanup');
         for (const blockchainId of this.blockchainModuleManager.getImplementationNames()) {
             const intervalKey = `${blockchainId}Interval`;
             if (this[intervalKey]) {
@@ -455,7 +467,7 @@ class ProofingService {
                 this[intervalKey] = null;
             }
         }
-        this.logger.info('ProofingService cleanup completed');
+        this.logger.info('[PROOFING] ProofingService cleanup completed');
     }
 }
 
