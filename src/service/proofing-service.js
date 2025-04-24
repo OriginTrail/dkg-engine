@@ -432,12 +432,13 @@ class ProofingService {
             newChallenge.epoch,
             newChallenge.activeProofPeriodStartBlock,
         );
-        if (score.toNumber() > 0) {
+
+        if (score > 0) {
             // Move score persistence to finalization
             await this.repositoryModuleManager.setCompletedAndScoreRandomSamplingChallengeRecord(
                 newChallenge.id,
                 true,
-                score.toNumber(),
+                BigInt(score.toString()), // eslint-disable-line no-undef
             );
             this.operationIdService.emitChangeEvent(
                 'PROOF_SUBMITTED_SUCCESSFULLY',
