@@ -225,26 +225,29 @@ class ProofingService {
         const createChallengeResult = await this.blockchainModuleManager.createChallenge(
             blockchainId,
         );
-        if (
-            !createChallengeResult.success &&
+
+        if (createChallengeResult.success) {
+            // Only emit the event if a new challenge was actually generated
+            this.operationIdService.emitChangeEvent(
+                'PROOF_NEW_CHALANGE_GENERATED',
+                this.generateOperationId(
+                    blockchainId,
+                    createChallengeResult.epoch,
+                    createChallengeResult.activeProofPeriodStartBlock,
+                ),
+                blockchainId,
+                null,
+                null,
+            );
+        } else if (
             !createChallengeResult.error.message.includes(
                 'An unsolved challenge already exists for this node in the current proof period',
             )
         ) {
+            // Throw an error only if it's not the expected "already exists" error
             throw new Error(createChallengeResult.error);
         }
 
-        this.operationIdService.emitChangeEvent(
-            'PROOF_NEW_CHALANGE_GENERATED',
-            this.generateOperationId(
-                blockchainId,
-                createChallengeResult.epoch,
-                createChallengeResult.activeProofPeriodStartBlock,
-            ),
-            blockchainId,
-            null,
-            null,
-        );
         const newChallenge = await this.blockchainModuleManager.getNodeChallenge(
             blockchainId,
             nodeId,
