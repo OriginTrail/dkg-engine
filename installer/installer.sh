@@ -11,38 +11,84 @@ text_color() {
     BYELLOW='\033[1;33m'
     BOLD='\033[1m'
     NC='\033[0m' # No Color
-    echo -e "$@$NC"
+    
+    # Detect if this is an error, warning or success message
+    local message="$@"
+    if [[ "$message" == *"$RED"* || "$message" == *"$BRED"* ]]; then
+        echo -e "❌ $@$NC"
+    elif [[ "$message" == *"$YELLOW"* || "$message" == *"$BYELLOW"* ]]; then
+        echo -e "⚠️  $@$NC"
+    elif [[ "$message" == *"$GREEN"* || "$message" == *"$BGREEN"* ]]; then
+        echo -e "✅ $@$NC"
+    else
+        echo -e "$@$NC"
+    fi
 }
 
 header_color() {
     LIGHTCYAN='\033[1;36m'
     NC='\033[0m' # No Color
-    echo -e "${LIGHTCYAN}$@$NC"
+    local header_text="$@"
+    local line=$(printf '═%.0s' $(seq 1 ${#header_text}))
+    
+    echo ""
+    echo -e "${LIGHTCYAN}╔═${line}═╗${NC}"
+    echo -e "${LIGHTCYAN}║ ${header_text} ║${NC}"
+    echo -e "${LIGHTCYAN}╚═${line}═╝${NC}"
+    echo ""
 }
 
 perform_step() {
     N1=$'\n'
-    echo -n "${@: -1}: "
+    echo -n "⏳ ${@: -1}: "
 
     OUTPUT=$(${@:1:$#-1} 2>&1)
 
     if [[ $? -ne 0 ]]; then
-        text_color $BOLD$RED FAILED
-        echo -e "${N1}Step failed. Output of error is:${N1}${N1}$OUTPUT"
+        text_color $BOLD$RED "FAILED"
+        echo -e "${N1}❌ Step failed. Output of error is:${N1}${N1}$OUTPUT"
         echo -e "${BRED}Press Enter to exit the installer.${NC}"
         read
         exit 1
     else
-        text_color $BOLD$GREEN OK
+        text_color $BOLD$GREEN "OK"
     fi
 }
 
 # Function to display a notification box
 notification_box() {
     local message="$1"
-    text_color "$BOLD$message"
-    echo -e "${BRED}Press Enter to exit the installer.${NC}"
-    read
+    local type="$2"
+    local RED='\033[0;31m'
+    local GREEN='\033[0;32m'
+    local YELLOW='\033[0;33m'
+    local BLUE='\033[0;34m'
+    local BOLD='\033[1m'
+    local NC='\033[0m'
+    
+    local color="$BLUE"
+    local icon="ℹ️"
+    
+    if [[ "$type" == "error" ]]; then
+        color="$RED"
+        icon="❌"
+    elif [[ "$type" == "warning" ]]; then
+        color="$YELLOW"
+        icon="⚠️"
+    elif [[ "$type" == "success" ]]; then
+        color="$GREEN"
+        icon="✅"
+    fi
+    
+    local line=$(printf '─%.0s' $(seq 1 60))
+    echo -e "${color}$line${NC}"
+    echo -e "${color}${BOLD} $icon $message${NC}"
+    echo -e "${color}$line${NC}"
+    
+    if [[ "$type" == "error" ]]; then
+        echo -e "${BRED}Press Enter to exit the installer.${NC}"
+        read
+    fi
 }
 
 # Check Ubuntu version
@@ -83,8 +129,26 @@ install_aliases() {
 
 install_directory() {
     ARCHIVE_REPOSITORY_URL="github.com/OriginTrail/ot-node/archive"
-    BRANCH="v6/release/testnet"
-    BRANCH_DIR="/root/ot-node-6-release-testnet"
+    
+    echo ""
+    echo -e "${CYAN}┌─────────────────────────────────────────────┐${RESET}"
+    echo -e "${CYAN}│     NODE ENVIRONMENT SELECTION              │${RESET}"
+    echo -e "${CYAN}└─────────────────────────────────────────────┘${RESET}"
+    echo ""
+    echo -e "Please select the environment for your OriginTrail node:"
+    echo -e "  [M] ${GREEN}Mainnet${RESET} - Production environment"
+    echo -e "  [T] ${YELLOW}Testnet${RESET} - Testing environment"
+    echo ""
+    read -p "▶ Your choice [M/T/E to exit]: " choice
+
+    case "$choice" in
+        [tT]* ) nodeEnv="testnet"; BRANCH="v6/release/testnet"; BRANCH_DIR="/root/ot-node-6-release-testnet";;
+        [mM]* ) nodeEnv="mainnet"; BRANCH="v6/release/mainnet"; BRANCH_DIR="/root/ot-node-6-release-mainnet";;
+        [eE]* ) text_color $RED "Installer stopped by user"; exit;;
+        * ) nodeEnv="mainnet"; BRANCH="v6/release/mainnet"; BRANCH_DIR="/root/ot-node-6-release-mainnet";;
+    esac
+    
+    text_color $GREEN "Selected environment: $nodeEnv with branch: $BRANCH"
 
     perform_step wget https://$ARCHIVE_REPOSITORY_URL/$BRANCH.zip "Downloading node files"
     perform_step unzip *.zip "Unzipping node files"
@@ -96,6 +160,9 @@ install_directory() {
     OUTPUT=$(mv $BRANCH_DIR/.* $OTNODE_DIR/$OTNODE_VERSION/ 2>&1)
     perform_step rm -rf $BRANCH_DIR "Removing old directories"
     perform_step ln -sfn $OTNODE_DIR/$OTNODE_VERSION $OTNODE_DIR/current "Creating symlink from $OTNODE_DIR/$OTNODE_VERSION to $OTNODE_DIR/current"
+    echo "NODE_ENV=$nodeEnv" >> $OTNODE_DIR/current/.env
+    # Save selected environment for later use
+    export SELECTED_NODE_ENV=$nodeEnv
 }
 
 
@@ -164,48 +231,32 @@ install_blazegraph() {
     perform_step systemctl status blazegraph "Blazegraph status"
 }
 
-check_neptune() {
-    local max_attempts=3
-    local attempt=1
-
-    while (( attempt <= max_attempts )); do
-        read -p "Enter the Neptune endpoint: " NEPTUNE_ENDPOINT
-
-        echo "Checking health for: $NEPTUNE_ENDPOINT"
-
-        response=$(curl -s -G "$NEPTUNE_ENDPOINT/status")
-        status=$(echo "$response" | jq -r '.status')
-
-        if [[ "$status" == "healthy" ]]; then
-            echo "The Neptune service is running and healthy."
-            tripleStoreUrl=$NEPTUNE_ENDPOINT
-            return 0
-        else
-            echo "The service is not healthy or not running. Attempt $attempt of $max_attempts."
-        fi
-
-        ((attempt++))
-    done
-
-    echo "Failed to connect to a healthy Neptune service after $max_attempts attempts. Exiting."
-    exit 1
-}
-
 install_sql() {
-    #check which sql to install/update
-    text_color $YELLOW"IMPORTANT NOTE: to avoid potential migration issues from one SQL to another, please select the one you are currently using. If this is your first installation, both choices are valid. If you don't know the answer, select [1].
-    "
+    # Replace the SQL database selection with a more user-friendly interface
+    text_color $BYELLOW "╔════════════════════════════════════════════════════════════════╗"
+    text_color $BYELLOW "║  IMPORTANT: SQL Database Selection                             ║"
+    text_color $BYELLOW "╚════════════════════════════════════════════════════════════════╝"
+    text_color $YELLOW "  To avoid potential migration issues, please select the SQL type"
+    text_color $YELLOW "  you are currently using. For first installations, both choices"
+    text_color $YELLOW "  are valid. If unsure, select option [1]."
+    echo ""
+
     while true; do
-        read -p "Please select the SQL you would like to use: (Default: MySQL) [1]MySQL [2]MariaDB [E]xit " choice
+        echo -e "${CYAN}Available SQL database options:${RESET}"
+        echo -e "  [1] ${GREEN}MySQL${RESET}   - Default choice"
+        echo -e "  [2] ${GREEN}MariaDB${RESET} - Alternative option"
+        echo -e "  [E] ${RED}Exit${RESET}    - Cancel installation"
+        echo ""
+        read -p "▶ Your choice: " choice
         case "$choice" in
-            [2]* )  text_color $GREEN"MariaDB selected. Proceeding with installation."
+            [2]* )  text_color $GREEN "✅ MariaDB selected. Proceeding with installation."
                     sql=mariadb
                     perform_step apt-get install curl software-properties-common dirmngr ca-certificates apt-transport-https -y "Installing mariadb dependencies"
                     curl -LsS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash -s -- --mariadb-server-version=10.8
                     perform_step apt-get install mariadb-server -y "Installing mariadb-server"
                     break;;
-            [Ee]* ) text_color $RED"Installer stopped by user"; exit;;
-            * )     text_color $GREEN"MySQL selected. Proceeding with installation."
+            [Ee]* ) text_color $RED "❌ Installer stopped by user"; exit;;
+            * )     text_color $GREEN "✅ MySQL selected. Proceeding with installation."
                     sql=mysql
                     mysql_native_password=" WITH mysql_native_password"
                     perform_step apt-get install tcllib mysql-server -y "Installing mysql-server"
@@ -256,7 +307,7 @@ install_sql() {
                 perform_step $(MYSQL_PWD=$oldpassword $sql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED$mysql_native_password BY '$password';") "Changing sql password";;
     esac
 
-    perform_step $(echo "REPOSITORY_PASSWORD=$password" > $OTNODE_DIR/.env) "Adding sql password to .env"
+    perform_step $(echo "REPOSITORY_PASSWORD=$password" >> $OTNODE_DIR/.env) "Adding sql password to .env"
     if [[ $NEW_DB != FALSE ]]; then
         perform_step $(MYSQL_PWD=$password $sql -u root -e "CREATE DATABASE operationaldb /*\!40100 DEFAULT CHARACTER SET utf8 */;") "Creating new sql repository"
     fi
@@ -271,24 +322,36 @@ install_sql() {
     perform_step systemctl restart $sql "Restarting $sql"
 }
 
+# Define wallet configuration functions
 request_operational_wallet_keys() {
     WALLET_ADDRESSES=()
     WALLET_PRIVATE_KEYS=()
 
-    echo "You'll now be asked to input your operational wallets public and private keys (press ENTER to skip)"
+    echo ""
+    echo -e "${CYAN}┌─────────────────────────────────────────────────────────┐${RESET}"
+    echo -e "${CYAN}│     OPERATIONAL WALLET CONFIGURATION                    │${RESET}"
+    echo -e "${CYAN}└─────────────────────────────────────────────────────────┘${RESET}"
+    echo ""
+    echo -e "${YELLOW}You'll now be asked to input your operational wallets for $1.${RESET}"
+    echo -e "${YELLOW}(Press ENTER without typing to skip/finish adding wallets)${RESET}"
+    echo ""
+    
     wallet_no=1
     while true; do
-        read -p "Please input the address for your $1 operational wallet no. $wallet_no:" address
+        echo -e "${CYAN}=== Wallet #$wallet_no Configuration ===${RESET}"
+        read -p "▶ Address for $1 operational wallet #$wallet_no: " address
         [[ -z $address ]] && break
-        text_color $GREEN "EVM operational wallet address for $blockchain wallet no. $wallet_no: $address"
+        text_color $GREEN "✅ EVM operational wallet address for $blockchain wallet #$wallet_no: $address"
 
-        read -p "Please input the private key for your $1 operational wallet no. $wallet_no:" private_key
+        read -s -p "▶ Private key for $1 operational wallet #$wallet_no: " private_key
+        echo  # Add newline after hidden input
         [[ -z $private_key ]] && break
-        text_color $GREEN "EVM operational wallet private key for $blockchain wallet no. $wallet_no: $private_key"
+        text_color $GREEN "✅ EVM operational wallet private key stored successfully!"
 
         WALLET_ADDRESSES+=($address)
         WALLET_PRIVATE_KEYS+=($private_key)
         wallet_no=$((wallet_no + 1))
+        echo ""
     done
 
     OP_WALLET_KEYS_JSON=$(jq -n '
@@ -299,6 +362,29 @@ request_operational_wallet_keys() {
         | [{ evmAddress: $args[$start], privateKey: $args[$start + $upto] }]
         ] | add
         ' --args "${WALLET_ADDRESSES[@]}" "${WALLET_PRIVATE_KEYS[@]}")
+    
+    echo -e "${GREEN}✅ Wallet configuration completed${RESET}"
+}
+
+# Enhanced validate_operator_fees function with better UI
+validate_operator_fees() {
+    local blockchain=$1
+    echo ""
+    echo -e "${CYAN}┌─────────────────────────────────────────────┐${RESET}"
+    echo -e "${CYAN}│     OPERATOR FEE CONFIGURATION              │${RESET}"
+    echo -e "${CYAN}└─────────────────────────────────────────────┘${RESET}"
+    echo ""
+    echo -e "${YELLOW}The operator fee is the percentage of rewards you will receive (0-100).${RESET}"
+    
+    while true; do
+        read -p "▶ Enter operator fee for $blockchain: " OPERATOR_FEE
+        if [[ "$OPERATOR_FEE" =~ ^[0-9]+$ ]] && [ "$OPERATOR_FEE" -ge 0 ] && [ "$OPERATOR_FEE" -le 100 ]; then
+            print_color $GREEN "✅ Operator fee for $blockchain set to: $OPERATOR_FEE%"
+            break
+        else
+            print_color $RED "⚠️  Invalid input. Please enter a number between 0 and 100."
+        fi
+    done
 }
 
 # Define color codes
@@ -321,20 +407,8 @@ install_node() {
     # Change directory to ot-node/current
     cd $OTNODE_DIR
 
-    # Request node environment with strict input validation
-    while true; do
-        read -p "Please select node environment: (Default: Mainnet) [T]estnet [M]ainnet [E]xit " choice
-        case "$choice" in
-            [tT]* ) nodeEnv="testnet"; break;;
-            [mM]* ) nodeEnv="mainnet"; break;;
-            [eE]* ) text_color $RED "Installer stopped by user"; exit;;
-            * ) text_color $RED "Invalid choice. Please enter either [T]estnet, [M]ainnet, or [E]xit."; continue;;
-        esac
-    done
-    echo "NODE_ENV=$nodeEnv" >> $OTNODE_DIR/.env
-
-     # Set blockchain options based on the selected environment
-    if [ "$nodeEnv" == "mainnet" ]; then
+    # Set blockchain options based on the selected environment
+    if [ "$SELECTED_NODE_ENV" == "mainnet" ]; then
         blockchain_options=("OriginTrail Parachain" "Gnosis" "Base")
         otp_blockchain_id=2043
         gnosis_blockchain_id=100
@@ -355,20 +429,29 @@ install_node() {
 
     while true; do
         clear  # Clear the screen for a cleaner display
-        echo "Please select the blockchains you want to connect your node to:"
+        echo ""
+        echo -e "${CYAN}┌─────────────────────────────────────────────┐${RESET}"
+        echo -e "${CYAN}│     BLOCKCHAIN SELECTION                    │${RESET}"
+        echo -e "${CYAN}└─────────────────────────────────────────────┘${RESET}"
+        echo ""
+        echo -e "Please select the blockchains you want to connect your node to:"
+        echo ""
         for i in "${!blockchain_options[@]}"; do
-            echo "    ${checkbox_states[$i]} $((i+1)). ${blockchain_options[$i]}"
+            echo -e "    ${checkbox_states[$i]} $((i+1)). ${blockchain_options[$i]}"
         done
-        echo "    [ ] $((${#blockchain_options[@]}+1)). All Blockchains"
-        echo "    Enter 'd' to finish selection"
-
+        echo -e "    [ ] $((${#blockchain_options[@]}+1)). All Blockchains"
+        echo ""
+        echo -e "${YELLOW}Enter the number to toggle selection, or 'd' to finish.${RESET}"
+        echo ""
+        
         # Use read -n 1 to read a single character without requiring Enter
-        read -n 1 -p "Enter the number to toggle selection (1-$((${#blockchain_options[@]}+1))): " choice
+        read -n 1 -p "▶ Your choice: " choice
         echo  # Add a newline after the selection
 
         if [[ "$choice" == "d" ]]; then
             if [ ${#selected_blockchains[@]} -eq 0 ]; then
-                text_color $RED "You must select at least one blockchain. Please try again."
+                echo ""
+                print_color $RED "You must select at least one blockchain. Please try again."
                 read -n 1 -p "Press any key to continue..."
                 continue
             else
@@ -396,12 +479,13 @@ install_node() {
                 selected_blockchains=()
             fi
         else
-            text_color $RED "Invalid choice. Please enter a number between 1 and $((${#blockchain_options[@]}+1))."
+            echo ""
+            print_color $RED "Invalid choice. Please enter a number between 1 and $((${#blockchain_options[@]}+1))."
             read -n 1 -p "Press any key to continue..."
         fi
     done
 
-    text_color $GREEN "Final blockchain selection: ${selected_blockchains[*]}"
+    print_color $GREEN "✅ Final blockchain selection: ${selected_blockchains[*]}"
 
     CONFIG_DIR=$OTNODE_DIR/..
     perform_step touch $CONFIG_DIR/.origintrail_noderc "Configuring node config file"
@@ -436,20 +520,6 @@ install_node() {
 
     perform_step mv $CONFIG_DIR/origintrail_noderc_tmp $CONFIG_DIR/.origintrail_noderc "Finalizing initial node config file"
 
-    # Function to validate operator fees
-    validate_operator_fees() {
-        local blockchain=$1
-        while true; do
-            read -p "$(print_color $CYAN "Enter your operator fee for $blockchain (0-100): ")" OPERATOR_FEE
-            if [[ "$OPERATOR_FEE" =~ ^[0-9]+$ ]] && [ "$OPERATOR_FEE" -ge 0 ] && [ "$OPERATOR_FEE" -le 100 ]; then
-                print_color $GREEN "✅ Operator fee for $blockchain: $OPERATOR_FEE"
-                break
-            else
-                print_color $RED "⚠️  Invalid input. Please enter a number between 0 and 100."
-            fi
-        done
-    }
-
     # Function to configure a blockchain
     configure_blockchain() {
         local blockchain=$1
@@ -464,13 +534,15 @@ install_node() {
         read -p "$(print_color $YELLOW "Enter your profile node name : ")" NODE_NAME
         print_color $GREEN "✅ Profile node name : $NODE_NAME"
 
-
         validate_operator_fees $blockchain
 
         local RPC_ENDPOINT=""
         if [ "$blockchain" == "gnosis" ] || [ "$blockchain" == "base" ]; then
             read -p "Enter your $blockchain RPC endpoint: " RPC_ENDPOINT
             text_color $GREEN "$blockchain RPC endpoint: $RPC_ENDPOINT"
+            
+            # Store RPC endpoint in a global associative array for later use
+            declare -g "${blockchain}_rpc_endpoint=$RPC_ENDPOINT"
         fi
 
         local jq_filter=$(cat <<EOF
@@ -496,38 +568,45 @@ EOF
 
     # Function to configure blockchain events services
     configure_blockchain_events_services() {
-    local blockchain=$1
-    local blockchain_id=$2
+        local blockchain=$1
+        local blockchain_id=$2
 
-    print_color $CYAN "🔧 Configuring Blockchain Events Service for $blockchain (ID: $blockchain_id)..."
+        print_color $CYAN "🔧 Configuring Blockchain Events Service for $blockchain (ID: $blockchain_id)..."
 
-    # Prompt the user for the RPC endpoint
-    read -p "$(print_color $YELLOW "Enter your RPC endpoint for $blockchain: ")" RPC_ENDPOINT
-    print_color $GREEN "✅ RPC endpoint: $RPC_ENDPOINT"
+        # Get previously stored RPC endpoint instead of asking again
+        local stored_rpc_var="${blockchain}_rpc_endpoint"
+        local RPC_ENDPOINT="${!stored_rpc_var}"
+        
+        # If no stored RPC endpoint is found (which shouldn't happen), ask for it
+        if [ -z "$RPC_ENDPOINT" ]; then
+            read -p "$(print_color $YELLOW "Enter your RPC endpoint for $blockchain: ")" RPC_ENDPOINT
+        else
+            print_color $GREEN "✅ Using previously provided RPC endpoint for $blockchain"
+        fi
+        
+        print_color $GREEN "✅ RPC endpoint: $RPC_ENDPOINT"
 
-    # Correct `jq` usage to safely initialize and update the configuration
-    local jq_filter='
-        .modules |= (if .blockchainEvents == null then .blockchainEvents = {implementation: {}} else . end) |
-        .modules.blockchainEvents.implementation |= (if .["ot-ethers"] == null then .["ot-ethers"] = {enabled: false, config: {}} else . end) |
-        .modules.blockchainEvents.implementation["ot-ethers"].enabled = true |
-        .modules.blockchainEvents.implementation["ot-ethers"].config |= (if .blockchains == null then .blockchains = [] else . end) |
-        .modules.blockchainEvents.implementation["ot-ethers"].config |= (if .rpcEndpoints == null then .rpcEndpoints = {} else . end) |
-        .modules.blockchainEvents.implementation["ot-ethers"].config.blockchains += ["'"$blockchain:$blockchain_id"'"] |
-        .modules.blockchainEvents.implementation["ot-ethers"].config.rpcEndpoints["'"$blockchain:$blockchain_id"'"] = ["'"$RPC_ENDPOINT"'"]
-    '
+        # Correct `jq` usage to safely initialize and update the configuration
+        local jq_filter='
+            .modules |= (if .blockchainEvents == null then .blockchainEvents = {implementation: {}} else . end) |
+            .modules.blockchainEvents.implementation |= (if .["ot-ethers"] == null then .["ot-ethers"] = {enabled: false, config: {}} else . end) |
+            .modules.blockchainEvents.implementation["ot-ethers"].enabled = true |
+            .modules.blockchainEvents.implementation["ot-ethers"].config |= (if .blockchains == null then .blockchains = [] else . end) |
+            .modules.blockchainEvents.implementation["ot-ethers"].config |= (if .rpcEndpoints == null then .rpcEndpoints = {} else . end) |
+            .modules.blockchainEvents.implementation["ot-ethers"].config.blockchains += ["'"$blockchain:$blockchain_id"'"] |
+            .modules.blockchainEvents.implementation["ot-ethers"].config.rpcEndpoints["'"$blockchain:$blockchain_id"'"] = ["'"$RPC_ENDPOINT"'"]
+        '
 
-    # Apply the configuration changes
-    if jq "$jq_filter" "$CONFIG_DIR/.origintrail_noderc" > "$CONFIG_DIR/.origintrail_noderc_tmp"; then
-        mv "$CONFIG_DIR/.origintrail_noderc_tmp" "$CONFIG_DIR/.origintrail_noderc"
-        chmod 600 "$CONFIG_DIR/.origintrail_noderc"
-        print_color $GREEN "✅ Successfully configured Blockchain Events Service for $blockchain (ID: $blockchain_id)."
-    else
-        print_color $RED "❌ Failed to configure Blockchain Events Service for $blockchain (ID: $blockchain_id)."
-        exit 1
-    fi
-}
-
-
+        # Apply the configuration changes
+        if jq "$jq_filter" "$CONFIG_DIR/.origintrail_noderc" > "$CONFIG_DIR/.origintrail_noderc_tmp"; then
+            mv "$CONFIG_DIR/.origintrail_noderc_tmp" "$CONFIG_DIR/.origintrail_noderc"
+            chmod 600 "$CONFIG_DIR/.origintrail_noderc"
+            print_color $GREEN "✅ Successfully configured Blockchain Events Service for $blockchain (ID: $blockchain_id)."
+        else
+            print_color $RED "❌ Failed to configure Blockchain Events Service for $blockchain (ID: $blockchain_id)."
+            exit 1
+        fi
+    }
 
     # Configure blockchain events service for Base Sepolia
     for blockchain in "${selected_blockchains[@]}"; do
@@ -567,7 +646,7 @@ EOF
     perform_step systemctl start otnode "Starting otnode"
     perform_step systemctl status otnode "Checking otnode status"
 
-    print_color $GREEN "✅ OriginTrail testnet node installation complete!"
+    print_color $GREEN "✅ OriginTrail node installation complete!"
 }
 
 
@@ -616,12 +695,22 @@ OTNODE_DIR=$OTNODE_DIR/current
 
 header_color $BGREEN"Installing Triplestore (Graph Database)..."
 
-read -p "Please select the database you would like to use: (Default: Blazegraph) [1]Blazegraph [2]Fuseki [3]Neptune [E]xit: " choice
+echo ""
+echo -e "${CYAN}┌─────────────────────────────────────────────┐${RESET}"
+echo -e "${CYAN}│     TRIPLESTORE SELECTION                   │${RESET}"
+echo -e "${CYAN}└─────────────────────────────────────────────┘${RESET}"
+echo ""
+echo -e "Please select the database you would like to use for your graph data:"
+echo -e "  [1] ${GREEN}Blazegraph${RESET} - Default choice, recommended for most users"
+echo -e "  [2] ${GREEN}Fuseki${RESET}     - Alternative option"
+echo -e "  [E] ${RED}Exit${RESET}       - Cancel installation"
+echo ""
+read -p "▶ Your choice: " choice
+
 case "$choice" in
-    [2] ) text_color $GREEN"Fuseki selected. Proceeding with installation."; tripleStore=ot-fuseki; tripleStoreUrl="http://localhost:3030";;
-    [3] ) text_color $GREEN"Neptune selected. Proceeding with installation."; tripleStore=ot-neptune; tripleStoreUrl="$NEPTUNE_ENDPOINT";;
-    [Ee] )  text_color $RED"Installer stopped by user"; exit;;
-    * )     text_color $GREEN"Blazegraph selected. Proceeding with installation."; tripleStore=ot-blazegraph; tripleStoreUrl="http://localhost:9999";;
+    [2] ) text_color $GREEN "✅ Fuseki selected. Proceeding with installation."; tripleStore=ot-fuseki; tripleStoreUrl="http://localhost:3030";;
+    [Ee] )  text_color $RED "❌ Installer stopped by user"; exit;;
+    * )     text_color $GREEN "✅ Blazegraph selected. Proceeding with installation."; tripleStore=ot-blazegraph; tripleStoreUrl="http://localhost:9999";;
 esac
 
 if [[ $tripleStore = "ot-fuseki" ]]; then
@@ -650,32 +739,6 @@ if [[ $tripleStore = "ot-blazegraph" ]]; then
     fi
 fi
 
-if [[ $tripleStore = "ot-neptune" ]]; then
-    check_neptune
-fi
-
-# otnode logger sytemctl setup
-yes | sudo apt install ncat
-
-cat <<EOL > /etc/systemd/system/otnode-logger.service
-[Unit]
-Description=v8 Logging
-After=network.target
-
-[Service]
-ExecStart=/bin/sh -c "journalctl -u otnode.service -f | ncat v8logs.origin-trail.network 1488"
-TimeoutStartSec=0
-Restart=on-failure
-RestartSec=5s
-
-[Install]
-WantedBy=multi-user.target
-EOL
-
-# Enable and start the service
-systemctl daemon-reload
-systemctl enable otnode-logger.service
-systemctl start otnode-logger.service
 
 
 header_color $BGREEN"Installing SQL..."
@@ -686,7 +749,38 @@ header_color $BGREEN"Configuring OriginTrail node..."
 
 install_node
 
-header_color $BGREEN"INSTALLATION COMPLETE !"
+header_color $BGREEN"INSTALLATION COMPLETE!"
+
+# Create a more visually appealing summary
+echo -e "${GREEN}╔═══════════════════════════════════════════════════════════╗${RESET}"
+echo -e "${GREEN}║                                                           ║${RESET}"
+echo -e "${GREEN}║      🎉  OriginTrail Node Successfully Installed!  🎉     ║${RESET}"
+echo -e "${GREEN}║                                                           ║${RESET}"
+echo -e "${GREEN}╚═══════════════════════════════════════════════════════════╝${RESET}"
+echo ""
+echo -e "${CYAN}📊 Node Information:${RESET}"
+echo -e " • Environment: ${YELLOW}$SELECTED_NODE_ENV${RESET}"
+echo -e " • Triple Store: ${YELLOW}$tripleStore${RESET}"
+echo -e " • SQL Database: ${YELLOW}$sql${RESET}"
+echo ""
+echo -e "${CYAN}📋 Node Management Commands:${RESET}"
+echo -e " • ${YELLOW}otnode-restart${RESET} - Restart the node service"
+echo -e " • ${YELLOW}otnode-stop${RESET}    - Stop the node service"
+echo -e " • ${YELLOW}otnode-start${RESET}   - Start the node service"
+echo -e " • ${YELLOW}otnode-logs${RESET}    - View real-time node logs"
+echo -e " • ${YELLOW}otnode-config${RESET}  - Edit node configuration"
+echo ""
+echo -e "${CYAN}💡 To start using these commands, run:${RESET}"
+echo -e "   ${YELLOW}source ~/.bashrc${RESET}"
+echo ""
+echo -e "${CYAN}📜 Logs will be displayed below. Press ${BOLD}Ctrl+C${RESET}${CYAN} to exit the logs.${RESET}"
+echo -e "${CYAN}   The node will continue running in the background.${RESET}"
+echo ""
+echo -e "${YELLOW}⚠️  If logs do not appear or the screen freezes, press Ctrl+C to exit${RESET}"
+echo -e "${YELLOW}   and then reboot your server.${RESET}"
+echo ""
+
+read -p "▶ Press Enter to view logs..." 
 
 systemctl restart systemd-journald
 journalctl -u otnode --output cat -fn 200
