@@ -110,67 +110,94 @@ class ProofingService {
         if (
             activeProofPeriodStatus.isValid &&
             latestChallenge?.activeProofPeriodStartBlock ===
-                activeProofPeriodStatus.activeProofPeriodStartBlock.toNumber() &&
-            latestChallenge?.sentSuccessfully
+                activeProofPeriodStatus.activeProofPeriodStartBlock.toNumber()
         ) {
-            if (!latestChallenge.finalized) {
-                this.logger.debug(
-                    `Processing non-finalized challenge for blockchain: ${blockchainId}`,
-                );
+            if (latestChallenge.sentSuccessfully) {
+                if (!latestChallenge.finalized) {
+                    this.logger.debug(
+                        `Processing non-finalized challenge for blockchain: ${blockchainId}`,
+                    );
 
-                // We have latest challenge and we sent valid proof
-                // Check onchain if it has score
-                const score = await this.blockchainModuleManager.getNodeEpochProofPeriodScore(
-                    blockchainId,
-                    nodeId,
-                    latestChallenge.epoch,
-                    latestChallenge.activeProofPeriodStartBlock,
-                );
-                this.logger.debug(
-                    `Retrieved node score for blockchain: ${blockchainId}, nodeId: ${nodeId}, score: ${score}`,
-                );
+                    // We have latest challenge and we sent valid proof
+                    // Check onchain if it has score
+                    const score = await this.blockchainModuleManager.getNodeEpochProofPeriodScore(
+                        blockchainId,
+                        nodeId,
+                        latestChallenge.epoch,
+                        latestChallenge.activeProofPeriodStartBlock,
+                    );
+                    this.logger.debug(
+                        `Retrieved node score for blockchain: ${blockchainId}, nodeId: ${nodeId}, score: ${score}`,
+                    );
 
-                // If score is greater than 0 than proof was sent and was valid
-                // Ensure no reorgs happened by checking if it has score and enough time has passed and if possible mark it as finalized
-                if (score > 0) {
-                    // Sent more than minute ago check onchain confirm it finalized and it's good
-                    if (latestChallenge.updatedAt.getTime() + REORG_PROOFING_BUFFER <= Date.now()) {
-                        this.logger.info(
-                            `Finalizing challenge for blockchainId: ${blockchainId}, challengeId: ${latestChallenge.id}`,
-                        );
-                        latestChallenge.finalized = true;
-                        await this.repositoryModuleManager.setCompletedAndFinalizedRandomSamplingChallengeRecord(
-                            latestChallenge.id,
-                            true,
-                            true,
-                        );
-                        this.operationIdService.emitChangeEvent(
-                            'PROOF_CHALANGE_FINALIZED',
-                            this.generateOperationId(
+                    // If score is greater than 0 than proof was sent and was valid
+                    // Ensure no reorgs happened by checking if it has score and enough time has passed and if possible mark it as finalized
+                    if (score > 0) {
+                        // Sent more than minute ago check onchain confirm it finalized and it's good
+                        if (
+                            latestChallenge.updatedAt.getTime() + REORG_PROOFING_BUFFER <=
+                            Date.now()
+                        ) {
+                            this.logger.info(
+                                `Finalizing challenge for blockchainId: ${blockchainId}, challengeId: ${latestChallenge.id}`,
+                            );
+                            latestChallenge.finalized = true;
+                            await this.repositoryModuleManager.setCompletedAndFinalizedRandomSamplingChallengeRecord(
+                                latestChallenge.id,
+                                true,
+                                true,
+                            );
+                            this.operationIdService.emitChangeEvent(
+                                'PROOF_CHALANGE_FINALIZED',
+                                this.generateOperationId(
+                                    blockchainId,
+                                    latestChallenge.epoch,
+                                    latestChallenge.activeProofPeriodStartBlock,
+                                ),
                                 blockchainId,
-                                latestChallenge.epoch,
-                                latestChallenge.activeProofPeriodStartBlock,
-                            ),
-                            blockchainId,
-                            null,
-                            null,
-                        );
+                                null,
+                                null,
+                            );
+                        } else {
+                            this.logger.info(
+                                `Waiting for reorg buffer to pass before finalizing for blockchain: ${blockchainId}, challengeId: ${latestChallenge.id}`,
+                            );
+                        }
                     } else {
-                        this.logger.info(
-                            `Waiting for reorg buffer to pass before finalizing for blockchain: ${blockchainId}, challengeId: ${latestChallenge.id}`,
+                        this.logger.warn(
+                            `Zero score detected, resetting challenge status for blockchain: ${blockchainId}, challengeId: ${latestChallenge.id}`,
                         );
+                        latestChallenge.sentSuccessfully = false;
+                        latestChallenge.finalized = false;
+                        await this.repositoryModuleManager.setCompletedAndFinalizedRandomSamplingChallengeRecord(
+                            latestChallenge,
+                        );
+                        await this.prepareAndSendProof(blockchainId, latestChallenge, nodeId);
                     }
-                } else {
-                    this.logger.warn(
-                        `Zero score detected, resetting challenge status for blockchain: ${blockchainId}, challengeId: ${latestChallenge.id}`,
-                    );
-                    latestChallenge.sentSuccessfully = false;
-                    latestChallenge.finalized = false;
-                    await this.repositoryModuleManager.setCompletedAndFinalizedRandomSamplingChallengeRecord(
-                        latestChallenge,
-                    );
-                    await this.prepareAndSendProof(blockchainId, latestChallenge, nodeId);
                 }
+            } else {
+                const ual = this.ualService.deriveUAL(
+                    blockchainId,
+                    latestChallenge.contractAddress,
+                    latestChallenge.knowledgeCollectionId,
+                );
+
+                const data = await this.fetchAndProcessAssertion(
+                    blockchainId,
+                    ual,
+                    latestChallenge,
+                );
+
+                const proof = await this.calculateAndSubmitProof(
+                    data,
+                    latestChallenge,
+                    blockchainId,
+                );
+                this.logger.info(
+                    `Proof calculated and submitted successfully for blockchain: ${blockchainId}, challengeId: ${latestChallenge.id}`,
+                );
+
+                return proof;
             }
             // If finalized is do nothing, wait for next proof
         } else {
