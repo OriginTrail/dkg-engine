@@ -238,21 +238,8 @@ class ProofingService {
             blockchainId,
         );
 
-        if (createChallengeResult.success) {
-            // Only emit the event if a new challenge was actually generated
-            this.operationIdService.emitChangeEvent(
-                'PROOF_NEW_CHALANGE_GENERATED',
-                this.generateOperationId(
-                    blockchainId,
-                    createChallengeResult.epoch,
-                    createChallengeResult.activeProofPeriodStartBlock,
-                ),
-                blockchainId,
-                null,
-                null,
-            );
-        } else if (
-            !createChallengeResult.error.message.includes(
+        if (
+            !createChallengeResult?.error?.message?.includes(
                 'An unsolved challenge already exists for this node in the current proof period',
             )
         ) {
@@ -264,6 +251,22 @@ class ProofingService {
             blockchainId,
             nodeId,
         );
+
+        if (createChallengeResult.success) {
+            // Only emit the event if a new challenge was actually generated
+            this.operationIdService.emitChangeEvent(
+                'PROOF_NEW_CHALANGE_GENERATED',
+                this.generateOperationId(
+                    blockchainId,
+                    newChallenge.epoch,
+                    newChallenge.activeProofPeriodStartBlock,
+                ),
+                blockchainId,
+                null,
+                null,
+            );
+        }
+
         // Persist new challenge
         if (
             latestChallenge?.epoch === newChallenge.epoch &&
