@@ -268,13 +268,14 @@ class ProofingService {
         }
 
         // Persist new challenge
+        // Use loose equality (==) because newChallenge properties are BigInt and latestChallenge properties are Number
         if (
-            latestChallenge?.epoch === newChallenge.epoch &&
-            latestChallenge?.activeProofPeriodStartBlock ===
-                newChallenge.activeProofPeriodStartBlock
+            // eslint-disable-next-line eqeqeq
+            latestChallenge?.epoch == newChallenge.epoch &&
+            // eslint-disable-next-line eqeqeq
+            latestChallenge?.activeProofPeriodStartBlock == newChallenge.activeProofPeriodStartBlock
         ) {
             // Delete old challenge before inserting new one
-            // TODO Does this delete?????
             await this.repositoryModuleManager.deleteRandomSamplingChallengeRecord(
                 latestChallenge.id,
             );
