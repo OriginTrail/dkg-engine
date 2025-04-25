@@ -45,19 +45,11 @@ class RandomSamplingChallengeRepository {
         });
     }
 
-    async deleteRandomSamplingChallengeRecord(ids, options) {
-        const whereConditions = Object.entries(ids)
-            .map(([key]) => `${key} = :${key}`)
-            .join(' AND ');
-
-        return this.model.sequelize.query(
-            `DELETE FROM random_sampling_challenges WHERE ${whereConditions}`,
-            {
-                replacements: ids,
-                type: this.model.sequelize.QueryTypes.DELETE,
-                ...options,
-            },
-        );
+    async deleteRandomSamplingChallengeRecord(id, options = {}) {
+        return this.model.destroy({
+            where: { id },
+            ...options,
+        });
     }
 
     async deleteRandomSamplingChallengeForBlockchainIdEpoch(blockchainId, epoch) {
