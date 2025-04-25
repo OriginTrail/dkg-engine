@@ -262,7 +262,7 @@ class ParanetSyncCommand extends Command {
                 }
             }
         });
-          
+
         await this.tripleStoreService.insertKnowledgeCollection(
             TRIPLE_STORE_REPOSITORIES.DKG,
             ual,
