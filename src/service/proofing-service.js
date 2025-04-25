@@ -272,7 +272,9 @@ class ProofingService {
         ) {
             // Delete old challenge before inserting new one
             // TODO Does this delete?????
-            await this.repositoryModuleManager.deleteRandomSamplingChallengeRecord(latestChallenge);
+            await this.repositoryModuleManager.deleteRandomSamplingChallengeRecord(
+                latestChallenge.id,
+            );
         }
         const newChallengeRecord = {
             blockchainId,
