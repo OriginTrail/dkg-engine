@@ -239,6 +239,7 @@ class ProofingService {
         );
 
         if (
+            !createChallengeResult.success &&
             !createChallengeResult?.error?.message?.includes(
                 'An unsolved challenge already exists for this node in the current proof period',
             )
