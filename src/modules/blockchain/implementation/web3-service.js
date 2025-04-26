@@ -1158,7 +1158,7 @@ class Web3Service {
                 'createChallenge',
                 [],
                 (result) => {
-                    if (result.error || result.status === 0) {
+                    if (result.error || result?.result?.status === 0) {
                         resolve({
                             success: false,
                             error: result?.error ?? 'Error message not found',
