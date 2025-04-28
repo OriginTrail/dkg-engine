@@ -65,7 +65,7 @@ class TripleStoreService {
         //     knowledgeAssetsUALs.map((ual) => `<${ual}>`),
         // );
         // const unifiedGraphTriples = [...triples, ...tripleAnnotations];
-        const promises = [];
+
         const publicAssertion = triples.public ?? triples;
 
         const filteredPublic = [];
@@ -98,26 +98,34 @@ class TripleStoreService {
 
         const allPossibleNamedGraphs = [];
 
-        if (!existsInNamedGraphs) {
-            promises.push(
-                this.tripleStoreModuleManager.createKnowledgeCollectionNamedGraphs(
-                    this.repositoryImplementations[repository],
-                    repository,
-                    publicKnowledgeAssetsUALs,
-                    publicKnowledgeAssetsTriplesGrouped,
-                    TRIPLES_VISIBILITY.PUBLIC,
-                ),
-            );
+        // Prepare data structures for operations
+        const operations = [];
 
-            promises.push(
-                this.tripleStoreModuleManager.insertMetadataTriples(
-                    this.repositoryImplementations[repository],
-                    repository,
-                    knowledgeCollectionUAL,
-                    publicKnowledgeAssetsUALs,
-                    TRIPLES_VISIBILITY.PUBLIC,
-                ),
-            );
+        if (!existsInNamedGraphs) {
+            // Public knowledge assets operations
+            operations.push({
+                name: 'createPublicKnowledgeCollectionNamedGraphs',
+                execute: () =>
+                    this.tripleStoreModuleManager.createKnowledgeCollectionNamedGraphs(
+                        this.repositoryImplementations[repository],
+                        repository,
+                        publicKnowledgeAssetsUALs,
+                        publicKnowledgeAssetsTriplesGrouped,
+                        TRIPLES_VISIBILITY.PUBLIC,
+                    ),
+            });
+
+            operations.push({
+                name: 'insertPublicMetadataTriples',
+                execute: () =>
+                    this.tripleStoreModuleManager.insertMetadataTriples(
+                        this.repositoryImplementations[repository],
+                        repository,
+                        knowledgeCollectionUAL,
+                        publicKnowledgeAssetsUALs,
+                        TRIPLES_VISIBILITY.PUBLIC,
+                    ),
+            });
 
             // current metadata triple relates to which named graph that represents Knowledge Asset hold the lates(current) data
             // so for each Knowledge Asset there will be one current metadata triple
@@ -174,24 +182,31 @@ class TripleStoreService {
                     }
                 }
 
-                promises.push(
-                    this.tripleStoreModuleManager.createKnowledgeCollectionNamedGraphs(
-                        this.repositoryImplementations[repository],
-                        repository,
-                        privateKnowledgeAssetsUALs,
-                        privateKnowledgeAssetsTriplesGrouped,
-                        TRIPLES_VISIBILITY.PRIVATE,
-                    ),
-                );
-                promises.push(
-                    this.tripleStoreModuleManager.insertMetadataTriples(
-                        this.repositoryImplementations[repository],
-                        repository,
-                        knowledgeCollectionUAL,
-                        privateKnowledgeAssetsUALs,
-                        TRIPLES_VISIBILITY.PRIVATE,
-                    ),
-                );
+                // Private knowledge assets operations
+                operations.push({
+                    name: 'createPrivateKnowledgeCollectionNamedGraphs',
+                    execute: () =>
+                        this.tripleStoreModuleManager.createKnowledgeCollectionNamedGraphs(
+                            this.repositoryImplementations[repository],
+                            repository,
+                            privateKnowledgeAssetsUALs,
+                            privateKnowledgeAssetsTriplesGrouped,
+                            TRIPLES_VISIBILITY.PRIVATE,
+                        ),
+                });
+
+                operations.push({
+                    name: 'insertPrivateMetadataTriples',
+                    execute: () =>
+                        this.tripleStoreModuleManager.insertMetadataTriples(
+                            this.repositoryImplementations[repository],
+                            repository,
+                            knowledgeCollectionUAL,
+                            privateKnowledgeAssetsUALs,
+                            TRIPLES_VISIBILITY.PRIVATE,
+                        ),
+                });
+
                 // current metadata triple relates to which named graph that represents Knowledge Asset hold the lates(current) data
                 // so for each Knowledge Asset there will be one current metadata triple
                 // in this case there are privateKnowledgeAssetsUALs.length number of named graphs created so for each there will be one current metadata triple
@@ -219,15 +234,20 @@ class TripleStoreService {
         }
 
         if (paranetUAL) {
-            await this.tripleStoreModuleManager.createParanetKnoledgeCollectionConnection(
-                this.repositoryImplementations[repository],
-                repository,
-                knowledgeCollectionUAL,
-                paranetUAL,
-                contentType,
-            );
-            totalNumberOfTriplesInserted += allPossibleNamedGraphs.length; // one triple will be created for each Knowledge Asset inserted into paranet
-            this.logger.info(`Adding connection triples for paranet: ${paranetUAL}`);
+            operations.push({
+                name: 'createParanetConnection',
+                execute: async () => {
+                    await this.tripleStoreModuleManager.createParanetKnoledgeCollectionConnection(
+                        this.repositoryImplementations[repository],
+                        repository,
+                        knowledgeCollectionUAL,
+                        paranetUAL,
+                        contentType,
+                    );
+                    totalNumberOfTriplesInserted += allPossibleNamedGraphs.length; // one triple will be created for each Knowledge Asset inserted into paranet
+                    this.logger.info(`Adding connection triples for paranet: ${paranetUAL}`);
+                },
+            });
         }
 
         // TODO: add new metadata triples and move to function insertMetadataTriples
@@ -251,76 +271,117 @@ class TripleStoreService {
 
         totalNumberOfTriplesInserted += publicKnowledgeAssetsUALs.length + 5; // one metadata triple for each public KA
 
-        promises.push(
-            this.tripleStoreModuleManager.insertKnowledgeCollectionMetadata(
-                this.repositoryImplementations[repository],
-                repository,
-                metadataTriples,
-            ),
-        );
+        operations.push({
+            name: 'insertKnowledgeCollectionMetadata',
+            execute: () =>
+                this.tripleStoreModuleManager.insertKnowledgeCollectionMetadata(
+                    this.repositoryImplementations[repository],
+                    repository,
+                    metadataTriples,
+                ),
+        });
 
         const uniqueTripleCount = tripleSet.size;
         totalNumberOfTriplesInserted += uniqueTripleCount;
 
+        // Implement proper retry mechanism
         let attempts = 0;
         let success = false;
+        let failedOperations = [...operations];
 
-        while (attempts < retries && !success) {
+        while (attempts < retries && !success && failedOperations.length > 0) {
             try {
-                await Promise.all(promises);
-                success = true;
+                // Execute all remaining operations
+                const currentOperations = [...failedOperations];
 
-                this.logger.info(
-                    `Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
-                        `has been successfully inserted to the Triple Store's ${repository} repository.`,
+                // Execute operations in parallel and collect results
+                const results = await Promise.all(
+                    currentOperations.map(async (operation) => {
+                        try {
+                            await operation.execute();
+                            return { success: true, operation };
+                        } catch (error) {
+                            // Return failure information instead of modifying failedOperations directly
+                            this.logger.error(
+                                `Operation ${operation.name} failed: ${error.message}`,
+                            );
+                            return { success: false, operation };
+                        }
+                    }),
                 );
+
+                // Create a new array of failed operations instead of modifying the existing one
+                const newFailedOperations = results
+                    .filter((result) => !result.success)
+                    .map((result) => result.operation);
+
+                // Update failedOperations outside of any function defined in the loop
+                failedOperations = newFailedOperations;
+
+                // If no operations failed, we're done
+                if (failedOperations.length === 0) {
+                    success = true;
+                    this.logger.info(
+                        `Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
+                            `has been successfully inserted to the Triple Store's ${repository} repository.`,
+                    );
+                } else {
+                    // Some operations failed, increment attempts and retry
+                    attempts += 1;
+
+                    if (attempts < retries) {
+                        this.logger.info(
+                            `Retrying failed operations for Knowledge Collection with UAL: ${knowledgeCollectionUAL} ` +
+                                `to the Triple Store's ${repository} repository. Attempt ${
+                                    attempts + 1
+                                } of ${retries} after delay of ${retryDelay} ms.`,
+                        );
+                        await setTimeout(retryDelay);
+                    }
+                }
             } catch (error) {
-                this.logger.error(
-                    `Error during insertion of the Knowledge Collection to the Triple Store's ${repository} repository. ` +
-                        `UAL: ${knowledgeCollectionUAL}. Error: ${error.message}`,
-                );
+                // This catch block handles any unexpected errors in the retry mechanism itself
+                this.logger.error(`Unexpected error during retry mechanism: ${error.message}`);
                 attempts += 1;
 
                 if (attempts < retries) {
-                    this.logger.info(
-                        `Retrying insertion of the Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
-                            `to the Triple Store's ${repository} repository. Attempt ${
-                                attempts + 1
-                            } of ${retries} after delay of ${retryDelay} ms.`,
-                    );
                     await setTimeout(retryDelay);
-                } else {
-                    this.logger.error(
-                        `Max retries reached for the insertion of the Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
-                            `to the Triple Store's ${repository} repository. Rolling back data.`,
-                    );
-
-                    if (!existsInNamedGraphs) {
-                        this.logger.info(
-                            `Rolling back Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
-                                `from the Triple Store's ${repository} repository Named Graphs.`,
-                        );
-
-                        await Promise.all([
-                            this.tripleStoreModuleManager.deleteKnowledgeCollectionNamedGraphs(
-                                this.repositoryImplementations[repository],
-                                repository,
-                                allPossibleNamedGraphs,
-                            ),
-                            this.tripleStoreModuleManager.deleteKnowledgeCollectionMetadata(
-                                this.repositoryImplementations[repository],
-                                repository,
-                                allPossibleNamedGraphs,
-                            ),
-                        ]);
-                    }
-
-                    throw new Error(
-                        `Failed to store Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
-                            `to the Triple Store's ${repository} repository after maximum retries. Error ${error}`,
-                    );
                 }
             }
+        }
+
+        // If we've exhausted all retries and still have failed operations
+        if (!success && failedOperations.length > 0) {
+            this.logger.error(
+                `Max retries reached for the insertion of the Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
+                    `to the Triple Store's ${repository} repository. Rolling back data.`,
+            );
+
+            if (!existsInNamedGraphs) {
+                this.logger.info(
+                    `Rolling back Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
+                        `from the Triple Store's ${repository} repository Named Graphs.`,
+                );
+
+                await Promise.all([
+                    this.tripleStoreModuleManager.deleteKnowledgeCollectionNamedGraphs(
+                        this.repositoryImplementations[repository],
+                        repository,
+                        allPossibleNamedGraphs,
+                    ),
+                    this.tripleStoreModuleManager.deleteKnowledgeCollectionMetadata(
+                        this.repositoryImplementations[repository],
+                        repository,
+                        allPossibleNamedGraphs,
+                    ),
+                ]);
+            }
+
+            throw new Error(
+                `Failed to store Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
+                    `to the Triple Store's ${repository} repository after maximum retries. ` +
+                    `Failed operations: ${failedOperations.map((op) => op.name).join(', ')}`,
+            );
         }
 
         return totalNumberOfTriplesInserted;
