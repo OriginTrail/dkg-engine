@@ -41,18 +41,10 @@ class StartParanetSyncCommands extends Command {
                 knowledgeCollectionId,
                 knowledgeAssetId,
             );
-            let paranetMetadata;
-            try {
-                paranetMetadata = await this.blockchainModuleManager.getParanetMetadata(
-                    blockchain,
-                    paranetId,
-                );
-            } catch (error) {
-                this.logger.error(
-                    `Unable to get paranet metadata for paranet ${paranetUAL}. Error: ${error.message}`,
-                );
-                return Command.empty();
-            }
+            const paranetMetadata = await this.blockchainModuleManager.getParanetMetadata(
+                blockchain,
+                paranetId,
+            );
 
             const commandData = {
                 blockchain,
