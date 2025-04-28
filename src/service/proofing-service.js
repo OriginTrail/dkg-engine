@@ -177,7 +177,7 @@ class ProofingService {
                         }
                     } else {
                         this.logger.warn(
-                            `Zero score detected, resetting challenge status for blockchain: ${blockchainId}, challengeId: ${latestChallenge.id}`,
+                            `[PROOFING] Zero score detected, resetting challenge status for blockchain: ${blockchainId}, challengeId: ${latestChallenge.id}`,
                         );
                         latestChallenge.sentSuccessfully = false;
                         latestChallenge.finalized = false;
@@ -206,7 +206,7 @@ class ProofingService {
                     blockchainId,
                 );
                 this.logger.info(
-                    `Proof calculated and submitted successfully for blockchain: ${blockchainId}, challengeId: ${latestChallenge.id}`,
+                    `[PROOFING] Proof calculated and submitted successfully for blockchain: ${blockchainId}, challengeId: ${latestChallenge.id}`,
                 );
 
                 return proof;
