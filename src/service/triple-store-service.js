@@ -295,25 +295,23 @@ class TripleStoreService {
                             `to the Triple Store's ${repository} repository. Rolling back data.`,
                     );
 
-                    if (!existsInNamedGraphs) {
-                        this.logger.info(
-                            `Rolling back Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
-                                `from the Triple Store's ${repository} repository Named Graphs.`,
-                        );
+                    this.logger.info(
+                        `Rolling back Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
+                            `from the Triple Store's ${repository} repository Named Graphs.`,
+                    );
 
-                        await Promise.all([
-                            this.tripleStoreModuleManager.deleteKnowledgeCollectionNamedGraphs(
-                                this.repositoryImplementations[repository],
-                                repository,
-                                allPossibleNamedGraphs,
-                            ),
-                            this.tripleStoreModuleManager.deleteKnowledgeCollectionMetadata(
-                                this.repositoryImplementations[repository],
-                                repository,
-                                allPossibleNamedGraphs,
-                            ),
-                        ]);
-                    }
+                    await Promise.all([
+                        this.tripleStoreModuleManager.deleteKnowledgeCollectionNamedGraphs(
+                            this.repositoryImplementations[repository],
+                            repository,
+                            allPossibleNamedGraphs,
+                        ),
+                        this.tripleStoreModuleManager.deleteKnowledgeCollectionMetadata(
+                            this.repositoryImplementations[repository],
+                            repository,
+                            allPossibleNamedGraphs,
+                        ),
+                    ]);
 
                     throw new Error(
                         `Failed to store Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
@@ -324,6 +322,14 @@ class TripleStoreService {
         }
 
         return totalNumberOfTriplesInserted;
+    }
+
+    async deletePublishTimestampMetadata(repository, ual) {
+        await this.tripleStoreModuleManager.deletePublishTimestampMetadata(
+            this.repositoryImplementations[repository],
+            repository,
+            ual,
+        );
     }
 
     async createV6KnowledgeCollection(triplesPublic, ual, triplesPrivate = null) {

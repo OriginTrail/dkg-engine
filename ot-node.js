@@ -182,21 +182,26 @@ class OTNode {
                         this.logger.info(`Creating profile on network: ${blockchain}`);
                         await blockchainModuleManager.createProfile(blockchain, peerId);
 
+                        const identityIdLocal = await blockchainModuleManager.getIdentityId(
+                            blockchain,
+                        );
                         if (
                             process.env.NODE_ENV === 'development' ||
                             process.env.NODE_ENV === 'test'
                         ) {
-                            const blockchainConfig =
-                                blockchainModuleManager.getModuleConfiguration(blockchain);
-                            execSync(
-                                `npm run set-stake -- --rpcEndpoint=${blockchainConfig.rpcEndpoints[0]} --stake=${blockchainConfig.initialStakeAmount} --operationalWalletPrivateKey=${blockchainConfig.operationalWallets[0].privateKey} --managementWalletPrivateKey=${blockchainConfig.evmManagementWalletPrivateKey} --hubContractAddress=${blockchainConfig.hubContractAddress}`,
-                                { stdio: 'inherit' },
-                            );
-                            await setTimeout(10000);
-                            execSync(
-                                `npm run set-ask -- --rpcEndpoint=${blockchainConfig.rpcEndpoints[0]} --ask=${blockchainConfig.initialAskAmount} --privateKey=${blockchainConfig.operationalWallets[0].privateKey} --hubContractAddress=${blockchainConfig.hubContractAddress}`,
-                                { stdio: 'inherit' },
-                            );
+                            if (identityIdLocal !== 4) {
+                                const blockchainConfig =
+                                    blockchainModuleManager.getModuleConfiguration(blockchain);
+                                execSync(
+                                    `npm run set-stake -- --rpcEndpoint=${blockchainConfig.rpcEndpoints[0]} --stake=${blockchainConfig.initialStakeAmount} --operationalWalletPrivateKey=${blockchainConfig.operationalWallets[0].privateKey} --managementWalletPrivateKey=${blockchainConfig.evmManagementWalletPrivateKey} --hubContractAddress=${blockchainConfig.hubContractAddress}`,
+                                    { stdio: 'inherit' },
+                                );
+                                await setTimeout(10000);
+                                execSync(
+                                    `npm run set-ask -- --rpcEndpoint=${blockchainConfig.rpcEndpoints[0]} --ask=${blockchainConfig.initialAskAmount} --privateKey=${blockchainConfig.operationalWallets[0].privateKey} --hubContractAddress=${blockchainConfig.hubContractAddress}`,
+                                    { stdio: 'inherit' },
+                                );
+                            }
                         }
                     }
 
@@ -396,8 +401,8 @@ class OTNode {
     }
 
     async initializeProofing() {
-        const proofingService = this.container.resolve('proofingService');
-        await proofingService.initialize();
+        // const proofingService = this.container.resolve('proofingService');
+        // await proofingService.initialize();
     }
 
     stop(code = 0) {

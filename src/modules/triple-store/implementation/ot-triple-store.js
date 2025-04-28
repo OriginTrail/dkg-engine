@@ -12,6 +12,7 @@ import {
     DKG_PREDICATE,
     HAS_KNOWLEDGE_ASSET_SUFFIX,
     HAS_NAMED_GRAPH_SUFFIX,
+    DKG_METADATA_PREDICATES,
 } from '../../../constants/constants.js';
 
 class OtTripleStore {
@@ -617,10 +618,19 @@ class OtTripleStore {
 
     async deleteKnowledgeCollectionMetadata(repository, uals) {
         const cleanedUals = [...new Set(uals.map((ual) => ual.replace(/\/(public|private)$/, '')))];
+        const kcUAL = cleanedUals[0].split('/').slice(0, -1).join('/');
 
-        const query = `${cleanedUals
-            .map((ual) => `DELETE WHERE { <${ual}> ?p ?o . }`)
+        let query = `${cleanedUals
+            .map((ual) => `DELETE WHERE { GRAPH <${BASE_NAMED_GRAPHS.METADATA}> <${ual}> ?p ?o . }`)
             .join(';\n')};`;
+
+        query += `DELETE WHERE { GRAPH <${BASE_NAMED_GRAPHS.METADATA}> <${kcUAL}> ?p ?o . }`;
+
+        await this.queryVoid(repository, query);
+    }
+
+    async deletePublishTimestampMetadata(repository, ual) {
+        const query = `DELETE WHERE { GRAPH <${BASE_NAMED_GRAPHS.METADATA}> <${ual}> <${DKG_METADATA_PREDICATES.PUBLISH_TIME}> ?o . }`;
 
         await this.queryVoid(repository, query);
     }

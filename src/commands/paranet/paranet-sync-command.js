@@ -263,6 +263,12 @@ class ParanetSyncCommand extends Command {
             }
         });
 
+        // TODO: Delete old metadata triples
+        this.tripleStoreService.deleteKnowledgeCollectionMetadata(
+            TRIPLE_STORE_REPOSITORIES.DKG,
+            ual,
+        );
+
         await this.tripleStoreService.insertKnowledgeCollection(
             TRIPLE_STORE_REPOSITORIES.DKG,
             ual,

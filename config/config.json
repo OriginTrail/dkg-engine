@@ -107,7 +107,7 @@
                         "package": "./triple-store/implementation/ot-graphdb/ot-graphdb.js",
                         "config": {}
                     },
-		    "ot-neptune": {
+                    "ot-neptune": {
                         "enabled": false,
                         "package": "./triple-store/implementation/ot-neptune/ot-neptune.js",
                         "config": {}
@@ -340,7 +340,7 @@
                         "package": "./triple-store/implementation/ot-blazegraph/ot-blazegraph.js",
                         "config": {}
                     },
-		    "ot-neptune": {
+                    "ot-neptune": {
                         "enabled": false,
                         "package": "./triple-store/implementation/ot-neptune/ot-neptune.js",
                         "config": {}
@@ -557,7 +557,7 @@
                         "package": "./triple-store/implementation/ot-graphdb/ot-graphdb.js",
                         "config": {}
                     },
-		    "ot-neptune": {
+                    "ot-neptune": {
                         "enabled": false,
                         "package": "./triple-store/implementation/ot-neptune/ot-neptune.js",
                         "config": {}
@@ -755,7 +755,7 @@
                         "package": "./triple-store/implementation/ot-graphdb/ot-graphdb.js",
                         "config": {}
                     },
-		    "ot-neptune": {
+                    "ot-neptune": {
                         "enabled": false,
                         "package": "./triple-store/implementation/ot-neptune/ot-neptune.js",
                         "config": {}
@@ -959,7 +959,7 @@
                         "package": "./triple-store/implementation/ot-graphdb/ot-graphdb.js",
                         "config": {}
                     },
-		    "ot-neptune": {
+                    "ot-neptune": {
                         "enabled": false,
                         "package": "./triple-store/implementation/ot-neptune/ot-neptune.js",
                         "config": {}
@@ -1020,7 +1020,9 @@
         "appDataPath": "data",
         "logLevel": "trace",
         "assetSync": {
-            "syncParanets": []
+            "syncParanets": [
+                "did:dkg:hardhat1:31337/0xd5724171c2b7f0aa717a324626050bd05767e2c6/1/1"
+            ]
         },
         "auth": {
             "ipBasedAuthEnabled": true,

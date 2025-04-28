@@ -232,6 +232,7 @@ class GetCommand extends Command {
             contract,
             knowledgeCollectionId,
             knowledgeAssetId,
+            paranetNodesAccessPolicy,
         );
         if (
             localGetPassed &&
@@ -265,18 +266,28 @@ class GetCommand extends Command {
             OPERATION_ID_STATUS.GET.GET_SHARD_START,
         );
 
-        let nodesInfo = await this.findNodes(operationId, blockchain, currentPeerId);
+        let nodesInfo = [];
         if (paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED) {
-            const permissionedNodes = await this.blockchainModuleManager.getPermissionedNodes(
+            const onChainNodes = await this.blockchainModuleManager.getPermissionedNodes(
                 blockchain,
                 paranetId,
             );
-            // Awful nested loop here but small arrays
-            nodesInfo = nodesInfo.filter((node) =>
-                permissionedNodes.some(
-                    (n) => this.cryptoService.convertHexToAscii(n.nodeId) === node.id,
+            const foundNodes = await Promise.all(
+                onChainNodes.map(async (node) =>
+                    this.shardingTableService.findPeerAddressAndProtocols(
+                        this.cryptoService.convertHexToAscii(node.nodeId),
+                    ),
                 ),
             );
+            const networkProtocols = this.operationService.getNetworkProtocols();
+
+            for (const node of foundNodes) {
+                if (node.id !== currentPeerId) {
+                    nodesInfo.push({ id: node.id, protocol: networkProtocols[0] });
+                }
+            }
+        } else {
+            nodesInfo = await this.findShardNodes(operationId, blockchain, currentPeerId);
         }
 
         if (nodesInfo.length < this.minAckResponses) {
@@ -341,6 +352,7 @@ class GetCommand extends Command {
                     contract,
                     knowledgeCollectionId,
                     knowledgeAssetId,
+                    paranetNodesAccessPolicy,
                 );
                 if (isResponseValid) {
                     this.operationService.markOperationAsCompleted(
@@ -463,7 +475,7 @@ class GetCommand extends Command {
         };
     }
 
-    async findNodes(operationId, blockchain, currentPeerId) {
+    async findShardNodes(operationId, blockchain, currentPeerId) {
         this.logger.debug(`Searching for shard for operationId: ${operationId}`);
 
         const networkProtocols = this.operationService.getNetworkProtocols();
@@ -514,6 +526,7 @@ class GetCommand extends Command {
         contract,
         knowledgeCollectionId,
         knowledgeAssetId,
+        paranetNodesAccessPolicy,
     ) {
         if (responseData?.assertion?.public) {
             // We can only validate whole collection not particular KA
@@ -554,11 +567,15 @@ class GetCommand extends Command {
                         knowledgeCollectionId,
                     );
 
-                    if (responseData.assertion?.private?.length)
+                    if (
+                        responseData.assertion?.private?.length ||
+                        paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED
+                    ) {
                         await this.validationService.validatePrivateMerkleRoot(
                             responseData.assertion.public,
                             responseData.assertion.private,
                         );
+                    }
                 } catch (e) {
                     return false;
                 }
