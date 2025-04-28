@@ -185,6 +185,14 @@ class ShardRepository {
 
         return !!nodeIsPartOfShard;
     }
+
+    async getNodeStake(blockchainId, peerId, options) {
+        const stake = await this.model.findOne({
+            where: { blockchainId, peerId },
+            ...options,
+        });
+        return stake?.stake ?? 0;
+    }
 }
 
 export default ShardRepository;

@@ -22,12 +22,21 @@ class ProofingService {
         this.commandExecutor = ctx.commandExecutor;
         this.operationIdService = ctx.operationIdService;
         this.operationIdService = ctx.operationIdService;
+        this.shardingTableService = ctx.shardingTableService;
     }
 
     async initialize() {
         this.logger.info('Initializing ProofingService');
         const promises = [];
         for (const blockchainId of this.blockchainModuleManager.getImplementationNames()) {
+            // eslint-disable-next-line no-await-in-loop
+            const isNodeStaked = await this.shardingTableService.isNodeStaked(blockchainId);
+            if (!isNodeStaked) {
+                this.logger.info(
+                    `Node is not staked on blockchain ${blockchainId}, skipping proofing`,
+                );
+                continue;
+            }
             this.logger.info(`Initializing proofing service for blockchain ${blockchainId}`);
             promises.push(this.proofingMechanism(blockchainId));
         }

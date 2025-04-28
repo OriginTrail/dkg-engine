@@ -531,6 +531,10 @@ class RepositoryModuleManager extends BaseModuleManager {
     async incrementInsertedTriples(count) {
         return this.getRepository('inserted_triples').increment(count);
     }
+
+    async getNodeStake(blockchainId, peerId, options = {}) {
+        return this.getRepository('shard').getNodeStake(blockchainId, peerId, options);
+    }
 }
 
 export default RepositoryModuleManager;

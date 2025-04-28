@@ -194,6 +194,12 @@ class ShardingTableService {
             protocols: peerInfo?.protocols ?? [],
         };
     }
+
+    async isNodeStaked(blockchainId) {
+        const peerId = this.networkModuleManager.getPeerId().toB58String();
+        const stake = await this.repositoryModuleManager.getPeerRecordStake(blockchainId, peerId);
+        return stake > 0;
+    }
 }
 
 export default ShardingTableService;
