@@ -621,7 +621,10 @@ class OtTripleStore {
         const kcUAL = cleanedUals[0].split('/').slice(0, -1).join('/');
 
         let query = `${cleanedUals
-            .map((ual) => `DELETE WHERE { GRAPH <${BASE_NAMED_GRAPHS.METADATA}> <${ual}> ?p ?o . }`)
+            .map(
+                (ual) =>
+                    `DELETE WHERE { GRAPH <${BASE_NAMED_GRAPHS.METADATA}> { <${ual}> ?p ?o . } }`,
+            )
             .join(';\n')};`;
 
         query += `DELETE WHERE { GRAPH <${BASE_NAMED_GRAPHS.METADATA}> <${kcUAL}> ?p ?o . }`;
@@ -630,7 +633,13 @@ class OtTripleStore {
     }
 
     async deletePublishTimestampMetadata(repository, ual) {
-        const query = `DELETE WHERE { GRAPH <${BASE_NAMED_GRAPHS.METADATA}> <${ual}> <${DKG_METADATA_PREDICATES.PUBLISH_TIME}> ?o . }`;
+        const query = `
+            DELETE WHERE {
+                GRAPH <${BASE_NAMED_GRAPHS.METADATA}> {
+                    <${ual}> <${DKG_METADATA_PREDICATES.PUBLISH_TIME}> ?o .
+                }
+            }
+        `;
 
         await this.queryVoid(repository, query);
     }

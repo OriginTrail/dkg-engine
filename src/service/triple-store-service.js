@@ -51,13 +51,6 @@ class TripleStoreService {
                 `to the Triple Store's ${repository} repository.`,
         );
 
-        const existsInNamedGraphs =
-            await this.tripleStoreModuleManager.knowledgeCollectionNamedGraphsExist(
-                this.repositoryImplementations[repository],
-                repository,
-                knowledgeCollectionUAL,
-            );
-
         // TODO: Add with the introduction of RDF-star mode
         // const tripleAnnotations = this.dataService.createTripleAnnotations(
         //     knowledgeAssetsTriples,
@@ -98,34 +91,106 @@ class TripleStoreService {
 
         const allPossibleNamedGraphs = [];
 
-        if (!existsInNamedGraphs) {
+        promises.push(
+            this.tripleStoreModuleManager.createKnowledgeCollectionNamedGraphs(
+                this.repositoryImplementations[repository],
+                repository,
+                publicKnowledgeAssetsUALs,
+                publicKnowledgeAssetsTriplesGrouped,
+                TRIPLES_VISIBILITY.PUBLIC,
+            ),
+        );
+
+        promises.push(
+            this.tripleStoreModuleManager.insertMetadataTriples(
+                this.repositoryImplementations[repository],
+                repository,
+                knowledgeCollectionUAL,
+                publicKnowledgeAssetsUALs,
+                TRIPLES_VISIBILITY.PUBLIC,
+            ),
+        );
+
+        // current metadata triple relates to which named graph that represents Knowledge Asset hold the lates(current) data
+        // so for each Knowledge Asset there will be one current metadata triple
+        // in this case there are publicKnowledgeAssetsUALs.length number of named graphs created so for each there will be one current metadata triple
+        totalNumberOfTriplesInserted += publicKnowledgeAssetsUALs.length;
+
+        publicKnowledgeAssetsUALs.forEach((ual) => {
+            const graphWithVisibility = `${ual}/public`;
+
+            tripleSet.add(
+                `<${knowledgeCollectionUAL}> <${DKG_PREDICATE}${HAS_KNOWLEDGE_ASSET_SUFFIX}> <${ual}> .`,
+            );
+            tripleSet.add(
+                `<${knowledgeCollectionUAL}> <${DKG_PREDICATE}${HAS_NAMED_GRAPH_SUFFIX}> <${graphWithVisibility}> .`,
+            );
+        });
+
+        this.logger.info(
+            `Adding metadata triples for public asets for Knowledge Collection: ${knowledgeCollectionUAL}`,
+        );
+
+        allPossibleNamedGraphs.push(...publicKnowledgeAssetsUALs.map((ual) => `${ual}/public`));
+
+        if (triples.private?.length) {
+            const privateKnowledgeAssetsTriplesGrouped = kcTools.groupNquadsBySubject(
+                triples.private,
+                true,
+            );
+
+            const privateKnowledgeAssetsUALs = [];
+
+            const publicSubjectMap = publicKnowledgeAssetsTriplesGrouped.reduce(
+                (map, group, index) => {
+                    const [publicSubject] = group[0].split(' ');
+                    map.set(publicSubject, index);
+                    return map;
+                },
+                new Map(),
+            );
+
+            for (const privateTriple of privateKnowledgeAssetsTriplesGrouped) {
+                const [privateSubject] = privateTriple[0].split(' ');
+                if (publicSubjectMap.has(privateSubject)) {
+                    const ualIndex = publicSubjectMap.get(privateSubject);
+                    privateKnowledgeAssetsUALs.push(publicKnowledgeAssetsUALs[ualIndex]);
+                } else {
+                    const privateSubjectHashed = `<${PRIVATE_HASH_SUBJECT_PREFIX}${this.cryptoService.sha256(
+                        privateSubject.slice(1, -1),
+                    )}>`;
+                    if (publicSubjectMap.has(privateSubjectHashed)) {
+                        const ualIndex = publicSubjectMap.get(privateSubjectHashed);
+                        privateKnowledgeAssetsUALs.push(publicKnowledgeAssetsUALs[ualIndex]);
+                    }
+                }
+            }
+
             promises.push(
                 this.tripleStoreModuleManager.createKnowledgeCollectionNamedGraphs(
                     this.repositoryImplementations[repository],
                     repository,
-                    publicKnowledgeAssetsUALs,
-                    publicKnowledgeAssetsTriplesGrouped,
-                    TRIPLES_VISIBILITY.PUBLIC,
+                    privateKnowledgeAssetsUALs,
+                    privateKnowledgeAssetsTriplesGrouped,
+                    TRIPLES_VISIBILITY.PRIVATE,
                 ),
             );
-
             promises.push(
                 this.tripleStoreModuleManager.insertMetadataTriples(
                     this.repositoryImplementations[repository],
                     repository,
                     knowledgeCollectionUAL,
-                    publicKnowledgeAssetsUALs,
-                    TRIPLES_VISIBILITY.PUBLIC,
+                    privateKnowledgeAssetsUALs,
+                    TRIPLES_VISIBILITY.PRIVATE,
                 ),
             );
-
             // current metadata triple relates to which named graph that represents Knowledge Asset hold the lates(current) data
             // so for each Knowledge Asset there will be one current metadata triple
-            // in this case there are publicKnowledgeAssetsUALs.length number of named graphs created so for each there will be one current metadata triple
-            totalNumberOfTriplesInserted += publicKnowledgeAssetsUALs.length;
+            // in this case there are privateKnowledgeAssetsUALs.length number of named graphs created so for each there will be one current metadata triple
+            totalNumberOfTriplesInserted += privateKnowledgeAssetsUALs.length;
 
-            publicKnowledgeAssetsUALs.forEach((ual) => {
-                const graphWithVisibility = `${ual}/public`;
+            privateKnowledgeAssetsUALs.forEach((ual) => {
+                const graphWithVisibility = `${ual}/private`;
 
                 tripleSet.add(
                     `<${knowledgeCollectionUAL}> <${DKG_PREDICATE}${HAS_KNOWLEDGE_ASSET_SUFFIX}> <${ual}> .`,
@@ -136,86 +201,12 @@ class TripleStoreService {
             });
 
             this.logger.info(
-                `Adding metadata triples for public asets for Knowledge Collection: ${knowledgeCollectionUAL}`,
+                `Adding metadata triples for private asets for Knowledge Collection: ${knowledgeCollectionUAL}`,
             );
 
-            allPossibleNamedGraphs.push(...publicKnowledgeAssetsUALs.map((ual) => `${ual}/public`));
-
-            if (triples.private?.length) {
-                const privateKnowledgeAssetsTriplesGrouped = kcTools.groupNquadsBySubject(
-                    triples.private,
-                    true,
-                );
-
-                const privateKnowledgeAssetsUALs = [];
-
-                const publicSubjectMap = publicKnowledgeAssetsTriplesGrouped.reduce(
-                    (map, group, index) => {
-                        const [publicSubject] = group[0].split(' ');
-                        map.set(publicSubject, index);
-                        return map;
-                    },
-                    new Map(),
-                );
-
-                for (const privateTriple of privateKnowledgeAssetsTriplesGrouped) {
-                    const [privateSubject] = privateTriple[0].split(' ');
-                    if (publicSubjectMap.has(privateSubject)) {
-                        const ualIndex = publicSubjectMap.get(privateSubject);
-                        privateKnowledgeAssetsUALs.push(publicKnowledgeAssetsUALs[ualIndex]);
-                    } else {
-                        const privateSubjectHashed = `<${PRIVATE_HASH_SUBJECT_PREFIX}${this.cryptoService.sha256(
-                            privateSubject.slice(1, -1),
-                        )}>`;
-                        if (publicSubjectMap.has(privateSubjectHashed)) {
-                            const ualIndex = publicSubjectMap.get(privateSubjectHashed);
-                            privateKnowledgeAssetsUALs.push(publicKnowledgeAssetsUALs[ualIndex]);
-                        }
-                    }
-                }
-
-                promises.push(
-                    this.tripleStoreModuleManager.createKnowledgeCollectionNamedGraphs(
-                        this.repositoryImplementations[repository],
-                        repository,
-                        privateKnowledgeAssetsUALs,
-                        privateKnowledgeAssetsTriplesGrouped,
-                        TRIPLES_VISIBILITY.PRIVATE,
-                    ),
-                );
-                promises.push(
-                    this.tripleStoreModuleManager.insertMetadataTriples(
-                        this.repositoryImplementations[repository],
-                        repository,
-                        knowledgeCollectionUAL,
-                        privateKnowledgeAssetsUALs,
-                        TRIPLES_VISIBILITY.PRIVATE,
-                    ),
-                );
-                // current metadata triple relates to which named graph that represents Knowledge Asset hold the lates(current) data
-                // so for each Knowledge Asset there will be one current metadata triple
-                // in this case there are privateKnowledgeAssetsUALs.length number of named graphs created so for each there will be one current metadata triple
-                totalNumberOfTriplesInserted += privateKnowledgeAssetsUALs.length;
-
-                privateKnowledgeAssetsUALs.forEach((ual) => {
-                    const graphWithVisibility = `${ual}/private`;
-
-                    tripleSet.add(
-                        `<${knowledgeCollectionUAL}> <${DKG_PREDICATE}${HAS_KNOWLEDGE_ASSET_SUFFIX}> <${ual}> .`,
-                    );
-                    tripleSet.add(
-                        `<${knowledgeCollectionUAL}> <${DKG_PREDICATE}${HAS_NAMED_GRAPH_SUFFIX}> <${graphWithVisibility}> .`,
-                    );
-                });
-
-                this.logger.info(
-                    `Adding metadata triples for private asets for Knowledge Collection: ${knowledgeCollectionUAL}`,
-                );
-
-                allPossibleNamedGraphs.push(
-                    ...privateKnowledgeAssetsUALs.map((ual) => `${ual}/private`),
-                );
-            }
+            allPossibleNamedGraphs.push(
+                ...privateKnowledgeAssetsUALs.map((ual) => `${ual}/private`),
+            );
         }
 
         if (paranetUAL) {
