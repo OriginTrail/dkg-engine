@@ -139,12 +139,12 @@ class ProofingService {
                         latestChallenge.activeProofPeriodStartBlock,
                     );
                     this.logger.debug(
-                        `[PROOFING] Retrieved node score for blockchain: ${blockchainId}, nodeId: ${nodeId}, score: ${score}`,
+                        `[PROOFING] Retrieved node score for blockchain: ${blockchainId}, nodeId: ${nodeId}, score: ${score.toString()}`,
                     );
 
                     // If score is greater than 0 than proof was sent and was valid
                     // Ensure no reorgs happened by checking if it has score and enough time has passed and if possible mark it as finalized
-                    if (score > 0) {
+                    if (score.gt(0)) {
                         // Sent more than minute ago check onchain confirm it finalized and it's good
                         if (
                             latestChallenge.updatedAt.getTime() + REORG_PROOFING_BUFFER <=
@@ -467,7 +467,7 @@ class ProofingService {
             newChallenge.activeProofPeriodStartBlock,
         );
 
-        if (score > 0) {
+        if (score.gt(0)) {
             // Move score persistence to finalization
             await this.repositoryModuleManager.setCompletedAndScoreRandomSamplingChallengeRecord(
                 newChallenge.id,
