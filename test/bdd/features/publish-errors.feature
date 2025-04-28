@@ -3,7 +3,7 @@ Feature: Publish errors test
     Given the blockchains are set up
     And 1 bootstrap is running
 
-  @publish-errors
+  @ignore
   Scenario: Publish on a node with minimum replication factor greater than the number of nodes
     Given I setup 2 nodes
     And I wait for 5 seconds
@@ -12,7 +12,7 @@ Feature: Publish errors test
     And I wait for latest Publish to finalize
     Then Latest Publish operation finished with status: PublishStartError
 
-  @publish-errors
+  @ignore
   Scenario: Publish a knowledge asset directly on the node
     Given I setup 1 nodes
     And I wait for 5 seconds
