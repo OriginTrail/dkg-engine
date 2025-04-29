@@ -4,6 +4,7 @@ import {
     ERROR_TYPE,
     TRIPLES_VISIBILITY,
 } from '../../../constants/constants.js';
+
 import BaseController from '../base-http-api-controller.js';
 
 class GetController extends BaseController {
@@ -16,6 +17,8 @@ class GetController extends BaseController {
         this.ualService = ctx.ualService;
         this.validationService = ctx.validationService;
         this.fileService = ctx.fileService;
+        this.paranetService = ctx.paranetService;
+        this.blockchainModuleManager = ctx.blockchainModuleManager;
     }
 
     async handleRequest(req, res) {
@@ -49,8 +52,27 @@ class GetController extends BaseController {
             ({ blockchain, contract, knowledgeCollectionId, knowledgeAssetId } =
                 this.ualService.resolveUAL(ual));
             contract = contract.toLowerCase();
-
+            let paranetNodesAccessPolicy;
             this.logger.info(`Get for ${ual} with operation id ${operationId} initiated.`);
+
+            if (paranetUAL) {
+                const {
+                    contract: paranetContract,
+                    knowledgeCollectionId: paranetKnowledgeCollectionId,
+                    knowledgeAssetId: paranetKnowledgeAssetId,
+                } = this.ualService.resolveUAL(paranetUAL);
+
+                const paranetId = this.paranetService.constructParanetId(
+                    paranetContract,
+                    paranetKnowledgeCollectionId,
+                    paranetKnowledgeAssetId,
+                );
+
+                paranetNodesAccessPolicy = await this.blockchainModuleManager.getNodesAccessPolicy(
+                    blockchain,
+                    paranetId,
+                );
+            }
 
             await this.commandExecutor.add({
                 name: 'getCommand',
@@ -65,6 +87,7 @@ class GetController extends BaseController {
                     knowledgeAssetId,
                     operationId,
                     paranetUAL,
+                    paranetNodesAccessPolicy,
                     contentType: contentType ?? TRIPLES_VISIBILITY.ALL,
                 },
                 transactional: false,

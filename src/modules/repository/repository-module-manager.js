@@ -467,6 +467,65 @@ class RepositoryModuleManager extends BaseModuleManager {
         return this.getRepository('finality_status').getFinalityAcksCount(ual, options);
     }
 
+    async getLatestRandomSamplingChallengeRecordForBlockchainId(blockchainId, limit = 1) {
+        return this.getRepository(
+            'random_sampling_challenge',
+        ).getLatestRandomSamplingChallengeRecordForBlockchainId(blockchainId, limit);
+    }
+
+    async createRandomSamplingChallengeRecord(randomSamplingChallenge, options) {
+        return this.getRepository('random_sampling_challenge').createRandomSamplingChallengeRecord(
+            randomSamplingChallenge,
+            options,
+        );
+    }
+
+    async updateRandomSamplingChallengeRecord(randomSamplingChallenge, options) {
+        return this.getRepository('random_sampling_challenge').updateRandomSamplingChallengeRecord(
+            randomSamplingChallenge,
+            options,
+        );
+    }
+
+    async deleteRandomSamplingChallengeRecord(randomSamplingChallengeId, options) {
+        return this.getRepository('random_sampling_challenge').deleteRandomSamplingChallengeRecord(
+            randomSamplingChallengeId,
+            options,
+        );
+    }
+
+    async setCompletedAndScoreRandomSamplingChallengeRecord(
+        randomSamplingChallengeId,
+        completed,
+        score,
+        options,
+    ) {
+        return this.getRepository(
+            'random_sampling_challenge',
+        ).setCompletedAndScoreRandomSamplingChallengeRecord(
+            randomSamplingChallengeId,
+            completed,
+            score,
+            options,
+        );
+    }
+
+    async setCompletedAndFinalizedRandomSamplingChallengeRecord(
+        randomSamplingChallengeId,
+        completed,
+        finalized,
+        options,
+    ) {
+        return this.getRepository(
+            'random_sampling_challenge',
+        ).setCompletedAndFinalizedRandomSamplingChallengeRecord(
+            randomSamplingChallengeId,
+            completed,
+            finalized,
+            options,
+        );
+    }
+
     async saveFinalityAck(publishOperationId, ual, peerId, options = {}) {
         return this.getRepository('finality_status').saveFinalityAck(
             publishOperationId,

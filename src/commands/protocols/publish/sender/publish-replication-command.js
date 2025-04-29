@@ -120,13 +120,6 @@ class PublishReplicationCommand extends Command {
                     },
                     null,
                 );
-            } else {
-                await this.operationService.processResponse(
-                    { ...command, data: updatedData },
-                    OPERATION_REQUEST_STATUS.FAILED,
-                    {},
-                    'Node is not part of the shard.',
-                );
             }
 
             await this.operationIdService.updateOperationIdStatus(
