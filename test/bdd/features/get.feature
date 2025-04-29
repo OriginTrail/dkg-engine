@@ -3,9 +3,13 @@ Feature: Get asset states test
     Given the blockchains are set up
     And 1 bootstrap is running
 
-  @ignore
+  @release
   Scenario: Get first state of the updated knowledge asset on both blockchains
-
+    Given I set R0 to be 1 on blockchain hardhat1:31337
+    And I set R1 to be 2 on blockchain hardhat1:31337
+    And I set finalizationCommitsNumber to be 2 on blockchain hardhat1:31337
+    And I set R0 to be 1 on blockchain hardhat2:31337
+    And I set R1 to be 2 on blockchain hardhat2:31337
     And I set finalizationCommitsNumber to be 2 on blockchain hardhat2:31337
     And I setup 4 nodes
     And I wait for 5 seconds
@@ -34,7 +38,7 @@ Feature: Get asset states test
     And I wait for latest resolve to finalize
     Then Latest Get operation finished with status: COMPLETED
 
-  @ignore
+  @release
   Scenario: Get latest state of the updated knowledge asset on both blockchains
     Given I set R0 to be 1 on blockchain hardhat1:31337
     And I set R1 to be 2 on blockchain hardhat1:31337
@@ -69,7 +73,7 @@ Feature: Get asset states test
     And I wait for latest resolve to finalize
     Then Latest Get operation finished with status: COMPLETED
 
-  @ignore
+  @release
   Scenario: Get all states of the knowledge asset that is updated 2 times on both blockchains
     Given I set R0 to be 1 on blockchain hardhat1:31337
     And I set R1 to be 2 on blockchain hardhat1:31337

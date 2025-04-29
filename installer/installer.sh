@@ -164,33 +164,6 @@ install_blazegraph() {
     perform_step systemctl status blazegraph "Blazegraph status"
 }
 
-check_neptune() {
-    local max_attempts=3
-    local attempt=1
-
-    while (( attempt <= max_attempts )); do
-        read -p "Enter the Neptune endpoint: " NEPTUNE_ENDPOINT
-
-        echo "Checking health for: $NEPTUNE_ENDPOINT"
-
-        response=$(curl -s -G "$NEPTUNE_ENDPOINT/status")
-        status=$(echo "$response" | jq -r '.status')
-
-        if [[ "$status" == "healthy" ]]; then
-            echo "The Neptune service is running and healthy."
-            tripleStoreUrl=$NEPTUNE_ENDPOINT
-            return 0
-        else
-            echo "The service is not healthy or not running. Attempt $attempt of $max_attempts."
-        fi
-
-        ((attempt++))
-    done
-
-    echo "Failed to connect to a healthy Neptune service after $max_attempts attempts. Exiting."
-    exit 1
-}
-
 install_sql() {
     #check which sql to install/update
     text_color $YELLOW"IMPORTANT NOTE: to avoid potential migration issues from one SQL to another, please select the one you are currently using. If this is your first installation, both choices are valid. If you don't know the answer, select [1].
@@ -616,10 +589,9 @@ OTNODE_DIR=$OTNODE_DIR/current
 
 header_color $BGREEN"Installing Triplestore (Graph Database)..."
 
-read -p "Please select the database you would like to use: (Default: Blazegraph) [1]Blazegraph [2]Fuseki [3]Neptune [E]xit: " choice
+read -p "Please select the database you would like to use: (Default: Blazegraph) [1]Blazegraph [2]Fuseki [E]xit: " choice
 case "$choice" in
     [2] ) text_color $GREEN"Fuseki selected. Proceeding with installation."; tripleStore=ot-fuseki; tripleStoreUrl="http://localhost:3030";;
-    [3] ) text_color $GREEN"Neptune selected. Proceeding with installation."; tripleStore=ot-neptune; tripleStoreUrl="$NEPTUNE_ENDPOINT";;
     [Ee] )  text_color $RED"Installer stopped by user"; exit;;
     * )     text_color $GREEN"Blazegraph selected. Proceeding with installation."; tripleStore=ot-blazegraph; tripleStoreUrl="http://localhost:9999";;
 esac
@@ -650,9 +622,6 @@ if [[ $tripleStore = "ot-blazegraph" ]]; then
     fi
 fi
 
-if [[ $tripleStore = "ot-neptune" ]]; then
-    check_neptune
-fi
 
 # otnode logger sytemctl setup
 yes | sudo apt install ncat

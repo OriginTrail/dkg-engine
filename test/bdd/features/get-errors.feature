@@ -3,7 +3,7 @@ Feature: Get errors test
     Given the blockchains are set up
     And 1 bootstrap is running
 
-  @ignore
+  @get-errors
   Scenario: Getting non-existent UAL
     Given I setup 4 nodes
     And I wait for 5 seconds
@@ -12,7 +12,7 @@ Feature: Get errors test
     And I wait for latest resolve to finalize
     Then Latest Get operation finished with status: GetRouteError
 
-  @ignore
+  @get-errors
   Scenario: Getting invalid UAL
     Given I setup 4 nodes
     And I wait for 5 seconds
@@ -21,7 +21,7 @@ Feature: Get errors test
     And I wait for latest resolve to finalize
     Then Latest Get operation finished with status: GetRouteError
 
-  @ignore
+  @get-errors
   Scenario: Getting non-existent state
     Given I setup 4 nodes
     And I set R0 to be 1 on blockchain hardhat1:31337
@@ -35,7 +35,7 @@ Feature: Get errors test
     And I call Get directly on the node 1 with nonExistentState on blockchain hardhat1:31337
     Then It should fail with status code 400
 
-  @ignore
+  @get-errors
   Scenario: Getting invalid state hash
     Given I setup 4 nodes
     And I set R0 to be 1 on blockchain hardhat1:31337

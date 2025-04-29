@@ -13,8 +13,6 @@ import {
     PARANET_NODES_ACCESS_POLICIES,
     PARANET_ACCESS_POLICY,
     TRIPLES_VISIBILITY,
-    DKG_METADATA_PREDICATES,
-    TRIPLE_STORE_REPOSITORIES,
 } from '../../constants/constants.js';
 
 class ParanetSyncCommand extends Command {
@@ -173,10 +171,6 @@ class ParanetSyncCommand extends Command {
         let attempt = 0;
         let getResult;
 
-        const contentType =
-            paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED
-                ? TRIPLES_VISIBILITY.ALL
-                : TRIPLES_VISIBILITY.PUBLIC;
         await this.commandExecutor.add({
             name: 'getCommand',
             sequence: [],
@@ -189,8 +183,10 @@ class ParanetSyncCommand extends Command {
                 knowledgeCollectionId,
                 state: assertionId,
                 ual: this.ualService.deriveUAL(blockchain, contract, knowledgeCollectionId),
-                includeMetadata: true,
-                contentType,
+                contentType:
+                    paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED
+                        ? TRIPLES_VISIBILITY.ALL
+                        : TRIPLES_VISIBILITY.PUBLIC,
                 paranetId,
                 paranetUAL,
                 paranetNodesAccessPolicy,
@@ -226,58 +222,11 @@ class ParanetSyncCommand extends Command {
             } nquads found for asset with ual: ${ual}, state index: ${stateIndex}, assertionId: ${assertionId}`,
         );
 
-        const metadata = {};
-        data.metadata.forEach((line) => {
-            for (const predicate of Object.values(DKG_METADATA_PREDICATES)) {
-                if (line.includes(predicate)) {
-                    switch (predicate) {
-                        case DKG_METADATA_PREDICATES.PUBLISHED_BY:
-                            metadata.publisherKey = line
-                                .split(' ')[2]
-                                .split('/')[1]
-                                .replaceAll('>', '');
-                            break;
-                        case DKG_METADATA_PREDICATES.PUBLISHED_AT_BLOCK:
-                            metadata.blockNumber = line.split(' ')[2].trim().replaceAll('"', '');
-                            break;
-                        case DKG_METADATA_PREDICATES.PUBLISH_TX:
-                            metadata.txHash = line.split(' ')[2].trim().replaceAll('"', '');
-                            break;
-                        case DKG_METADATA_PREDICATES.BLOCK_TIME:
-                            metadata.blockTimestamp =
-                                new Date(
-                                    line
-                                        .split(' ')[2]
-                                        .trim()
-                                        .replaceAll('"', '')
-                                        .replaceAll(
-                                            '^^<http://www.w3.org/2001/XMLSchema#dateTime>',
-                                            '',
-                                        ),
-                                ).getTime() / 1000;
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-        });
-
-        // Delete old insert time as it's updated on each sync both paranet triples and private data after permissioned sync
-        await this.tripleStoreService.deletePublishTimestampMetadata(
-            TRIPLE_STORE_REPOSITORIES.DKG,
-            ual,
-        );
-
+        const paranetRepository = this.paranetService.getParanetRepositoryName(paranetUAL);
         await this.tripleStoreService.insertKnowledgeCollection(
-            TRIPLE_STORE_REPOSITORIES.DKG,
+            paranetRepository,
             ual,
             data.assertion,
-            metadata,
-            5,
-            50,
-            paranetUAL,
-            contentType,
         );
     }
 

@@ -3,7 +3,7 @@ Feature: Release related tests
     Given the blockchains are set up
     And 1 bootstrap is running
 
-  @ignore
+  @release
   Scenario: Get bid suggestion with a valid assertion and valid hashFunctionId and scoreFunctionId on both blockchains
     Given I set R0 to be 1 on blockchain hardhat1:31337
     And I set R1 to be 2 on blockchain hardhat1:31337

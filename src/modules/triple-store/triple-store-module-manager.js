@@ -15,10 +15,6 @@ class TripleStoreModuleManager extends BaseModuleManager {
         }
     }
 
-    repositoryInitilized(repository) {
-        return this.getImplementation().module.repositoryInitilized(repository);
-    }
-
     async deleteUniqueKnowledgeCollectionTriplesFromUnifiedGraph(
         implementationName,
         repository,
@@ -133,25 +129,6 @@ class TripleStoreModuleManager extends BaseModuleManager {
         }
     }
 
-    async createParanetKnoledgeCollectionConnection(
-        implementationName,
-        repository,
-        knowledgeCollectionUal,
-        paranetUAL,
-        contentType,
-    ) {
-        if (this.getImplementation(implementationName)) {
-            return this.getImplementation(
-                implementationName,
-            ).module.createParanetKnoledgeCollectionConnection(
-                repository,
-                knowledgeCollectionUal,
-                paranetUAL,
-                contentType,
-            );
-        }
-    }
-
     async insertMetadataTriples(implementationName, repository, kcUal, uals, visibility) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(implementationName).module.insertMetadataTriples(
@@ -175,32 +152,14 @@ class TripleStoreModuleManager extends BaseModuleManager {
         implementationName,
         repository,
         ual,
-        knowledgeAssetId,
-        visibility,
-    ) {
-        if (this.getImplementation(implementationName)) {
-            return this.getImplementation(
-                implementationName,
-            ).module.getKnowledgeCollectionNamedGraphs(
-                repository,
-                ual,
-                knowledgeAssetId,
-                visibility,
-            );
-        }
-    }
-
-    async getKnowledgeCollectionNamedGraphsOld(
-        implementationName,
-        repository,
-        ual,
         tokenIds,
         visibility,
+        sort,
     ) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(
                 implementationName,
-            ).module.getKnowledgeCollectionNamedGraphsOld(repository, ual, tokenIds, visibility);
+            ).module.getKnowledgeCollectionNamedGraphs(repository, tokenIds, ual, visibility, sort);
         }
     }
 
@@ -253,15 +212,6 @@ class TripleStoreModuleManager extends BaseModuleManager {
             return this.getImplementation(
                 implementationName,
             ).module.deleteKnowledgeCollectionMetadata(repository, ual);
-        }
-    }
-
-    async deletePublishTimestampMetadata(implementationName, repository, ual) {
-        if (this.getImplementation(implementationName)) {
-            return this.getImplementation(implementationName).module.deletePublishTimestampMetadata(
-                repository,
-                ual,
-            );
         }
     }
 

@@ -3,7 +3,7 @@ Feature: Update errors test
     Given the blockchains are set up
     And 1 bootstrap is running
 
-  @ignore
+  @update-errors
   Scenario: Update knowledge asset that was not previously published
     Given I setup 1 node
     And I wait for 5 seconds
