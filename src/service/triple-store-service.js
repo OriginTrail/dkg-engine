@@ -210,6 +210,7 @@ class TripleStoreService {
         }
 
         if (paranetUAL) {
+            await Promise.all(promises);
             await this.tripleStoreModuleManager.createParanetKnoledgeCollectionConnection(
                 this.repositoryImplementations[repository],
                 repository,
