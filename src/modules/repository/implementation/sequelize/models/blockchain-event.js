@@ -14,6 +14,7 @@ export default (sequelize, DataTypes) => {
             data: DataTypes.TEXT,
             blockNumber: DataTypes.BIGINT,
             transactionIndex: DataTypes.BIGINT,
+            txHash: DataTypes.STRING,
             logIndex: DataTypes.BIGINT,
             processed: DataTypes.BOOLEAN,
             createdAt: DataTypes.DATE,

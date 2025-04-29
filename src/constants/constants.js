@@ -57,6 +57,14 @@ export const TRIPLE_ANNOTATION_LABEL_PREDICATE = 'https://ontology.origintrail.i
 export const PRIVATE_RESOURCE_PREDICATE =
     'https://ontology.origintrail.io/dkg/1.0#representsPrivateResource';
 
+export const DKG_METADATA_PREDICATES = {
+    PUBLISHED_BY: 'https://ontology.origintrail.io/dkg/1.0#publishedBy',
+    PUBLISHED_AT_BLOCK: 'https://ontology.origintrail.io/dkg/1.0#publishedAtBlock',
+    PUBLISH_TX: 'https://ontology.origintrail.io/dkg/1.0#publishTx',
+    PUBLISH_TIME: 'https://ontology.origintrail.io/dkg/1.0#publishTime',
+    BLOCK_TIME: 'https://ontology.origintrail.io/dkg/1.0#blockTime',
+};
+
 export const PRIVATE_HASH_SUBJECT_PREFIX = 'https://ontology.origintrail.io/dkg/1.0#metadata-hash:';
 
 export const UAL_PREDICATE = '<https://ontology.origintrail.io/dkg/1.0#UAL>';
@@ -284,6 +292,8 @@ export const ABIs = {
     AskStorage: require('dkg-evm-module/abi/AskStorage.json'),
     Chronos: require('dkg-evm-module/abi/Chronos.json'),
     Paranet: require('dkg-evm-module/abi/Paranet.json'),
+    RandomSampling: require('dkg-evm-module/abi/RandomSampling.json'),
+    RandomSamplingStorage: require('dkg-evm-module/abi/RandomSamplingStorage.json'),
 };
 
 export const CONTRACT_FUNCTION_PRIORITY = {};
@@ -305,6 +315,8 @@ export const COMMAND_TX_GAS_INCREASE_FACTORS = {
     SUBMIT_UPDATE_COMMIT: 1.2,
     SUBMIT_PROOFS: 1.2,
 };
+
+export const MIGRATION_FLAG_PATH = '.enrichment_migration_done_dkg';
 
 export const CONTRACT_FUNCTION_GAS_LIMIT_INCREASE_FACTORS = {};
 
@@ -336,6 +348,7 @@ export const TRIPLE_STORE_IMPLEMENTATION = {
     BLAZEGRAPH: 'Blazegraph',
     GRAPHDB: 'GraphDB',
     FUSEKI: 'Fuseki',
+    NEPTUNE: 'Neptune',
 };
 
 export const NETWORK_MESSAGE_TYPES = {
@@ -1023,3 +1036,8 @@ export const V6_CONTENT_STORAGE_MAP = {
     OTP_TESTNET: '0x1A061136Ed9f5eD69395f18961a0a535EF4B3E5f',
     OTP_DEVNET: '0xABd59A9aa71847F499d624c492d3903dA953d67a',
 };
+
+export const PROOFING_INTERVAL = 12 * 1000;
+export const PROOFING_MAX_ATTEMPTS = 120;
+export const REORG_PROOFING_BUFFER = 60 * 1000;
+export const CHUNK_SIZE = 32;
