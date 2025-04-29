@@ -263,6 +263,12 @@ class ParanetSyncCommand extends Command {
             }
         });
 
+        // Delete old insert time as it's updated on each sync both paranet triples and private data after permissioned sync
+        await this.tripleStoreService.deletePublishTimestampMetadata(
+            TRIPLE_STORE_REPOSITORIES.DKG,
+            ual,
+        );
+
         await this.tripleStoreService.insertKnowledgeCollection(
             TRIPLE_STORE_REPOSITORIES.DKG,
             ual,

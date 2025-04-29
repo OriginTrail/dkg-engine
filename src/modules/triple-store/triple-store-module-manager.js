@@ -256,6 +256,15 @@ class TripleStoreModuleManager extends BaseModuleManager {
         }
     }
 
+    async deletePublishTimestampMetadata(implementationName, repository, ual) {
+        if (this.getImplementation(implementationName)) {
+            return this.getImplementation(implementationName).module.deletePublishTimestampMetadata(
+                repository,
+                ual,
+            );
+        }
+    }
+
     async getKnowledgeCollectionMetadata(implementationName, repository, ual) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(implementationName).module.getKnowledgeCollectionMetadata(
