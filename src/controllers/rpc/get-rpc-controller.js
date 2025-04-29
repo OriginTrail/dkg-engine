@@ -1,8 +1,4 @@
-import {
-    DEFAULT_GET_STATE,
-    NETWORK_MESSAGE_TYPES,
-    TRIPLE_STORE_REPOSITORY,
-} from '../../constants/constants.js';
+import { DEFAULT_GET_STATE, NETWORK_MESSAGE_TYPES } from '../../constants/constants.js';
 import BaseController from './base-rpc-controller.js';
 
 class GetController extends BaseController {
@@ -36,14 +32,11 @@ class GetController extends BaseController {
                 blockchain: message.data.blockchain,
                 contract: message.data.contract,
                 knowledgeCollectionId: message.data.knowledgeCollectionId,
-                tokenIds: message.data.tokenIds,
                 knowledgeAssetId: message.data.knowledgeAssetId,
                 includeMetadata: message.data.includeMetadata,
                 state: message.data.state ?? DEFAULT_GET_STATE,
                 paranetUAL: message.data.paranetUAL,
                 paranetId: message.data.paranetId,
-                migrationFlag: message.data.migrationFlag,
-                repository: message.data.repository ?? TRIPLE_STORE_REPOSITORY.DKG,
             },
             transactional: false,
         });

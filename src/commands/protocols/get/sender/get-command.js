@@ -1,6 +1,4 @@
 import { kcTools } from 'assertion-tools';
-import fs from 'fs/promises';
-import path from 'path';
 import Command from '../../../command.js';
 import {
     OPERATION_ID_STATUS,
@@ -11,7 +9,6 @@ import {
     NETWORK_MESSAGE_TIMEOUT_MILLS,
     PRIVATE_ASSERTION_PREDICATE,
     PRIVATE_HASH_SUBJECT_PREFIX,
-    MIGRATION_FLAG_PATH,
 } from '../../../../constants/constants.js';
 
 class GetCommand extends Command {
@@ -28,7 +25,6 @@ class GetCommand extends Command {
         this.shardingTableService = ctx.shardingTableService;
         this.cryptoService = ctx.cryptoService;
         this.messagingService = ctx.messagingService;
-        this.tripleStoreModuleManager = ctx.tripleStoreModuleManager;
     }
 
     async handleError(operationId, blockchain, errorMessage, errorType) {
@@ -56,9 +52,8 @@ class GetCommand extends Command {
             contentType,
             includeMetadata,
             paranetNodesAccessPolicy,
-            knowledgeAssetId,
         } = command.data;
-
+        let { knowledgeAssetId } = command.data;
         await this.operationIdService.updateOperationIdStatus(
             operationId,
             blockchain,
@@ -85,21 +80,6 @@ class GetCommand extends Command {
 
         const currentPeerId = this.networkModuleManager.getPeerId().toB58String();
         let paranetId;
-        let repository = TRIPLE_STORE_REPOSITORIES.DKG;
-        let migrationFlag = '0';
-        const migrationFlagPath = path.join(process.cwd(), MIGRATION_FLAG_PATH);
-        try {
-            migrationFlag = await fs.readFile(migrationFlagPath, 'utf8');
-            migrationFlag = migrationFlag.trim();
-        } catch (error) {
-            if (error.code === 'ENOENT') {
-                this.logger.warn(
-                    `Migration flag file not found at ${migrationFlagPath}, using default value '${migrationFlag}'`,
-                );
-            } else {
-                throw error;
-            }
-        }
         if (paranetUAL) {
             const {
                 blockchain: paranetBlockchain,
@@ -113,17 +93,6 @@ class GetCommand extends Command {
                 paranetKnowledgeAssetId,
             );
 
-            if (!paranetSync && migrationFlag === '0') {
-                // query the paranet repository if the migration is not yet finished
-                repository = this.paranetService.getParanetRepositoryName(paranetUAL);
-                const repositoryExists =
-                    this.tripleStoreModuleManager.repositoryInitilized(repository);
-
-                if (!repositoryExists) {
-                    repository = TRIPLE_STORE_REPOSITORIES.DKG;
-                }
-            }
-
             const { isValid: paranetIsValid, errorMessage: paranetErrorMessage } =
                 await this.validateParanet(
                     operationId,
@@ -132,10 +101,6 @@ class GetCommand extends Command {
                     paranetKnowledgeAssetId,
                     paranetNodesAccessPolicy,
                     paranetId,
-                    knowledgeCollectionId,
-                    blockchain,
-                    contract,
-                    ual,
                 );
             if (!paranetIsValid) {
                 await this.handleError(
@@ -158,17 +123,17 @@ class GetCommand extends Command {
             blockchain,
             OPERATION_ID_STATUS.GET.GET_LOCAL_START,
         );
-        let tokenIds;
+
         if (!knowledgeAssetId) {
             try {
-                tokenIds = await this.blockchainModuleManager.getKnowledgeAssetsRange(
+                knowledgeAssetId = await this.blockchainModuleManager.getKnowledgeAssetsRange(
                     blockchain,
                     contract,
                     knowledgeCollectionId,
                 );
             } catch (error) {
                 // Asset created on old content asset storage contract
-                tokenIds = {
+                knowledgeAssetId = {
                     startTokenId: 1,
                     endTokenId: 1,
                     burned: [],
@@ -176,26 +141,29 @@ class GetCommand extends Command {
             }
         } else {
             // kaId is number, so transform it to range
-            tokenIds = {
+            knowledgeAssetId = {
                 startTokenId: knowledgeAssetId,
                 endTokenId: knowledgeAssetId,
                 burned: [],
             };
         }
 
+        let repository;
         const promises = [];
+        if (paranetUAL && !paranetSync) {
+            repository = this.paranetService.getParanetRepositoryName(paranetUAL);
+        } else {
+            repository = TRIPLE_STORE_REPOSITORIES.DKG;
+        }
         const assertionPromise = this.tripleStoreService.getAssertion(
             blockchain,
             contract,
             knowledgeCollectionId,
             knowledgeAssetId,
-            tokenIds,
-            migrationFlag,
             contentType,
             repository,
         );
         promises.push(assertionPromise);
-
         if (includeMetadata) {
             const metadataPromise = this.tripleStoreService.getAssertionMetadata(
                 blockchain,
@@ -232,8 +200,6 @@ class GetCommand extends Command {
             contract,
             knowledgeCollectionId,
             knowledgeAssetId,
-            paranetNodesAccessPolicy,
-            contentType,
         );
         if (
             localGetPassed &&
@@ -267,28 +233,18 @@ class GetCommand extends Command {
             OPERATION_ID_STATUS.GET.GET_SHARD_START,
         );
 
-        let nodesInfo = [];
+        let nodesInfo = await this.findNodes(operationId, blockchain, currentPeerId);
         if (paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED) {
-            const onChainNodes = await this.blockchainModuleManager.getPermissionedNodes(
+            const permissionedNodes = await this.blockchainModuleManager.getPermissionedNodes(
                 blockchain,
                 paranetId,
             );
-            const foundNodes = await Promise.all(
-                onChainNodes.map(async (node) =>
-                    this.shardingTableService.findPeerAddressAndProtocols(
-                        this.cryptoService.convertHexToAscii(node.nodeId),
-                    ),
+            // Awful nested loop here but small arrays
+            nodesInfo = nodesInfo.filter((node) =>
+                permissionedNodes.some(
+                    (n) => this.cryptoService.convertHexToAscii(n.nodeId) === node.id,
                 ),
             );
-            const networkProtocols = this.operationService.getNetworkProtocols();
-
-            for (const node of foundNodes) {
-                if (node.id !== currentPeerId) {
-                    nodesInfo.push({ id: node.id, protocol: networkProtocols[0] });
-                }
-            }
-        } else {
-            nodesInfo = await this.findShardNodes(operationId, blockchain, currentPeerId);
         }
 
         if (nodesInfo.length < this.minAckResponses) {
@@ -313,12 +269,9 @@ class GetCommand extends Command {
             contract,
             knowledgeCollectionId,
             knowledgeAssetId,
-            tokenIds,
             includeMetadata,
             ual,
             paranetUAL,
-            migrationFlag,
-            repository,
         };
         const BATCH_SIZE = 5;
         let index = 0;
@@ -353,8 +306,6 @@ class GetCommand extends Command {
                     contract,
                     knowledgeCollectionId,
                     knowledgeAssetId,
-                    paranetNodesAccessPolicy,
-                    contentType,
                 );
                 if (isResponseValid) {
                     this.operationService.markOperationAsCompleted(
@@ -415,10 +366,6 @@ class GetCommand extends Command {
         paranetKnowledgeAssetId,
         paranetNodeAccessPolicy,
         paranetId,
-        knowledgeCollectionId,
-        blockchain,
-        contract,
-        ual,
     ) {
         if (!paranetKnowledgeAssetId) {
             return {
@@ -440,23 +387,6 @@ class GetCommand extends Command {
             this.blockchainModuleManager.getNodesAccessPolicy(paranetBlockchain, paranetId),
         ]);
 
-        const knowledgeCollectionOnchainId = this.cryptoService.keccak256EncodePacked(
-            ['address', 'uint256'],
-            [contract, knowledgeCollectionId],
-        );
-        const paranetContainsKnowledgeCollection =
-            this.blockchainModuleManager.isKnowledgeCollectionRegistered(
-                blockchain,
-                paranetId,
-                knowledgeCollectionOnchainId,
-            );
-        if (!paranetContainsKnowledgeCollection) {
-            return {
-                isValid: false,
-                errorMessage: `Paranet UAL: ${paranetUAL} does not contain Knowledge Collection: ${ual}`,
-            };
-        }
-
         if (!paranetExists) {
             return {
                 isValid: false,
@@ -477,7 +407,7 @@ class GetCommand extends Command {
         };
     }
 
-    async findShardNodes(operationId, blockchain, currentPeerId) {
+    async findNodes(operationId, blockchain, currentPeerId) {
         this.logger.debug(`Searching for shard for operationId: ${operationId}`);
 
         const networkProtocols = this.operationService.getNetworkProtocols();
@@ -528,8 +458,6 @@ class GetCommand extends Command {
         contract,
         knowledgeCollectionId,
         knowledgeAssetId,
-        paranetNodesAccessPolicy,
-        contentType,
     ) {
         if (responseData?.assertion?.public) {
             // We can only validate whole collection not particular KA
@@ -570,45 +498,16 @@ class GetCommand extends Command {
                         knowledgeCollectionId,
                     );
 
-                    if (paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED) {
-                        if (Array.isArray(responseData?.assertion?.public)) {
-                            const assertionShouldHavePrivateTriples =
-                                responseData?.assertion?.public?.some((triple) =>
-                                    triple.includes(`${PRIVATE_ASSERTION_PREDICATE}`),
-                                );
-                            if (assertionShouldHavePrivateTriples) {
-                                if (responseData?.assertion?.private?.length > 0) {
-                                    await this.validationService.validatePrivateMerkleRoot(
-                                        responseData.assertion.public,
-                                        responseData.assertion.private,
-                                    );
-                                    return true;
-                                }
-                            }
-                        }
-                        return false;
-                    }
-
-                    if (responseData.assertion?.private?.length) {
+                    if (responseData.assertion?.private?.length)
                         await this.validationService.validatePrivateMerkleRoot(
                             responseData.assertion.public,
                             responseData.assertion.private,
                         );
-                        return true;
-                    }
                 } catch (e) {
                     return false;
                 }
             }
 
-            return true;
-        }
-        if (
-            !responseData?.assertion?.public &&
-            responseData?.assertion?.private &&
-            contentType === 'private'
-        ) {
-            // if there is only private part skip validation
             return true;
         }
 

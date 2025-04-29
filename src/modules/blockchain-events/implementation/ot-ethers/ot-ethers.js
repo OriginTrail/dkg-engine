@@ -187,7 +187,6 @@ class OtEthers extends BlockchainEventsService {
                             blockNumber: parseInt(log.blockNumber, 16),
                             transactionIndex: parseInt(log.transactionIndex, 16),
                             logIndex: parseInt(log.logIndex, 16),
-                            txHash: log.transactionHash,
                         });
                     } catch (error) {
                         this.logger.warn(

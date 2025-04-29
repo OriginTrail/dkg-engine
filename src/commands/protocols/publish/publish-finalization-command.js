@@ -22,13 +22,11 @@ class PublishFinalizationCommand extends Command {
         this.networkModuleManager = ctx.networkModuleManager;
         this.repositoryModuleManager = ctx.repositoryModuleManager;
         this.dataService = ctx.dataService;
-        this.blockchainModuleManager = ctx.blockchainModuleManager;
     }
 
     async execute(command) {
         const { event } = command.data;
         const eventData = JSON.parse(event.data);
-        const { txHash, blockNumber } = event;
         const { id, publishOperationId, merkleRoot, byteSize } = eventData;
         const { blockchain, contractAddress } = event;
         const operationId = await this.operationIdService.generateOperationId(
@@ -36,16 +34,6 @@ class PublishFinalizationCommand extends Command {
             publishOperationId,
         );
 
-        const [transaction, blockTimestamp] = await Promise.all([
-            this.blockchainModuleManager.getTransaction(blockchain, txHash),
-            this.blockchainModuleManager.getBlockTimestamp(blockchain, blockNumber),
-        ]);
-        const metadata = {
-            publisherKey: transaction.from.toLowerCase(),
-            blockNumber,
-            txHash,
-            blockTimestamp,
-        };
         let cachedMerkleRoot;
         let assertion;
         let publisherPeerId;
@@ -86,7 +74,6 @@ class PublishFinalizationCommand extends Command {
                 TRIPLE_STORE_REPOSITORIES.DKG,
                 ual,
                 assertion,
-                metadata,
             );
 
             await this.repositoryModuleManager.incrementInsertedTriples(totalTriples ?? 0);
