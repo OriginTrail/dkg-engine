@@ -107,7 +107,7 @@
                         "package": "./triple-store/implementation/ot-graphdb/ot-graphdb.js",
                         "config": {}
                     },
-		    "ot-neptune": {
+                    "ot-neptune": {
                         "enabled": false,
                         "package": "./triple-store/implementation/ot-neptune/ot-neptune.js",
                         "config": {}
@@ -340,7 +340,7 @@
                         "package": "./triple-store/implementation/ot-blazegraph/ot-blazegraph.js",
                         "config": {}
                     },
-		    "ot-neptune": {
+                    "ot-neptune": {
                         "enabled": false,
                         "package": "./triple-store/implementation/ot-neptune/ot-neptune.js",
                         "config": {}
@@ -557,7 +557,7 @@
                         "package": "./triple-store/implementation/ot-graphdb/ot-graphdb.js",
                         "config": {}
                     },
-		    "ot-neptune": {
+                    "ot-neptune": {
                         "enabled": false,
                         "package": "./triple-store/implementation/ot-neptune/ot-neptune.js",
                         "config": {}
@@ -755,7 +755,7 @@
                         "package": "./triple-store/implementation/ot-graphdb/ot-graphdb.js",
                         "config": {}
                     },
-		    "ot-neptune": {
+                    "ot-neptune": {
                         "enabled": false,
                         "package": "./triple-store/implementation/ot-neptune/ot-neptune.js",
                         "config": {}
@@ -959,7 +959,7 @@
                         "package": "./triple-store/implementation/ot-graphdb/ot-graphdb.js",
                         "config": {}
                     },
-		    "ot-neptune": {
+                    "ot-neptune": {
                         "enabled": false,
                         "package": "./triple-store/implementation/ot-neptune/ot-neptune.js",
                         "config": {}
