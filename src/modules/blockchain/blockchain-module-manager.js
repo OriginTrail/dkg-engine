@@ -277,38 +277,6 @@ class BlockchainModuleManager extends BaseModuleManager {
         ]);
     }
 
-    async getActiveProofPeriodStatus(blockchain) {
-        return this.callImplementationFunction(blockchain, 'getActiveProofPeriodStatus');
-    }
-
-    async createChallenge(blockchain) {
-        return this.callImplementationFunction(blockchain, 'createChallenge', []);
-    }
-
-    async getNodeChallenge(blockchain, nodeId) {
-        return this.callImplementationFunction(blockchain, 'getNodeChallenge', [nodeId]);
-    }
-
-    async submitProof(blockchain, chunk, merkleProof) {
-        return this.callImplementationFunction(blockchain, 'submitProof', [chunk, merkleProof]);
-    }
-
-    async getNodeEpochProofPeriodScore(blockchain, nodeId, epoch, proofPeriodStartBlock) {
-        return this.callImplementationFunction(blockchain, 'getNodeEpochProofPeriodScore', [
-            nodeId,
-            epoch,
-            proofPeriodStartBlock,
-        ]);
-    }
-
-    async getTransaction(blockchain, txHash) {
-        return this.callImplementationFunction(blockchain, 'getTransaction', [txHash]);
-    }
-
-    async getBlockTimestamp(blockchain, blockNumber) {
-        return this.callImplementationFunction(blockchain, 'getBlockTimestamp', [blockNumber]);
-    }
-
     // SUPPORT FOR OLD CONTRACTS
     async getLatestAssertionId(blockchain, assetContractAddress, tokenId) {
         return this.callImplementationFunction(blockchain, 'getLatestAssertionId', [

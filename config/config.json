@@ -106,11 +106,6 @@
                         "enabled": false,
                         "package": "./triple-store/implementation/ot-graphdb/ot-graphdb.js",
                         "config": {}
-                    },
-                    "ot-neptune": {
-                        "enabled": false,
-                        "package": "./triple-store/implementation/ot-neptune/ot-neptune.js",
-                        "config": {}
                     }
                 }
             },
@@ -339,11 +334,6 @@
                         "enabled": true,
                         "package": "./triple-store/implementation/ot-blazegraph/ot-blazegraph.js",
                         "config": {}
-                    },
-                    "ot-neptune": {
-                        "enabled": false,
-                        "package": "./triple-store/implementation/ot-neptune/ot-neptune.js",
-                        "config": {}
                     }
                 }
             },
@@ -556,11 +546,6 @@
                         "enabled": false,
                         "package": "./triple-store/implementation/ot-graphdb/ot-graphdb.js",
                         "config": {}
-                    },
-                    "ot-neptune": {
-                        "enabled": false,
-                        "package": "./triple-store/implementation/ot-neptune/ot-neptune.js",
-                        "config": {}
                     }
                 }
             },
@@ -753,11 +738,6 @@
                     "ot-graphdb": {
                         "enabled": false,
                         "package": "./triple-store/implementation/ot-graphdb/ot-graphdb.js",
-                        "config": {}
-                    },
-                    "ot-neptune": {
-                        "enabled": false,
-                        "package": "./triple-store/implementation/ot-neptune/ot-neptune.js",
                         "config": {}
                     }
                 }
@@ -957,11 +937,6 @@
                     "ot-graphdb": {
                         "enabled": false,
                         "package": "./triple-store/implementation/ot-graphdb/ot-graphdb.js",
-                        "config": {}
-                    },
-                    "ot-neptune": {
-                        "enabled": false,
-                        "package": "./triple-store/implementation/ot-neptune/ot-neptune.js",
                         "config": {}
                     }
                 }

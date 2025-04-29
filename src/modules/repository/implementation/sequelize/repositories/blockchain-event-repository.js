@@ -24,7 +24,6 @@ class BlockchainEventRepository {
                     transactionIndex: event.transactionIndex,
                     logIndex: event.logIndex,
                     processed: false,
-                    txHash: event.txHash,
                 })),
                 {
                     ignoreDuplicates: true,

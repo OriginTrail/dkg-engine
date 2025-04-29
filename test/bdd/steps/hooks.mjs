@@ -12,7 +12,7 @@ BeforeAll(() => {});
 
 Before(function beforeMethod(testCase, done) {
     this.logger = console;
-    this.logger.log('\n🟡 Starting scenario:', testCase.pickle.name);
+    this.logger.log('\nStarting scenario: ', testCase.pickle.name, `${testCase.pickle.uri}`);
     // Initialize variables
     this.state = {};
     this.state.localBlockchain = null;
@@ -23,89 +23,88 @@ Before(function beforeMethod(testCase, done) {
     logDir += `/test/bdd/log/${slugify(testCase.pickle.name)}`;
     fs.mkdirSync(logDir, { recursive: true });
     this.state.scenarionLogDir = logDir;
-    this.logger.log('📁 Scenario logs:', logDir);
+    this.logger.log('Scenario logs can be found here: ', logDir);
     done();
 });
 
-After(async function afterMethod(testCase, done) {
+After(function afterMethod(testCase, done) {
     const tripleStoreConfiguration = [];
     const databaseNames = [];
     const promises = [];
-
     for (const key in this.state.nodes) {
-        const node = this.state.nodes[key];
-        if (node.forkedNode) {
-            node.forkedNode.kill();
-        } else if (node.otNodeInstance?.stop) {
-            promises.push(node.otNodeInstance.stop());
-        }
-
+        this.state.nodes[key].forkedNode.kill();
+        tripleStoreConfiguration.push({
+            modules: { tripleStore: this.state.nodes[key].configuration.modules.tripleStore },
+        });
+        databaseNames.push(this.state.nodes[key].configuration.operationalDatabase.databaseName);
+        const dataFolderPath = this.state.nodes[key].fileService.getDataFolderPath();
+        promises.push(this.state.nodes[key].fileService.removeFolder(dataFolderPath));
+    }
+    this.state.bootstraps.forEach((node) => {
+        node.forkedNode.kill();
         tripleStoreConfiguration.push({
             modules: { tripleStore: node.configuration.modules.tripleStore },
         });
         databaseNames.push(node.configuration.operationalDatabase.databaseName);
         const dataFolderPath = node.fileService.getDataFolderPath();
         promises.push(node.fileService.removeFolder(dataFolderPath));
-    }
-
-    for (const node of this.state.bootstraps) {
-        if (node.forkedNode) {
-            node.forkedNode.kill();
-        } else if (node.otNodeInstance?.stop) {
-            promises.push(node.otNodeInstance.stop());
-        }
-
-        tripleStoreConfiguration.push({
-            modules: { tripleStore: node.configuration.modules.tripleStore },
-        });
-        databaseNames.push(node.configuration.operationalDatabase.databaseName);
-        const dataFolderPath = node.fileService.getDataFolderPath();
-        promises.push(node.fileService.removeFolder(dataFolderPath));
-    }
-
+    });
     for (const localBlockchain in this.state.localBlockchains) {
-        this.logger.info(`🛑 Stopping local blockchain ${localBlockchain}`);
+        this.logger.info(`Stopping local blockchain ${localBlockchain}!`);
         promises.push(this.state.localBlockchains[localBlockchain].stop());
         this.state.localBlockchains[localBlockchain] = null;
     }
+    this.logger.log('After test hook, cleaning repositories');
 
-    this.logger.log('🧹 Cleaning up repositories and databases...');
     const con = mysql.createConnection({
         host: 'localhost',
         user: 'root',
         password: process.env.REPOSITORY_PASSWORD,
     });
-
-    for (const db of databaseNames) {
-        const sql = `DROP DATABASE IF EXISTS \`${db}\`;`;
+    databaseNames.forEach((element) => {
+        const sql = `DROP DATABASE IF EXISTS \`${element}\`;`;
         promises.push(con.promise().query(sql));
-    }
-
-    for (const config of tripleStoreConfiguration) {
-        promises.push((async () => {
+    });
+    promises.push(con);
+    tripleStoreConfiguration.forEach((config) => {
+        promises.push(async () => {
             const tripleStoreModuleManager = new TripleStoreModuleManager({
                 config,
                 logger: this.logger,
             });
             await tripleStoreModuleManager.initialize();
-            for (const impl of tripleStoreModuleManager.getImplementationNames()) {
-                const { tripleStoreConfig } = tripleStoreModuleManager.getImplementation(impl);
-                for (const repo of Object.keys(tripleStoreConfig.repositories)) {
-                    this.logger.log('🗑 Removing triple store repository:', repo);
-                    await tripleStoreModuleManager.deleteRepository(impl, repo);
-                }
+            for (const implementationName of tripleStoreModuleManager.getImplementationNames()) {
+                const { tripleStoreConfig } =
+                    tripleStoreModuleManager.getImplementation(implementationName);
+                Object.keys(tripleStoreConfig.repositories).map(async (repository) => {
+                    this.logger.log(
+                        'Removing triple store configuration:',
+                        JSON.stringify(tripleStoreConfig, null, 4),
+                    );
+                    await tripleStoreModuleManager.deleteRepository(implementationName, repository);
+                });
             }
-        })());
-    }
-
-    await Promise.all(promises);
-    con.end();
-
-    this.logger.log('\n✅ Completed scenario:', testCase.pickle.name);
-    this.logger.log(`📄 Location: ${testCase.gherkinDocument.uri}:${testCase.gherkinDocument.feature.location.line}`);
-    this.logger.log(`🟢 Status: ${testCase.result.status}`);
-    this.logger.log(`⏱ Duration: ${testCase.result.duration} milliseconds\n`);
-    done();
+        });
+    });
+    Promise.all(promises)
+        .then(() => {
+            con.end();
+        })
+        .then(() => {
+            this.logger.log(
+                'Completed scenario: ',
+                testCase.pickle.name,
+                `${testCase.gherkinDocument.uri}:${testCase.gherkinDocument.feature.location.line}`,
+            );
+            this.logger.log(
+                'with status: ',
+                testCase.result.status,
+                ' and duration: ',
+                testCase.result.duration,
+                ' miliseconds.',
+            );
+            done();
+        });
 });
 
 AfterAll(async () => {});
