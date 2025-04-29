@@ -233,6 +233,7 @@ class GetCommand extends Command {
             knowledgeCollectionId,
             knowledgeAssetId,
             paranetNodesAccessPolicy,
+            contentType,
         );
         if (
             localGetPassed &&
@@ -353,6 +354,7 @@ class GetCommand extends Command {
                     knowledgeCollectionId,
                     knowledgeAssetId,
                     paranetNodesAccessPolicy,
+                    contentType,
                 );
                 if (isResponseValid) {
                     this.operationService.markOperationAsCompleted(
@@ -527,6 +529,7 @@ class GetCommand extends Command {
         knowledgeCollectionId,
         knowledgeAssetId,
         paranetNodesAccessPolicy,
+        contentType,
     ) {
         if (responseData?.assertion?.public) {
             // We can only validate whole collection not particular KA
@@ -567,14 +570,31 @@ class GetCommand extends Command {
                         knowledgeCollectionId,
                     );
 
-                    if (
-                        responseData.assertion?.private?.length ||
-                        paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED
-                    ) {
+                    if (paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED) {
+                        if (Array.isArray(responseData?.assertion?.public)) {
+                            const assertionShouldHavePrivateTriples =
+                                responseData?.assertion?.public?.some((triple) =>
+                                    triple.includes(`${PRIVATE_ASSERTION_PREDICATE}`),
+                                );
+                            if (assertionShouldHavePrivateTriples) {
+                                if (responseData?.assertion?.private?.length > 0) {
+                                    await this.validationService.validatePrivateMerkleRoot(
+                                        responseData.assertion.public,
+                                        responseData.assertion.private,
+                                    );
+                                    return true;
+                                }
+                            }
+                        }
+                        return false;
+                    }
+
+                    if (responseData.assertion?.private?.length) {
                         await this.validationService.validatePrivateMerkleRoot(
                             responseData.assertion.public,
                             responseData.assertion.private,
                         );
+                        return true;
                     }
                 } catch (e) {
                     return false;
@@ -583,7 +603,11 @@ class GetCommand extends Command {
 
             return true;
         }
-        if (!responseData?.assertion?.public && responseData?.assertion?.private) {
+        if (
+            !responseData?.assertion?.public &&
+            responseData?.assertion?.private &&
+            contentType === 'private'
+        ) {
             // if there is only private part skip validation
             return true;
         }
