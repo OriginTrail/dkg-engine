@@ -61,6 +61,7 @@ class OTNode {
         await this.initializeRouters();
         await this.startNetworkModule();
         this.resumeCommandExecutor();
+        await this.initializeProofing();
         this.logger.info('Node is up and running!');
     }
 
@@ -188,12 +189,16 @@ class OTNode {
                             const blockchainConfig =
                                 blockchainModuleManager.getModuleConfiguration(blockchain);
                             execSync(
-                                `npm run set-stake -- --rpcEndpoint=${blockchainConfig.rpcEndpoints[0]} --stake=${blockchainConfig.initialStakeAmount} --operationalWalletPrivateKey=${blockchainConfig.operationalWallets[0].privateKey} --managementWalletPrivateKey=${blockchainConfig.evmManagementWalletPrivateKey} --hubContractAddress=${blockchainConfig.hubContractAddress}`,
+                                `npm run set-ask -- --rpcEndpoint=${
+                                    blockchainConfig.rpcEndpoints[0]
+                                } --ask=${1 + Math.random() * 0.5} --privateKey=${
+                                    blockchainConfig.operationalWallets[0].privateKey
+                                } --hubContractAddress=${blockchainConfig.hubContractAddress}`,
                                 { stdio: 'inherit' },
                             );
-                            await setTimeout(10000);
+                            await setTimeout(10000 + Math.random() * 10000);
                             execSync(
-                                `npm run set-ask -- --rpcEndpoint=${blockchainConfig.rpcEndpoints[0]} --ask=${blockchainConfig.initialAskAmount} --privateKey=${blockchainConfig.operationalWallets[0].privateKey} --hubContractAddress=${blockchainConfig.hubContractAddress}`,
+                                `npm run set-stake -- --rpcEndpoint=${blockchainConfig.rpcEndpoints[0]} --stake=${blockchainConfig.initialStakeAmount} --operationalWalletPrivateKey=${blockchainConfig.operationalWallets[0].privateKey} --managementWalletPrivateKey=${blockchainConfig.evmManagementWalletPrivateKey} --hubContractAddress=${blockchainConfig.hubContractAddress}`,
                                 { stdio: 'inherit' },
                             );
                         }
@@ -314,7 +319,6 @@ class OTNode {
     async initializeParanets() {
         const blockchainModuleManager = this.container.resolve('blockchainModuleManager');
         const tripleStoreService = this.container.resolve('tripleStoreService');
-        const tripleStoreModuleManager = this.container.resolve('tripleStoreModuleManager');
         const paranetService = this.container.resolve('paranetService');
         const ualService = this.container.resolve('ualService');
         const validParanets = [];
@@ -387,14 +391,17 @@ class OTNode {
             }
 
             validParanets.push(paranetUAL);
-            const repository = paranetService.getParanetRepositoryName(paranetUAL);
-            // eslint-disable-next-line no-await-in-loop
-            await tripleStoreModuleManager.initializeParanetRepository(repository);
+
             // eslint-disable-next-line no-await-in-loop
             await paranetService.initializeParanetRecord(blockchain, paranetId);
         }
         this.config.assetSync.syncParanets = validParanets;
         tripleStoreService.initializeRepositories();
+    }
+
+    async initializeProofing() {
+        const proofingService = this.container.resolve('proofingService');
+        await proofingService.initialize();
     }
 
     stop(code = 0) {
