@@ -78,6 +78,10 @@ class PublishReplicationCommand extends Command {
                 this.errorType,
                 true,
             );
+            this.operationIdService.emitChangeEvent(
+                OPERATION_ID_STATUS.PUBLISH.PUBLISH_FAILED,
+                operationId,
+            );
             return Command.empty();
         }
 
@@ -129,6 +133,10 @@ class PublishReplicationCommand extends Command {
             );
         } catch (e) {
             await this.handleError(operationId, blockchain, e.message, this.errorType, true);
+            this.operationIdService.emitChangeEvent(
+                OPERATION_ID_STATUS.PUBLISH.PUBLISH_FAILED,
+                operationId,
+            );
             return Command.empty();
         }
         const { dataset } = await this.operationIdService.getCachedOperationIdData(operationId);
