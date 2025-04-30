@@ -1,6 +1,6 @@
 {
     "name": "origintrail_node",
-    "version": "8.0.11",
+    "version": "8.0.12",
     "description": "OTNode V8",
     "main": "index.js",
     "type": "module",

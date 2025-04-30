@@ -1,6 +1,10 @@
 import BaseController from '../base-http-api-controller.js';
 
-import { TRIPLE_STORE_REPOSITORIES, QUERY_TYPES } from '../../../constants/constants.js';
+import {
+    OPERATION_ID_STATUS,
+    TRIPLE_STORE_REPOSITORIES,
+    QUERY_TYPES,
+} from '../../../constants/constants.js';
 
 class DirectQueryController extends BaseController {
     constructor(ctx) {
@@ -10,6 +14,7 @@ class DirectQueryController extends BaseController {
         this.tripleStoreService = ctx.tripleStoreService;
         this.paranetService = ctx.paranetService;
         this.ualService = ctx.ualService;
+        this.operationIdService = ctx.operationIdService;
     }
 
     async handleRequest(req, res) {
@@ -17,7 +22,9 @@ class DirectQueryController extends BaseController {
         let { query, repository } = req.body;
 
         let data;
+        const operationId = await this.operationIdService.generateId();
         try {
+            this.emitChangeEvent(OPERATION_ID_STATUS.QUERY.QUERY_INIT_START, operationId);
             if (paranetUAL) {
                 repository = this.paranetService.getParanetRepositoryName(paranetUAL);
             } else {
@@ -51,7 +58,8 @@ class DirectQueryController extends BaseController {
                     );
                 }
             }
-
+            this.emitChangeEvent(OPERATION_ID_STATUS.QUERY.QUERY_INIT_END, operationId);
+            this.emitChangeEvent(OPERATION_ID_STATUS.QUERY.QUERY_START, operationId);
             switch (queryType) {
                 case QUERY_TYPES.CONSTRUCT: {
                     if (Array.isArray(repository)) {
@@ -89,16 +97,19 @@ class DirectQueryController extends BaseController {
                 }
                 default:
                     this.returnResponse(res, 400, `Unknown query type ${queryType}`);
+                    this.emitChangeEvent(OPERATION_ID_STATUS.QUERY.QUERY_FAILED, operationId);
                     return;
             }
         } catch (e) {
             this.returnResponse(res, 500, e.message);
+            this.emitChangeEvent(OPERATION_ID_STATUS.QUERY.QUERY_FAILED, operationId);
             return;
         }
 
         this.returnResponse(res, 200, {
             data,
         });
+        this.emitChangeEvent(OPERATION_ID_STATUS.QUERY.QUERY_END, operationId);
     }
 
     validateRepositoryName(repository) {
