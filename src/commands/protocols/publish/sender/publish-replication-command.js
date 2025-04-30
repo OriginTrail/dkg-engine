@@ -79,6 +79,7 @@ class PublishReplicationCommand extends Command {
                     this.errorType,
                     true,
                 );
+
                 this.operationIdService.emitChangeEvent(
                     OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_FAILED,
                     operationId,
@@ -161,6 +162,8 @@ class PublishReplicationCommand extends Command {
             );
             return Command.empty();
         }
+
+        return Command.empty();
     }
 
     async sendAndHandleMessage(node, operationId, message, command) {
