@@ -38,6 +38,7 @@ class GetCommand extends Command {
             errorMessage,
             errorType,
         );
+        this.operationIdService.emitChangeEvent(OPERATION_ID_STATUS.GET.GET_FAILED, operationId);
     }
 
     /**
