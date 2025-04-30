@@ -34,13 +34,13 @@ generate_enriched_chunks() {
 
     log_message "INFO" "Streaming and enriching $input_file into chunked enriched files"
 
-    local total_triples
-    total_triples=$(gunzip -c "$input_file" | wc -l)
-    log_message "INFO" "Total triples to process: $total_triples"
+    local total_input_triples
+    total_input_triples=$(gunzip -c "$input_file" | wc -l)
+    log_message "INFO" "Total triples to process: $total_input_triples"
 
     local chunk_count=0
     local line_count=0
-    local total_line_count=0
+    local processed_input_triples=0
     local enriched_chunk_file="$chunk_dir/enriched_chunk_$(printf "%05d" $chunk_count).nq"
     local bar_width=50
 
@@ -75,8 +75,9 @@ generate_enriched_chunks() {
             echo "${collection_iri} <https://ontology.origintrail.io/dkg/1.0#hasKnowledgeAsset> ${asset_iri} <metadata:graph> ." >> "$enriched_chunk_file"
 
             ((line_count+=3))
-            ((total_line_count+=3))
         fi
+
+        ((processed_input_triples++))
 
         if (( line_count >= CHUNK_SIZE * 3 )); then
             ((chunk_count++))
@@ -84,15 +85,16 @@ generate_enriched_chunks() {
             line_count=0
         fi
 
-       
-        if (( total_line_count % 5000 == 0 )); then
-            local progress=$(( (total_line_count * bar_width) / total_triples ))
+        
+        if (( processed_input_triples % 1000 == 0 )); then
+            local progress=$(( (processed_input_triples * bar_width) / total_input_triples ))
+            local percent=$(( (processed_input_triples * 100) / total_input_triples ))
             local progress_bar=$(printf "%-${bar_width}s" "#" | tr ' ' '#')
-            printf "\r[%-${bar_width}.${progress}s] %d / %d triples processed" "$progress_bar" "$total_line_count" "$total_triples"
+            printf "\r[%-${bar_width}.${progress}s] %d%% (%d/%d triples processed)\n" "$progress_bar" "$percent" "$processed_input_triples" "$total_input_triples"
         fi
     done
 
-    echo 
+    echo  
 
     enriched_chunk_files=("$chunk_dir"/enriched_chunk_*.nq)
     total_enriched_chunks=${#enriched_chunk_files[@]}

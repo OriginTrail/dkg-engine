@@ -95,6 +95,10 @@ class PublishController extends BaseController {
                 'Unable to publish data, Failed to process input data!',
                 ERROR_TYPE.PUBLISH.PUBLISH_ROUTE_ERROR,
             );
+            this.operationIdService.emitChangeEvent(
+                OPERATION_ID_STATUS.PUBLISH.PUBLISH_FAILED,
+                operationId,
+            );
         }
     }
 }
