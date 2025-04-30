@@ -80,7 +80,7 @@ class PublishReplicationCommand extends Command {
                     true,
                 );
                 this.operationIdService.emitChangeEvent(
-                    OPERATION_ID_STATUS.PUBLISH.PUBLISH_FAILED,
+                    OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_FAILED,
                     operationId,
                 );
                 return Command.empty();
@@ -135,7 +135,7 @@ class PublishReplicationCommand extends Command {
             } catch (e) {
                 await this.handleError(operationId, blockchain, e.message, this.errorType, true);
                 this.operationIdService.emitChangeEvent(
-                    OPERATION_ID_STATUS.PUBLISH.PUBLISH_FAILED,
+                    OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_FAILED,
                     operationId,
                 );
                 return Command.empty();
@@ -156,7 +156,7 @@ class PublishReplicationCommand extends Command {
         } catch (e) {
             await this.handleError(operationId, blockchain, e.message, this.errorType, true);
             this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.PUBLISH.PUBLISH_FAILED,
+                OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_FAILED,
                 operationId,
             );
             return Command.empty();
@@ -195,6 +195,10 @@ class PublishReplicationCommand extends Command {
                 command,
                 OPERATION_REQUEST_STATUS.FAILED,
                 responseData,
+            );
+            this.operationIdService.emitChangeEvent(
+                OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_FAILED,
+                operationId,
             );
         }
     }
