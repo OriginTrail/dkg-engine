@@ -107,7 +107,10 @@ class GetController extends BaseController {
                 'Unable to get data, Failed to process input data!',
                 ERROR_TYPE.GET.GET_ROUTE_ERROR,
             );
-            this.emitChangeEvent(OPERATION_ID_STATUS.GET.GET_FAILED, operationId);
+            this.operationIdService.emitChangeEvent(
+                OPERATION_ID_STATUS.GET.GET_FAILED,
+                operationId,
+            );
         }
     }
 }
