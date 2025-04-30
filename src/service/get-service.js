@@ -86,7 +86,10 @@ class GetService extends OperationService {
                     `Unable to find assertion ${assertionId} on the network!`,
                     this.errorType,
                 );
-                this.emitChangeEvent(OPERATION_ID_STATUS.GET.GET_FAILED, operationId);
+                this.operationIdService.emitChangeEvent(
+                    OPERATION_ID_STATUS.GET.GET_FAILED,
+                    operationId,
+                );
                 this.logResponsesSummary(completedNumber, failedNumber);
             }
         }
