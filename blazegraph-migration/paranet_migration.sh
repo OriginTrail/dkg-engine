@@ -46,7 +46,18 @@ generate_enriched_chunks() {
     gunzip -c "$input_file" | while IFS= read -r line || [[ -n "$line" ]]; do
         echo "$line" >> "$chunk_file"
 
-        named_graph=$(echo "$line" | awk '{print $4}' | sed 's/[<>]//g')
+        named_graph=$(awk '
+            {
+            in_string = 0
+            graph = ""
+            for (i = 1; i <= NF; i++) {
+                if ($i ~ /^"/) in_string = 1
+                if (in_string && $i ~ /"$/ && substr($i, length($i), 1) != "\\") in_string = 0
+                if (!in_string && $i ~ /^<.*>$/) graph = $i
+            }
+            gsub(/[<>]/, "", graph)
+            print graph
+            }' <<< "$line")
 
         echo "<${ual}> <https://ontology.origintrail.io/dkg/1.0#hasNamedGraph> <${named_graph}> <${ual}> ." >> "$chunk_file"
 
