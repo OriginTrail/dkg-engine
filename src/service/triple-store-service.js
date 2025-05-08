@@ -557,6 +557,27 @@ class TripleStoreService {
         return nquads;
     }
 
+    async getAssertionsInBatch(uals, tokenIds, migrationFlag, contentType) {
+        const results = {};
+        await Promise.all(
+            uals.map(async (ual) => {
+                const { blockchain, contract, knowledgeCollectionId } =
+                    this.ualService.resolveUAL(ual);
+                results[ual] = await this.getAssertion(
+                    blockchain,
+                    contract,
+                    knowledgeCollectionId,
+                    null,
+                    tokenIds[ual],
+                    migrationFlag,
+                    contentType,
+                );
+            }),
+        );
+
+        return results;
+    }
+
     async getV6Assertion(repository, assertionId) {
         this.logger.debug(
             `Getting Assertion with the ID: ${assertionId} from the Triple Store's ${repository} repository.`,

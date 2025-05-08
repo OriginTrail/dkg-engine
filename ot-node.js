@@ -61,7 +61,7 @@ class OTNode {
         await this.initializeRouters();
         await this.startNetworkModule();
         this.resumeCommandExecutor();
-        await this.initializeProofing();
+        // await this.initializeProofing();
         this.logger.info('Node is up and running!');
     }
 
@@ -258,10 +258,26 @@ class OTNode {
         try {
             const commandExecutor = this.container.resolve('commandExecutor');
             commandExecutor.resumeQueue();
+            commandExecutor.add({
+                name: 'batchGetCommand',
+                sequence: [],
+                delay: 0,
+                data: {
+                    operationId: '123',
+                    uals: [
+                        'did:dkg:hardhat1:31337/0xd5724171c2b7f0aa717a324626050bd05767e2c6/1',
+                        'did:dkg:hardhat1:31337/0xd5724171c2b7f0aa717a324626050bd05767e2c6/2',
+                    ],
+                    blockchain: 'hardhat1:31337',
+                    contentType: 'all',
+                },
+                transactional: false,
+            });
         } catch (e) {
             this.logger.error(
                 `Unable to resume command executor queue. Error message: ${e.message}`,
             );
+
             this.stop(1);
         }
     }

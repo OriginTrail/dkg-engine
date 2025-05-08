@@ -455,6 +455,25 @@ class OtTripleStore {
         return assertion;
     }
 
+    async getKnowledgeCollectionNamedGraphsOldInBatch(repository, uals, ualTokenIds, visibility) {
+        const results = await Promise.all(
+            uals.map((ual) =>
+                this.getKnowledgeCollectionNamedGraphsOld(
+                    repository,
+                    ual,
+                    ualTokenIds[ual],
+                    visibility,
+                ),
+            ),
+        );
+        const result = {};
+        for (const [index, ual] of uals.entries()) {
+            result[ual] = results[index];
+        }
+
+        return result;
+    }
+
     async getKnowledgeCollectionNamedGraphs(repository, ual, knowledgeAssetId, visibility) {
         const assertion = {};
         let publicPrivateMetadataConnections = null;
@@ -525,6 +544,51 @@ class OtTripleStore {
         }
 
         return assertion;
+    }
+
+    async getKnowledgeCollectionNamedGraphsInBatch(repository, uals, visibility) {
+        const query = `
+        SELECT ?ual ?g ?s ?p ?o
+            WHERE { 
+                VALUES ?ual {
+                    ${uals.map((ual) => `<${ual}>`).join('\n')}
+                }
+
+                ?ual <https://ontology.origintrail.io/dkg/1.0#hasNamedGraph> ?g .
+                GRAPH ?g {
+                    ?s ?p ?o .
+                }
+            }
+        `;
+        const queryResult = await this.select(repository, query);
+
+        const result = {};
+        queryResult.split('\n').forEach((row) => {
+            if (!row.trim()) return;
+
+            // Match: ual, g, then the rest (s p o together as a string)
+            const match = row.match(/^(\S+)\s+(\S+)\s+(.+)$/);
+
+            const [, ual, g, triple] = match;
+
+            if (!result[ual]) {
+                result[ual] = {};
+            }
+            const isPublic = visibility === TRIPLES_VISIBILITY.PUBLIC && g.includes('/public');
+            const isPrivate = visibility === TRIPLES_VISIBILITY.PRIVATE && g.includes('/private');
+            const isAll = visibility === TRIPLES_VISIBILITY.ALL;
+
+            if (isPublic || isPrivate || isAll) {
+                if (!result[ual][g]) {
+                    result[ual][g] = [];
+                }
+                result[ual][g].push(triple);
+            } else {
+                throw new Error(`Unsupported visibility: ${visibility}`);
+            }
+        });
+
+        return result;
     }
 
     async knowledgeCollectionNamedGraphsExist(repository, ual) {

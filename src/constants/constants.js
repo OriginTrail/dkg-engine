@@ -380,6 +380,9 @@ export const NETWORK_MESSAGE_TIMEOUT_MILLS = {
     FINALITY: {
         REQUEST: 60 * 1000,
     },
+    BATCH_GET: {
+        REQUEST: 60 * 1000,
+    },
 };
 
 export const MAX_OPEN_SESSIONS = 10;
@@ -434,6 +437,9 @@ export const ERROR_TYPE = {
         GET_INIT_REMOTE_ERROR: 'GetInitRemoteError',
         GET_REQUEST_REMOTE_ERROR: 'GetRequestRemoteError',
         GET_ERROR: 'GetError',
+    },
+    BATCH_GET: {
+        BATCH_GET_ERROR: 'BatchGetError',
     },
     LOCAL_STORE: {
         LOCAL_STORE_ERROR: 'LocalStoreError',
@@ -592,6 +598,16 @@ export const OPERATION_ID_STATUS = {
         GET_END: 'GET_END',
         GET_FAILED: 'GET_FAILED',
     },
+    BATCH_GET: {
+        BATCH_GET_START: 'BATCH_GET_START',
+        BATCH_GET_END: 'BATCH_GET_END',
+        BATCH_GET_FAILED: 'BATCH_GET_FAILED',
+        BATCH_GET_VALIDATE_ASSET_START: 'BATCH_GET_VALIDATE_ASSET_START',
+        BATCH_GET_VALIDATE_ASSET_END: 'BATCH_GET_VALIDATE_ASSET_END',
+        BATCH_GET_VALIDATE_ASSET_ERROR: 'BATCH_GET_VALIDATE_ASSET_ERROR',
+        BATCH_GET_LOCAL_START: 'BATCH_GET_LOCAL_START',
+        BATCH_GET_LOCAL_END: 'BATCH_GET_LOCAL_END',
+    },
     QUERY: {
         QUERY_INIT_START: 'QUERY_INIT_START',
         QUERY_INIT_END: 'QUERY_INIT_END',
@@ -646,6 +662,7 @@ export const OPERATIONS = {
     FINALITY: 'finality',
     // UPDATE: 'update',
     GET: 'get',
+    BATCH_GET: 'batch-get',
     ASK: 'ask',
 };
 
@@ -866,6 +883,7 @@ export const NETWORK_PROTOCOLS = {
     STORE: ['/store/1.0.0'],
     // UPDATE: ['/update/1.0.0'],
     GET: ['/get/1.0.0'],
+    BATCH_GET: ['/batch-get/1.0.0'],
     ASK: ['/ask/1.0.0'],
     FINALITY: ['/finality/1.0.0'],
 };
