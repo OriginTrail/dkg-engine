@@ -23,6 +23,7 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
         this.operationStartEvent = OPERATION_ID_STATUS.GET.GET_REMOTE_START;
         this.operationEndEvent = OPERATION_ID_STATUS.GET.GET_REMOTE_END;
     }
+    // TODO: Operation id status not corrects
 
     async prepareMessage(commandData) {
         const {
