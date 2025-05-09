@@ -198,9 +198,9 @@ class BatchGetCommand extends Command {
         //     promises.push(metadataPromise);
         // }
 
-        const [batchAssertion /* metadata */] = await Promise.all(promises);
+        const [batchAssertions /* metadata */] = await Promise.all(promises);
 
-        console.log(batchAssertion);
+        console.log(batchAssertions);
 
         // const responseData = {
         //     batchAssertion,
@@ -219,18 +219,22 @@ class BatchGetCommand extends Command {
         //         localGetPassed = false;
         //     }
         // }
+
+        const finalResult = { local: [], remote: {} };
+
         // Whant happens when KC not in TS???
         const localGetResultValid = await this.validateBatchResponse(
-            batchAssertion,
+            batchAssertions,
             blockchain,
             paranetNodesAccessPolicy,
             contentType,
-            uals,
+            finalResult,
         );
 
         console.log(localGetResultValid);
 
-        // Filter what we have locally and add those ual to
+        // Filter what we have locally and add those ual to finalResult local
+
         const ualPresentLocally = Object.keys(localGetResultValid).filter(
             (ual) => localGetResultValid[ual],
         );
@@ -238,20 +242,8 @@ class BatchGetCommand extends Command {
             (ual) => !localGetResultValid[ual],
         );
 
-        // Create final result object it should probably be formed like
-        // {
-        //     ual: {
-        //         local: [ual: string],
-        //         remote: [{ual: string, assertion: object, found: boolean}],
-        //     },
-        // }
-
-        const finalResult = {};
         ualPresentLocally.forEach((ual) => {
-            finalResult[ual] = {
-                local: [ual],
-                remote: [],
-            };
+            finalResult.local.push(ual);
         });
 
         if (ualNotPresentLocally.length === 0) {
@@ -323,14 +315,6 @@ class BatchGetCommand extends Command {
             OPERATION_ID_STATUS.GET.GET_SHARD_END,
         );
 
-        const message = {
-            blockchain,
-            tokenIds,
-            // includeMetadata,
-            uals,
-            paranetUAL,
-            repository,
-        };
         const BATCH_SIZE = 5;
         let index = 0;
 
@@ -339,6 +323,14 @@ class BatchGetCommand extends Command {
             // Slice out a batch of nodes
             const batch = nodesInfo.slice(index, index + BATCH_SIZE);
 
+            const message = {
+                blockchain,
+                tokenIds,
+                // includeMetadata,
+                uals: ualNotPresentLocally,
+                paranetUAL,
+                repository,
+            };
             // Send messages in parallel to all nodes in the current batch
             // eslint-disable-next-line no-await-in-loop
             const results = await Promise.all(
@@ -357,39 +349,45 @@ class BatchGetCommand extends Command {
                 }
             });
 
-            // for (const result of succsesfulResult) {
-            //     // eslint-disable-next-line no-await-in-loop
-            //     const isResponseValid = await this.validateResponse(
-            //         result.responseData,
-            //         blockchain,
-            //         contract,
-            //         knowledgeCollectionId,
-            //         knowledgeAssetId,
-            //         paranetNodesAccessPolicy,
-            //         contentType,
-            //     );
-            //     if (isResponseValid) {
-            //         this.operationService.markOperationAsCompleted(
-            //             operationId,
-            //             blockchain,
-            //             result.responseData,
-            //             [OPERATION_ID_STATUS.GET.GET_END, OPERATION_ID_STATUS.COMPLETED],
-            //         );
-            //         return Command.empty();
-            //     }
-            // }
+            for (const result of succsesfulResult) {
+                // eslint-disable-next-line no-await-in-loop
+                const validationResult = await this.validateBatchResponse(
+                    result.responseData.assertions,
+                    blockchain,
+                    paranetNodesAccessPolicy,
+                    contentType,
+                    finalResult,
+                );
+
+                for (const [ual, isValidAssertion] of Object.entries(validationResult)) {
+                    if (isValidAssertion) {
+                        finalResult.remote[ual] = result.responseData.assertions[ual];
+                        ualNotPresentLocally.splice(ualNotPresentLocally.indexOf(ual), 1);
+                    }
+                }
+
+                if (ualNotPresentLocally.length === 0) {
+                    // eslint-disable-next-line no-await-in-loop
+                    await this.operationService.markOperationAsCompleted(
+                        operationId,
+                        blockchain,
+                        finalResult,
+                    );
+                    return Command.empty();
+                }
+            }
             // Otherwise, continue with the next batch
             index += BATCH_SIZE;
+
+            // await this.handleError(
+            //     operationId,
+            //     blockchain,
+            //     `No node responded successfully for GET for ${ual}. Minimum required responses: ${this.minAckResponses}. Operation id: ${operationId}`,
+            //     ERROR_TYPE.FIND_SHARD.GET_ERROR,
+            // );
         }
-
-        // await this.handleError(
-        //     operationId,
-        //     blockchain,
-        //     `No node responded successfully for GET for ${ual}. Minimum required responses: ${this.minAckResponses}. Operation id: ${operationId}`,
-        //     ERROR_TYPE.FIND_SHARD.GET_ERROR,
-        // );
-
-        // return Command.empty();
+        // TODO: Batch get can partialy fail 4/5 found but still one missing return that as result
+        return Command.empty();
     }
 
     async validateUALs(operationId, blockchain, uals) {
@@ -571,12 +569,22 @@ class BatchGetCommand extends Command {
         };
     }
 
-    async validateBatchResponse(responseData, blockchain, paranetNodesAccessPolicy, contentType) {
+    async validateBatchResponse(
+        responseData,
+        blockchain,
+        paranetNodesAccessPolicy,
+        contentType,
+        finalResult,
+    ) {
         const validationResults = {};
         await Promise.all(
             Object.entries(responseData).map(async ([ual, assertion]) => {
+                // Already received and validate this assertion
+                if (finalResult.remote[ual]) {
+                    return;
+                }
                 if (contentType === 'private') {
-                    validationResults[ual] = false;
+                    validationResults[ual] = true;
                     return;
                 }
                 const filteredPublic = [];
