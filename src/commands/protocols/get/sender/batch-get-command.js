@@ -10,6 +10,7 @@ import {
     NETWORK_MESSAGE_TIMEOUT_MILLS,
     MIGRATION_FLAG_PATH,
     PRIVATE_HASH_SUBJECT_PREFIX,
+    OPERATION_STATUS,
 } from '../../../../constants/constants.js';
 
 class BatchGetCommand extends Command {
@@ -27,6 +28,7 @@ class BatchGetCommand extends Command {
         this.cryptoService = ctx.cryptoService;
         this.messagingService = ctx.messagingService;
         this.tripleStoreModuleManager = ctx.tripleStoreModuleManager;
+        this.repositoryModuleManager = ctx.repositoryModuleManager;
     }
 
     async handleError(operationId, blockchain, errorMessage, errorType) {
@@ -62,6 +64,12 @@ class BatchGetCommand extends Command {
             operationId,
             blockchain,
             OPERATION_ID_STATUS.BATCH_GET.BATCH_GET_START,
+        );
+
+        await this.repositoryModuleManager.createOperationRecord(
+            this.operationService.getOperationName(),
+            operationId,
+            OPERATION_STATUS.IN_PROGRESS,
         );
 
         await this.operationIdService.updateOperationIdStatus(

@@ -7,7 +7,7 @@ import {
     OPERATIONS,
 } from '../constants/constants.js';
 
-class GetService extends OperationService {
+class BatchGetService extends OperationService {
     constructor(ctx) {
         super(ctx);
 
@@ -23,4 +23,4 @@ class GetService extends OperationService {
     }
 }
 
-export default GetService;
+export default BatchGetService;

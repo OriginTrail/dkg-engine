@@ -10,6 +10,7 @@ class OperationRepository {
             publish_paranet: models.publish_paranet,
             ask: models.ask,
             finality: models.finality,
+            batch_get: models.batch_get,
         };
     }
 

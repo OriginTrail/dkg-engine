@@ -662,7 +662,7 @@ export const OPERATIONS = {
     FINALITY: 'finality',
     // UPDATE: 'update',
     GET: 'get',
-    BATCH_GET: 'batch-get',
+    BATCH_GET: 'batchGet',
     ASK: 'ask',
 };
 
