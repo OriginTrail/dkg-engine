@@ -37,12 +37,12 @@ export async function up({ context: { queryInterface, Sequelize } }) {
     const [[{ triggerInsertExists }]] = await queryInterface.sequelize.query(`
         SELECT COUNT(*) AS triggerInsertExists
         FROM information_schema.triggers
-        WHERE trigger_schema = DATABASE() AND trigger_name = 'after_insert_blockchain_missed_kc';
+        WHERE trigger_schema = DATABASE() AND trigger_name = 'after_insert_sync_missed_kc';
     `);
     if (triggerInsertExists === 0) {
         await queryInterface.sequelize.query(`
-            CREATE TRIGGER after_insert_blockchain_missed_kc
-            BEFORE INSERT ON blockchain_missed_kc
+            CREATE TRIGGER after_insert_sync_missed_kc
+            BEFORE INSERT ON sync_missed_kc
             FOR EACH ROW
             BEGIN
                 SET NEW.created_at = NOW();
@@ -53,12 +53,12 @@ export async function up({ context: { queryInterface, Sequelize } }) {
     const [[{ triggerUpdateExists }]] = await queryInterface.sequelize.query(`
         SELECT COUNT(*) AS triggerUpdateExists
         FROM information_schema.triggers
-        WHERE trigger_schema = DATABASE() AND trigger_name = 'after_update_blockchain_missed_kc';
+        WHERE trigger_schema = DATABASE() AND trigger_name = 'after_update_sync_missed_kc';
     `);
     if (triggerUpdateExists === 0) {
         await queryInterface.sequelize.query(`
-            CREATE TRIGGER after_update_blockchain_missed_kc
-            BEFORE UPDATE ON blockchain_missed_kc
+            CREATE TRIGGER after_update_sync_missed_kc
+            BEFORE UPDATE ON sync_missed_kc
             FOR EACH ROW
             BEGIN
                 SET NEW.updated_at = NOW();
@@ -68,5 +68,5 @@ export async function up({ context: { queryInterface, Sequelize } }) {
 }
 
 export async function down({ context: { queryInterface } }) {
-    await queryInterface.dropTable('blockchain_missed_kc');
+    await queryInterface.dropTable('sync_missed_kc');
 }
