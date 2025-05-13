@@ -39,6 +39,7 @@ class BatchGetRpcController extends BaseController {
                 paranetUAL: message.data.paranetUAL,
                 paranetId: message.data.paranetId,
                 repository: message.data.repository ?? TRIPLE_STORE_REPOSITORY.DKG,
+                includeMetadata: message.data.includeMetadata,
             },
             transactional: false,
         });

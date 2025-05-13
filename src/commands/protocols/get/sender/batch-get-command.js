@@ -54,9 +54,9 @@ class BatchGetCommand extends Command {
             blockchain,
             uals,
             paranetUAL,
-            paranetSync,
+            // paranetSync,
             contentType,
-            // includeMetadata,
+            includeMetadata,
             paranetNodesAccessPolicy,
         } = command.data;
 
@@ -91,8 +91,8 @@ class BatchGetCommand extends Command {
         }
 
         const currentPeerId = this.networkModuleManager.getPeerId().toB58String();
-        let paranetId;
-        let repository = TRIPLE_STORE_REPOSITORIES.DKG;
+        // let paranetId;
+        const repository = TRIPLE_STORE_REPOSITORIES.DKG;
         let migrationFlag = '0';
         const migrationFlagPath = path.join(process.cwd(), MIGRATION_FLAG_PATH);
         try {
@@ -107,51 +107,51 @@ class BatchGetCommand extends Command {
                 throw error;
             }
         }
-        if (paranetUAL) {
-            const {
-                blockchain: paranetBlockchain,
-                contract: paranetContract,
-                knowledgeCollectionId: paranetKnowledgeCollectionId,
-                knowledgeAssetId: paranetKnowledgeAssetId,
-            } = this.ualService.resolveUAL(paranetUAL);
-            paranetId = this.paranetService.constructParanetId(
-                paranetContract,
-                paranetKnowledgeCollectionId,
-                paranetKnowledgeAssetId,
-            );
+        // if (paranetUAL) {
+        //     const {
+        //         blockchain: paranetBlockchain,
+        //         contract: paranetContract,
+        //         knowledgeCollectionId: paranetKnowledgeCollectionId,
+        //         knowledgeAssetId: paranetKnowledgeAssetId,
+        //     } = this.ualService.resolveUAL(paranetUAL);
+        //     paranetId = this.paranetService.constructParanetId(
+        //         paranetContract,
+        //         paranetKnowledgeCollectionId,
+        //         paranetKnowledgeAssetId,
+        //     );
 
-            if (!paranetSync && migrationFlag === '0') {
-                // query the paranet repository if the migration is not yet finished
-                repository = this.paranetService.getParanetRepositoryName(paranetUAL);
-                const repositoryExists =
-                    this.tripleStoreModuleManager.repositoryInitilized(repository);
+        //     if (!paranetSync && migrationFlag === '0') {
+        //         // query the paranet repository if the migration is not yet finished
+        //         repository = this.paranetService.getParanetRepositoryName(paranetUAL);
+        //         const repositoryExists =
+        //             this.tripleStoreModuleManager.repositoryInitilized(repository);
 
-                if (!repositoryExists) {
-                    repository = TRIPLE_STORE_REPOSITORIES.DKG;
-                }
-            }
+        //         if (!repositoryExists) {
+        //             repository = TRIPLE_STORE_REPOSITORIES.DKG;
+        //         }
+        //     }
 
-            const { isValid: paranetIsValid, errorMessage: paranetErrorMessage } =
-                await this.validateParanet(
-                    operationId,
-                    paranetUAL,
-                    paranetBlockchain,
-                    paranetKnowledgeAssetId,
-                    paranetNodesAccessPolicy,
-                    paranetId,
-                    blockchain,
-                    uals,
-                );
-            if (!paranetIsValid) {
-                await this.handleError(
-                    operationId,
-                    blockchain,
-                    paranetErrorMessage,
-                    ERROR_TYPE.GET.GET_VALIDATE_ASSET_ERROR,
-                );
-                return Command.empty();
-            }
-        }
+        //     const { isValid: paranetIsValid, errorMessage: paranetErrorMessage } =
+        //         await this.validateParanet(
+        //             operationId,
+        //             paranetUAL,
+        //             paranetBlockchain,
+        //             paranetKnowledgeAssetId,
+        //             paranetNodesAccessPolicy,
+        //             paranetId,
+        //             blockchain,
+        //             uals,
+        //         );
+        //     if (!paranetIsValid) {
+        //         await this.handleError(
+        //             operationId,
+        //             blockchain,
+        //             paranetErrorMessage,
+        //             ERROR_TYPE.GET.GET_VALIDATE_ASSET_ERROR,
+        //         );
+        //         return Command.empty();
+        //     }
+        // }
         await this.operationIdService.updateOperationIdStatus(
             operationId,
             blockchain,
@@ -195,20 +195,17 @@ class BatchGetCommand extends Command {
         );
         promises.push(assertionPromise);
 
-        // if (includeMetadata) {
-        //     const metadataPromise = this.tripleStoreService.getAssertionMetadata(
-        //         blockchain,
-        //         contract,
-        //         knowledgeCollectionId,
-        //         knowledgeAssetId,
-        //         repository,
-        //     );
-        //     promises.push(metadataPromise);
-        // }
+        if (includeMetadata) {
+            const metadataPromise = this.tripleStoreService.getAssertionMetadataBatch(
+                uals,
+                tokenIds,
+            );
+            promises.push(metadataPromise);
+        }
 
-        const [batchAssertions /* metadata */] = await Promise.all(promises);
+        const [batchAssertions, metadata] = await Promise.all(promises);
 
-        console.log(batchAssertions);
+        console.log(batchAssertions, metadata);
 
         // const responseData = {
         //     batchAssertion,
@@ -228,7 +225,7 @@ class BatchGetCommand extends Command {
         //     }
         // }
 
-        const finalResult = { local: [], remote: {} };
+        const finalResult = { local: [], remote: {}, metadata: {} };
 
         // Whant happens when KC not in TS???
         const localGetResultValid = await this.validateBatchResponse(
@@ -252,6 +249,7 @@ class BatchGetCommand extends Command {
 
         ualPresentLocally.forEach((ual) => {
             finalResult.local.push(ual);
+            finalResult.metadata[ual] = metadata[ual];
         });
 
         if (ualNotPresentLocally.length === 0) {
@@ -334,7 +332,7 @@ class BatchGetCommand extends Command {
             const message = {
                 blockchain,
                 tokenIds,
-                // includeMetadata,
+                includeMetadata,
                 uals: ualNotPresentLocally,
                 paranetUAL,
                 repository,
@@ -370,6 +368,7 @@ class BatchGetCommand extends Command {
                 for (const [ual, isValidAssertion] of Object.entries(validationResult)) {
                     if (isValidAssertion) {
                         finalResult.remote[ual] = result.responseData.assertions[ual];
+                        finalResult.metadata[ual] = result.responseData.metadata[ual];
                         ualNotPresentLocally.splice(ualNotPresentLocally.indexOf(ual), 1);
                     }
                 }

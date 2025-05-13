@@ -645,6 +645,23 @@ class TripleStoreService {
         return nquads;
     }
 
+    async getAssertionMetadataBatch(uals, tokenIds) {
+        const results = {};
+        await Promise.all(
+            uals.map(async (ual) => {
+                const { blockchain, contract, knowledgeCollectionId } =
+                    this.ualService.resolveUAL(ual);
+                results[ual] = await this.getAssertionMetadata(
+                    blockchain,
+                    contract,
+                    knowledgeCollectionId,
+                    tokenIds[ual],
+                );
+            }),
+        );
+        return results;
+    }
+
     async getLatestAssertionId(repository, ual) {
         const nquads = await this.tripleStoreModuleManager.getLatestAssertionId(
             this.repositoryImplementations[repository],

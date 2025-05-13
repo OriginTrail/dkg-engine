@@ -29,6 +29,7 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
             blockchain,
             tokenIds,
             uals,
+            includeMetadata,
             // paranetUAL,
             // remotePeerId,
             // repository,
@@ -168,21 +169,19 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
 
         promises.push(assertionPromise);
 
-        // if (includeMetadata) {
-        //     const metadataPromise = this.tripleStoreService.getAssertionMetadata(
-        //         blockchain,
-        //         contract,
-        //         knowledgeCollectionId,
-        //         knowledgeAssetId,
-        //     );
-        //     promises.push(metadataPromise);
-        // }
+        if (includeMetadata) {
+            const metadataPromise = this.tripleStoreService.getAssertionMetadataBatch(
+                uals,
+                tokenIds,
+            );
+            promises.push(metadataPromise);
+        }
 
-        const [assertions /* metadata */] = await Promise.all(promises);
+        const [assertions, metadata] = await Promise.all(promises);
 
         const responseData = {
             assertions,
-            // ...(includeMetadata && metadata && { metadata }),
+            ...(includeMetadata && metadata && { metadata }),
         };
 
         if (assertions?.length) {
