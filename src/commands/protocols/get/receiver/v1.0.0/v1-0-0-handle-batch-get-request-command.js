@@ -11,17 +11,15 @@ import {
 class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
     constructor(ctx) {
         super(ctx);
-        this.operationService = ctx.getService;
         this.tripleStoreService = ctx.tripleStoreService;
-        this.pendingStorageService = ctx.pendingStorageService;
         this.paranetService = ctx.paranetService;
         this.blockchainModuleManager = ctx.blockchainModuleManager;
         this.networkModuleManager = ctx.networkModuleManager;
         this.cryptoService = ctx.cryptoService;
 
-        this.errorType = ERROR_TYPE.GET.GET_REQUEST_REMOTE_ERROR;
-        this.operationStartEvent = OPERATION_ID_STATUS.GET.GET_REMOTE_START;
-        this.operationEndEvent = OPERATION_ID_STATUS.GET.GET_REMOTE_END;
+        this.errorType = ERROR_TYPE.BATCH_GET.BATCH_GET_REQUEST_REMOTE_ERROR;
+        this.operationStartEvent = OPERATION_ID_STATUS.BATCH_GET.BATCH_GET_REMOTE_START;
+        this.operationEndEvent = OPERATION_ID_STATUS.BATCH_GET.BATCH_GET_REMOTE_END;
     }
     // TODO: Operation id status not corrects
 
@@ -36,6 +34,12 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
             // repository,
             // contentType,
         } = commandData;
+
+        await this.operationIdService.updateOperationIdStatus(
+            operationId,
+            blockchain,
+            this.operationStartEvent,
+        );
 
         // if (paranetUAL) {
         //     const {
@@ -185,7 +189,7 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
             await this.operationIdService.updateOperationIdStatus(
                 operationId,
                 blockchain,
-                OPERATION_ID_STATUS.GET.GET_REMOTE_END,
+                this.operationEndEvent,
             );
         }
 
@@ -202,7 +206,7 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
             name: 'v1_0_0HandleBatchGetRequestCommand',
             delay: 0,
             transactional: false,
-            errorType: ERROR_TYPE.BATCH_GET.BATCH_GET_REQUEST_REMOTE_ERROR,
+            errorType: this.errorType,
         };
         Object.assign(command, map);
         return command;

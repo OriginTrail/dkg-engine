@@ -236,7 +236,7 @@ export const PERMANENT_COMMANDS = [
     'otnodeUpdateCommand',
     'sendTelemetryCommand',
     'startParanetSyncCommands',
-    'dialPeersCommand',
+    // 'dialPeersCommand',
     'shardingTableCheckCommand',
     'commandsCleanerCommand',
     'operationIdCleanerCommand',
@@ -608,6 +608,9 @@ export const OPERATION_ID_STATUS = {
         BATCH_GET_VALIDATE_ASSET_ERROR: 'BATCH_GET_VALIDATE_ASSET_ERROR',
         BATCH_GET_LOCAL_START: 'BATCH_GET_LOCAL_START',
         BATCH_GET_LOCAL_END: 'BATCH_GET_LOCAL_END',
+        BATCH_GET_REMOTE_START: 'BATCH_GET_REMOTE_START',
+        BATCH_GET_REMOTE_END: 'BATCH_GET_REMOTE_END',
+        BATCH_GET_REQUEST_REMOTE_ERROR: 'BATCH_GET_REQUEST_REMOTE_ERROR',
     },
     QUERY: {
         QUERY_INIT_START: 'QUERY_INIT_START',
