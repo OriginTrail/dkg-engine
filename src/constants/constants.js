@@ -1067,3 +1067,5 @@ export const PROOFING_INTERVAL = 12 * 1000;
 export const PROOFING_MAX_ATTEMPTS = 120;
 export const REORG_PROOFING_BUFFER = 60 * 1000;
 export const CHUNK_SIZE = 32;
+
+export const SYNC_INTERVAL = 12 * 1000;
