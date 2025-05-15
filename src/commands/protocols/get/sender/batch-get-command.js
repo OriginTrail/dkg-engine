@@ -196,10 +196,7 @@ class BatchGetCommand extends Command {
         promises.push(assertionPromise);
 
         if (includeMetadata) {
-            const metadataPromise = this.tripleStoreService.getAssertionMetadataBatch(
-                uals,
-                tokenIds,
-            );
+            const metadataPromise = this.tripleStoreService.getAssertionMetadataBatch(uals);
             promises.push(metadataPromise);
         }
 
@@ -628,6 +625,8 @@ class BatchGetCommand extends Command {
                         contract,
                         knowledgeCollectionId,
                     );
+                    console.log(ual);
+                    console.log(assertion.private);
 
                     // If not permissioned and there are private triples, validate
                     if (assertion?.private?.length) {

@@ -558,22 +558,65 @@ class TripleStoreService {
     }
 
     async getAssertionsInBatch(uals, tokenIds, migrationFlag, contentType) {
+        // if (migrationFlag === '0') {
+        const result =
+            await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphsOldInBatch(
+                this.repositoryImplementations[TRIPLE_STORE_REPOSITORY.DKG],
+                TRIPLE_STORE_REPOSITORY.DKG,
+                uals,
+                tokenIds,
+                contentType,
+                migrationFlag,
+            );
+        // TODO: This only returns \n ???
+        // } else {
+        //     result = await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphsInBatch(
+        //         this.repositoryImplementations[TRIPLE_STORE_REPOSITORY.DKG],
+        //         TRIPLE_STORE_REPOSITORY.DKG,
+        //         uals,
+        //         contentType,
+        //     );
+        // }
+
         const results = {};
-        await Promise.all(
-            uals.map(async (ual) => {
-                const { blockchain, contract, knowledgeCollectionId } =
-                    this.ualService.resolveUAL(ual);
-                results[ual] = await this.getAssertion(
-                    blockchain,
-                    contract,
-                    knowledgeCollectionId,
-                    null,
-                    tokenIds[ual],
-                    migrationFlag,
-                    contentType,
-                );
-            }),
-        );
+        uals.forEach((ual) => {
+            results[ual] = {};
+        });
+
+        for (const line of result.split('\n')) {
+            if (line === '') {
+                continue;
+            }
+            const splitLine = line.split('\t');
+            const ualKAWithVisibility = splitLine[0];
+            const ual = ualKAWithVisibility.replace(/[<>]/g, '').split('/').slice(0, -2).join('/');
+            // Join first 3 elements with spaces (subject, predicate, object)
+            // and the rest with tabs (any additional elements)
+            const triple =
+                `${splitLine.slice(1, 4).join(' ')}` +
+                ` ${splitLine.length > 4 ? `\t${splitLine.slice(4).join('\t')}` : ''}` +
+                `.`;
+
+            if (
+                ualKAWithVisibility.includes(TRIPLES_VISIBILITY.PRIVATE) &&
+                contentType !== TRIPLES_VISIBILITY.PUBLIC
+            ) {
+                if (results[ual].private) {
+                    results[ual].private.push(triple);
+                } else {
+                    results[ual].private = [triple];
+                }
+            } else if (
+                ualKAWithVisibility.includes(TRIPLES_VISIBILITY.PUBLIC) &&
+                contentType !== TRIPLES_VISIBILITY.PRIVATE
+            ) {
+                if (results[ual].public) {
+                    results[ual].public.push(triple);
+                } else {
+                    results[ual].public = [triple];
+                }
+            }
+        }
 
         return results;
     }
@@ -645,21 +688,25 @@ class TripleStoreService {
         return nquads;
     }
 
-    async getAssertionMetadataBatch(uals, tokenIds) {
-        const results = {};
-        await Promise.all(
-            uals.map(async (ual) => {
-                const { blockchain, contract, knowledgeCollectionId } =
-                    this.ualService.resolveUAL(ual);
-                results[ual] = await this.getAssertionMetadata(
-                    blockchain,
-                    contract,
-                    knowledgeCollectionId,
-                    tokenIds[ual],
-                );
-            }),
+    async getAssertionMetadataBatch(uals) {
+        const metadataTriples = await this.tripleStoreModuleManager.getMetadataInBatch(
+            this.repositoryImplementations[TRIPLE_STORE_REPOSITORY.DKG],
+            TRIPLE_STORE_REPOSITORY.DKG,
+            uals,
         );
-        return results;
+
+        const metadata = {};
+        for (const line of metadataTriples.split('\n').filter((result) => result !== '')) {
+            const splitLine = line.split(' ');
+            const ual = splitLine[0].replace(/[<>]/g, '');
+            if (!metadata[ual]) {
+                metadata[ual] = [line];
+            } else {
+                metadata[ual].push(line);
+            }
+        }
+
+        return metadata;
     }
 
     async getLatestAssertionId(repository, ual) {

@@ -455,23 +455,45 @@ class OtTripleStore {
         return assertion;
     }
 
+    // TODO: Clean up unused arguments of this method
     async getKnowledgeCollectionNamedGraphsOldInBatch(repository, uals, ualTokenIds, visibility) {
-        const results = await Promise.all(
-            uals.map((ual) =>
-                this.getKnowledgeCollectionNamedGraphsOld(
-                    repository,
-                    ual,
-                    ualTokenIds[ual],
-                    visibility,
-                ),
-            ),
-        );
-        const result = {};
-        for (const [index, ual] of uals.entries()) {
-            result[ual] = results[index];
-        }
+        // TODO: Validate this query
+        const kaUALs = Array.from(Object.entries(ualTokenIds)).flatMap(([ual, tokenIds]) => {
+            const arr = Array.from(
+                { length: tokenIds.endTokenId - tokenIds.startTokenId + 1 },
+                (_, i) => tokenIds.startTokenId + i,
+            );
+            if (
+                visibility === TRIPLES_VISIBILITY.PUBLIC ||
+                visibility === TRIPLES_VISIBILITY.PRIVATE
+            ) {
+                return arr
+                    .filter((id) => !tokenIds.burned.includes(id))
+                    .map((id) => `<${ual}/${id}/${visibility}>`);
+            }
+            // visibility === TRIPLES_VISIBILITY.ALL;
+            // It should add both public and private suffixes
+            return arr
+                .filter((id) => !tokenIds.burned.includes(id))
+                .flatMap((id) => [
+                    `<${ual}/${id}/${TRIPLES_VISIBILITY.PUBLIC}>`,
+                    `<${ual}/${id}/${TRIPLES_VISIBILITY.PRIVATE}>`,
+                ]);
+        });
 
-        return result;
+        const query = `
+            SELECT ?g ?s ?p ?o
+            WHERE {
+                VALUES ?g {
+                    ${kaUALs.join('\n')}
+                }
+                GRAPH ?g {
+                    ?s ?p ?o
+                }
+            }
+        `;
+
+        return this.selectTSV(repository, query);
     }
 
     async getKnowledgeCollectionNamedGraphs(repository, ual, knowledgeAssetId, visibility) {
@@ -546,49 +568,43 @@ class OtTripleStore {
         return assertion;
     }
 
-    async getKnowledgeCollectionNamedGraphsInBatch(repository, uals, visibility) {
+    async getKnowledgeCollectionNamedGraphsInBatch(repository, uals) {
         const query = `
-        SELECT ?ual ?g ?s ?p ?o
-            WHERE { 
-                VALUES ?ual {
-                    ${uals.map((ual) => `<${ual}>`).join('\n')}
+            PREFIX dkg: <https://ontology.origintrail.io/dkg/1.0#>
+            SELECT ?g ?s ?p ?o
+            WHERE {
+                GRAPH <metadata:graph> {
+                    VALUES ?ual {
+                        ${uals.map((ual) => `<${ual}>`).join('\n')}
+                    }
+                    ?ual dkg:hasNamedGraph ?g .
                 }
 
-                ?ual <https://ontology.origintrail.io/dkg/1.0#hasNamedGraph> ?g .
                 GRAPH ?g {
-                    ?s ?p ?o .
+                    ?s ?p ?o
                 }
             }
         `;
-        const queryResult = await this.select(repository, query);
 
-        const result = {};
-        queryResult.split('\n').forEach((row) => {
-            if (!row.trim()) return;
+        return this.selectTSV(repository, query);
+    }
 
-            // Match: ual, g, then the rest (s p o together as a string)
-            const match = row.match(/^(\S+)\s+(\S+)\s+(.+)$/);
-
-            const [, ual, g, triple] = match;
-
-            if (!result[ual]) {
-                result[ual] = {};
+    async getMetadataInBatch(repository, uals) {
+        const query = `
+            CONSTRUCT {
+                ?ual ?p ?o
             }
-            const isPublic = visibility === TRIPLES_VISIBILITY.PUBLIC && g.includes('/public');
-            const isPrivate = visibility === TRIPLES_VISIBILITY.PRIVATE && g.includes('/private');
-            const isAll = visibility === TRIPLES_VISIBILITY.ALL;
-
-            if (isPublic || isPrivate || isAll) {
-                if (!result[ual][g]) {
-                    result[ual][g] = [];
+            WHERE {
+                VALUES ?ual {
+                    ${uals.map((ual) => `<${ual}>`).join('\n')}
                 }
-                result[ual][g].push(triple);
-            } else {
-                throw new Error(`Unsupported visibility: ${visibility}`);
+                GRAPH <${BASE_NAMED_GRAPHS.METADATA}> {
+                    ?ual ?p ?o
+                }
             }
-        });
+        `;
 
-        return result;
+        return this.construct(repository, query);
     }
 
     async knowledgeCollectionNamedGraphsExist(repository, ual) {
@@ -829,6 +845,23 @@ class OtTripleStore {
         }
 
         return response;
+    }
+
+    async selectTSV(repository, query) {
+        const result = await this.queryEngine.query(
+            query,
+            this.repositories[repository].queryContext,
+        );
+
+        const { data } = await this.queryEngine.resultToString(result, 'text/tab-separated-values');
+
+        let response = '';
+
+        for await (const chunk of data) {
+            response += chunk;
+        }
+        // Remove top line of TSV
+        return response.indexOf('\n') > -1 ? response.slice(response.indexOf('\n') + 1) : response;
     }
 
     async reinitialize() {

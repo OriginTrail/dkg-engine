@@ -236,6 +236,15 @@ class TripleStoreModuleManager extends BaseModuleManager {
         }
     }
 
+    async getMetadataInBatch(implementationName, repository, uals) {
+        if (this.getImplementation(implementationName)) {
+            return this.getImplementation(implementationName).module.getMetadataInBatch(
+                repository,
+                uals,
+            );
+        }
+    }
+
     async knowledgeCollectionNamedGraphsExist(implementationName, repository, ual) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(
