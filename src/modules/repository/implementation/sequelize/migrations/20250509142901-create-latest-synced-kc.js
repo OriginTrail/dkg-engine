@@ -16,6 +16,7 @@ export async function up({ context: { queryInterface, Sequelize } }) {
         latest_synced_kc: {
             type: Sequelize.INTEGER,
             allowNull: false,
+            defaultValue: 0,
         },
         created_at: {
             allowNull: false,

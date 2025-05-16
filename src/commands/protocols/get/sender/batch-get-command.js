@@ -60,12 +60,6 @@ class BatchGetCommand extends Command {
             paranetNodesAccessPolicy,
         } = command.data;
 
-        await this.operationIdService.updateOperationIdStatus(
-            operationId,
-            blockchain,
-            OPERATION_ID_STATUS.BATCH_GET.BATCH_GET_START,
-        );
-
         await this.repositoryModuleManager.createOperationRecord(
             this.operationService.getOperationName(),
             operationId,
@@ -246,7 +240,7 @@ class BatchGetCommand extends Command {
 
         ualPresentLocally.forEach((ual) => {
             finalResult.local.push(ual);
-            finalResult.metadata[ual] = metadata[ual];
+            delete tokenIds[ual];
         });
 
         if (ualNotPresentLocally.length === 0) {
@@ -376,6 +370,11 @@ class BatchGetCommand extends Command {
                         operationId,
                         blockchain,
                         finalResult,
+                        [
+                            OPERATION_ID_STATUS.GET.GET_LOCAL_END,
+                            OPERATION_ID_STATUS.GET.GET_END,
+                            OPERATION_ID_STATUS.COMPLETED,
+                        ],
                     );
                     return Command.empty();
                 }

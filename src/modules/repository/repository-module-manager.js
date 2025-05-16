@@ -538,6 +538,18 @@ class RepositoryModuleManager extends BaseModuleManager {
     async incrementInsertedTriples(count) {
         return this.getRepository('inserted_triples').increment(count);
     }
+
+    async getKCStorageContracts(blockchainId) {
+        return this.getRepository('latest_synced_kc').getKCStorageContracts(blockchainId);
+    }
+
+    async getSyncRecordForBlockchain(blockchainId) {
+        return this.getRepository('latest_synced_kc').getSyncRecordForBlockchain(blockchainId);
+    }
+
+    async addSyncContracts(blockchainId, contracts) {
+        return this.getRepository('latest_synced_kc').addSyncContracts(blockchainId, contracts);
+    }
 }
 
 export default RepositoryModuleManager;
