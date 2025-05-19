@@ -1,6 +1,6 @@
 export default (sequelize, DataTypes) => {
-    const syncMissedKc = sequelize.define(
-        'sync_missed_kc',
+    const otpSyncMissedKc = sequelize.define(
+        'otp_sync_missed_kc',
         {
             id: {
                 type: DataTypes.INTEGER,
@@ -32,6 +32,12 @@ export default (sequelize, DataTypes) => {
                 allowNull: true,
                 field: 'sync_error',
             },
+            retryCount: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0,
+                field: 'retry_count',
+            },
             createdAt: {
                 type: DataTypes.DATE,
                 field: 'created_at',
@@ -44,9 +50,9 @@ export default (sequelize, DataTypes) => {
         { underscored: true },
     );
 
-    syncMissedKc.associate = () => {
+    otpSyncMissedKc.associate = () => {
         // associations can be defined here
     };
 
-    return syncMissedKc;
+    return otpSyncMissedKc;
 };

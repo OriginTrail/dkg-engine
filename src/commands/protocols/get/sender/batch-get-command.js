@@ -390,6 +390,11 @@ class BatchGetCommand extends Command {
             // );
         }
         // TODO: Batch get can partialy fail 4/5 found but still one missing return that as result
+        await this.operationService.markOperationAsCompleted(operationId, blockchain, finalResult, [
+            OPERATION_ID_STATUS.GET.GET_LOCAL_END,
+            OPERATION_ID_STATUS.GET.GET_END,
+            OPERATION_ID_STATUS.COMPLETED,
+        ]);
         return Command.empty();
     }
 

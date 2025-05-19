@@ -316,6 +316,53 @@ class TripleStoreService {
         return totalNumberOfTriplesInserted;
     }
 
+    async insertKnowledgeCollectionBatch(repository, KCs) {
+        // this.logger.info(
+        //     `Inserting Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
+        //         `to the Triple Store's ${repository} repository.`,
+        // );
+        // This metadata is not validated
+        const { remote, metadata } = KCs;
+        const insert = {};
+        // remote { ual: { public: [triples], private: [triples] } }
+        for (const ual of Object.keys(remote)) {
+            const triples = remote[ual].public;
+            const filteredPublic = [];
+            const privateHashTriples = [];
+
+            triples.forEach((triple) => {
+                if (triple.startsWith(`<${PRIVATE_HASH_SUBJECT_PREFIX}`)) {
+                    privateHashTriples.push(triple);
+                } else {
+                    filteredPublic.push(triple);
+                }
+            });
+
+            const publicKnowledgeAssetsTriplesGrouped = kcTools.groupNquadsBySubject(
+                filteredPublic,
+                true,
+            );
+            publicKnowledgeAssetsTriplesGrouped.push(
+                ...kcTools.groupNquadsBySubject(privateHashTriples, true),
+            );
+
+            const publicKnowledgeAssetsUALs = publicKnowledgeAssetsTriplesGrouped.map(
+                (_, index) => `${ual}/${index + 1}`,
+            );
+
+            for (const [index, kaUAL] of publicKnowledgeAssetsUALs.entries()) {
+                insert[`${kaUAL}/public`] = publicKnowledgeAssetsTriplesGrouped[index];
+            }
+        }
+
+        await this.tripleStoreModuleManager.insertAssertionBatch(
+            TRIPLE_STORE_REPOSITORY.DKG,
+            repository,
+            insert,
+            metadata,
+        );
+    }
+
     async deletePublishTimestampMetadata(repository, ual) {
         await this.tripleStoreModuleManager.deletePublishTimestampMetadata(
             this.repositoryImplementations[repository],

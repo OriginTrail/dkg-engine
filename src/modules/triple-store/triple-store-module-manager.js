@@ -390,6 +390,16 @@ class TripleStoreModuleManager extends BaseModuleManager {
         }
     }
 
+    async insertAssertionBatch(implementationName, repository, insertMap, metadata) {
+        if (this.getImplementation(implementationName)) {
+            return this.getImplementation(implementationName).module.insertAssertionBatch(
+                repository,
+                insertMap,
+                metadata,
+            );
+        }
+    }
+
     getName() {
         return 'tripleStore';
     }

@@ -77,7 +77,7 @@
                             "port": "3306",
                             "host": "localhost",
                             "dialect": "mysql",
-                            "logging": false,
+                            "logging": true,
                             "pool": {
                                 "max": 120,
                                 "min": 0,

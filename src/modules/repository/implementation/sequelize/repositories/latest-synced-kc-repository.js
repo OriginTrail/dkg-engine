@@ -1,6 +1,5 @@
 class LatestSyncedKcRepository {
     constructor(ctx) {
-        this.logger = ctx.logger;
         this.model = ctx.latest_synced_kc;
     }
 
@@ -24,6 +23,13 @@ class LatestSyncedKcRepository {
         `;
 
         return this.model.sequelize.query(query, { type: this.model.sequelize.QueryTypes.INSERT });
+    }
+
+    async updateLatestSyncedKc(blockchainId, contractAddress, latestSyncedKc, options) {
+        return this.model.update(
+            { latestSyncedKc },
+            { where: { blockchain: blockchainId, contractAddress }, ...options },
+        );
     }
 }
 

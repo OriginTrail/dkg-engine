@@ -550,6 +550,24 @@ class RepositoryModuleManager extends BaseModuleManager {
     async addSyncContracts(blockchainId, contracts) {
         return this.getRepository('latest_synced_kc').addSyncContracts(blockchainId, contracts);
     }
+
+    async insertMissedKc(blockchainId, records, error, options = {}) {
+        return this.getRepository('blockchain_missed_kc').insertMissedKc(
+            blockchainId,
+            records,
+            error,
+            options,
+        );
+    }
+
+    async updateLatestSyncedKc(blockchainId, contractAddress, latestSyncedKc, options = {}) {
+        return this.getRepository('latest_synced_kc').updateLatestSyncedKc(
+            blockchainId,
+            contractAddress,
+            latestSyncedKc,
+            options,
+        );
+    }
 }
 
 export default RepositoryModuleManager;

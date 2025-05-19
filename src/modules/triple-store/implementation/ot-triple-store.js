@@ -126,6 +126,37 @@ class OtTripleStore {
         await this.queryVoid(repository, query);
     }
 
+    async insertAssertionBatch(repository, insertMap, metadata) {
+        const graphsForDataInsert = [];
+        for (const [ual, triples] of Object.entries(insertMap)) {
+            const graph = `
+                GRAPH <${ual}> {
+                    ${triples.join('\n')}
+                }
+            `;
+            graphsForDataInsert.push(graph);
+        }
+
+        const metadataGraphForInsert = `
+            GRAPH <${BASE_NAMED_GRAPHS.METADATA}> {
+                ${Object.values(metadata)
+                    .map((triples) => triples.join('\n'))
+                    .join('\n')}
+            }
+        `;
+        const query = `
+            PREFIX schema: <${SCHEMA_CONTEXT}>
+            INSERT DATA {
+                ${graphsForDataInsert.join('\n')}
+                ${metadataGraphForInsert}
+            }
+        `;
+
+        console.log(query);
+
+        await this.queryVoid(repository, query);
+    }
+
     async deleteUniqueKnowledgeCollectionTriplesFromUnifiedGraph(repository, namedGraph, ual) {
         const query = `
             DELETE {
