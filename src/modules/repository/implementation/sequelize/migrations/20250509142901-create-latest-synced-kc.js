@@ -61,8 +61,59 @@ export async function up({ context: { queryInterface, Sequelize } }) {
             END;
         `);
     }
+    const [[{ blockchainContractAddressIndexExists }]] = await queryInterface.sequelize.query(`
+        SELECT COUNT(*) AS indexExists
+        FROM information_schema.statistics
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'latest_synced_kc'
+          AND INDEX_NAME = 'idx_latest_synced_kc_blockchain_contract_address';
+    `);
+    if (!blockchainContractAddressIndexExists) {
+        await queryInterface.addIndex('latest_synced_kc', ['blockchain', 'contract_address'], {
+            unique: true,
+            name: 'idx_latest_synced_kc_blockchain_contract_address',
+        });
+    }
+
+    const [[{ blockchainIndexExists }]] = await queryInterface.sequelize.query(`
+        SELECT COUNT(*) AS indexExists
+        FROM information_schema.statistics
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'latest_synced_kc'
+          AND INDEX_NAME = 'idx_latest_synced_kc_blockchain';
+    `);
+    if (!blockchainIndexExists) {
+        await queryInterface.addIndex('latest_synced_kc', ['blockchain'], {
+            name: 'idx_latest_synced_kc_blockchain',
+        });
+    }
 }
 
 export async function down({ context: { queryInterface } }) {
+    const [[{ blockchainContractAddressIndexExists }]] = await queryInterface.sequelize.query(`
+        SELECT COUNT(*) AS indexExists
+        FROM information_schema.statistics
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'latest_synced_kc'
+          AND INDEX_NAME = 'idx_latest_synced_kc_blockchain_contract_address';
+    `);
+    if (blockchainContractAddressIndexExists) {
+        await queryInterface.removeIndex(
+            'latest_synced_kc',
+            'idx_latest_synced_kc_blockchain_contract_address',
+        );
+    }
+
+    const [[{ blockchainIndexExists }]] = await queryInterface.sequelize.query(`
+        SELECT COUNT(*) AS indexExists
+        FROM information_schema.statistics
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'latest_synced_kc'
+          AND INDEX_NAME = 'idx_latest_synced_kc_blockchain';
+    `);
+    if (blockchainIndexExists) {
+        await queryInterface.removeIndex('latest_synced_kc', 'idx_latest_synced_kc_blockchain');
+    }
+
     await queryInterface.dropTable('latest_synced_kc');
 }
