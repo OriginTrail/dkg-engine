@@ -1,4 +1,4 @@
-class ClaimRewardService {
+class ClaimRewardsService {
     constructor(ctx) {
         this.ctx = ctx;
         this.logger = ctx.logger;
@@ -13,17 +13,17 @@ class ClaimRewardService {
     }
 
     async initialize() {
-        this.logger.info('[CLAIM REWARD] Initializing ClaimRewardService');
+        this.logger.info('[CLAIM REWARDS] Initializing ClaimRewardsService');
         const promises = [];
         for (const blockchainId of this.blockchainModuleManager.getImplementationNames()) {
             this.logger.info(
-                `[CLAIM REWARD] Initializing claim reward service for blockchain ${blockchainId}`,
+                `[CLAIM REWARDS] Initializing claim rewards service for blockchain ${blockchainId}`,
             );
-            promises.push(this.claimRewardMechanism(blockchainId));
+            promises.push(this.claimRewardsMechanism(blockchainId));
         }
         await Promise.all(promises);
-        this.logger.info('[CLAIM REWARD] ClaimRewardService initialization completed');
+        this.logger.info('[CLAIM REWARDS] ClaimRewardsService initialization completed');
     }
 }
 
-export default ClaimRewardService;
+export default ClaimRewardsService;
