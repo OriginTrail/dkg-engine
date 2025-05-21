@@ -21,6 +21,7 @@ import UserRepository from './repositories/user-repository.js';
 import TriplesInsertCountRepository from './repositories/inserted-triples-repository.js';
 import FinalityStatusRepository from './repositories/finality-status-repository.js';
 import RandomSamplingChallengeRepository from './repositories/random-sampling-challenge-repository.js';
+import EpochRewardsClaimedRepository from './repositories/epoch-rewards-claimed-repository.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -52,6 +53,7 @@ class SequelizeRepository {
             user: new UserRepository(this.models),
             finality_status: new FinalityStatusRepository(this.models),
             random_sampling_challenge: new RandomSamplingChallengeRepository(this.models),
+            epoch_rewards_claimed: new EpochRewardsClaimedRepository(this.models),
             inserted_triples: new TriplesInsertCountRepository(this.models),
         };
     }
