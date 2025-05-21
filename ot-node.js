@@ -62,6 +62,7 @@ class OTNode {
         await this.startNetworkModule();
         this.resumeCommandExecutor();
         await this.initializeProofing();
+        await this.initializeClaimRewards();
         this.logger.info('Node is up and running!');
     }
 
@@ -402,6 +403,11 @@ class OTNode {
     async initializeProofing() {
         const proofingService = this.container.resolve('proofingService');
         await proofingService.initialize();
+    }
+
+    async initializeClaimRewards() {
+        const claimRewardsService = this.container.resolve('claimRewardsService');
+        await claimRewardsService.initialize();
     }
 
     stop(code = 0) {
