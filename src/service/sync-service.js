@@ -122,14 +122,11 @@ class SyncService {
                         syncRecord.contractAddress,
                     );
 
-                if (latestKnowledgeCollectionId.toNumber() > syncRecord.latestSyncedKc) {
-                    return {
-                        contractAddress: syncRecord.contractAddress,
-                        latestKnowledgeCollectionId,
-                        latestSyncedKc: syncRecord.latestSyncedKc,
-                    };
-                }
-                return null;
+                return {
+                    contractAddress: syncRecord.contractAddress,
+                    latestKnowledgeCollectionId,
+                    latestSyncedKc: syncRecord.latestSyncedKc,
+                };
             }),
         );
 

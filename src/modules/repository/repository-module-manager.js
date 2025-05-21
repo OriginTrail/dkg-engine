@@ -586,7 +586,7 @@ class RepositoryModuleManager extends BaseModuleManager {
         );
     }
 
-    async updateSyncedKc(blockchain, records, options) {
+    async setSyncedToTrue(blockchain, records, options) {
         return this.getRepository('blockchain_missed_kc').setSyncedToTrue(
             blockchain,
             records,
