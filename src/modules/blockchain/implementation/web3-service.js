@@ -1217,6 +1217,13 @@ class Web3Service {
         return block.timestamp;
     }
 
+    async claimRewards(identityId, epoch) {
+        return this.callContractFunction(this.contracts.RandomSampling, 'claimRewards', [
+            identityId,
+            epoch,
+        ]);
+    }
+
     // SUPPORT FOR OLD CONTRACTS
     async getLatestAssertionId(assetContractAddress, tokenId) {
         const assetStorageContractInstance =
