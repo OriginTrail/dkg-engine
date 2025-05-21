@@ -91,6 +91,22 @@ export async function up({ context: { queryInterface, Sequelize } }) {
             END;
         `);
         }
+
+        const [[{ retryIndexExists }]] = await queryInterface.sequelize.query(`
+            SELECT COUNT(*) AS indexExists
+            FROM information_schema.statistics
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = '${blockchain}_sync_missed_kc'
+              AND INDEX_NAME = 'idx_${blockchain}_sync_missed_kc_retry_index';
+        `);
+
+        if (!retryIndexExists) {
+            await queryInterface.addIndex(
+                `${blockchain}_sync_missed_kc`,
+                ['contract_address', 'synced', 'updated_at', 'retry_count'],
+                { name: `idx_${blockchain}_sync_missed_kc_retry_index` },
+            );
+        }
     }
 }
 
@@ -105,6 +121,33 @@ export async function down({ context: { queryInterface } }) {
         throw new Error(`Invalid node environment: ${nodeEnv}`);
     }
     for (const blockchain of blockchains) {
+        const [[{ contractKcIdIndexExists }]] = await queryInterface.sequelize.query(`
+            SELECT COUNT(*) AS indexExists
+            FROM information_schema.statistics
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = '${blockchain}_sync_missed_kc'
+              AND INDEX_NAME = 'idx_${blockchain}_sync_missed_kc_contract_kc_id';
+        `);
+        if (contractKcIdIndexExists) {
+            await queryInterface.removeIndex(
+                `${blockchain}_sync_missed_kc`,
+                `idx_${blockchain}_sync_missed_kc_contract_kc_id`,
+            );
+        }
+
+        const [[{ retryIndexExists }]] = await queryInterface.sequelize.query(`
+            SELECT COUNT(*) AS indexExists
+            FROM information_schema.statistics
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = '${blockchain}_sync_missed_kc'
+              AND INDEX_NAME = 'idx_${blockchain}_sync_missed_kc_retry_index';
+        `);
+        if (retryIndexExists) {
+            await queryInterface.removeIndex(
+                `${blockchain}_sync_missed_kc`,
+                `idx_${blockchain}_sync_missed_kc_retry_index`,
+            );
+        }
         await queryInterface.dropTable(`${blockchain}_sync_missed_kc`);
     }
 }
