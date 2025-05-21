@@ -3,13 +3,13 @@ import {
     SYNC_INTERVAL,
     OPERATION_ID_STATUS,
     DKG_METADATA_PREDICATES,
-    SYNC_BATCH_SIZE,
 } from '../constants/constants.js';
 
 class SyncService {
     // TODO: Send getter for Neuroweb fixed on last finalised block, there should be ethers flag
     constructor(ctx) {
         this.ctx = ctx;
+        this.syncConfig = ctx.config.assetSync.syncDKG;
         this.logger = ctx.logger;
         this.ualService = ctx.ualService;
         this.blockchainModuleManager = ctx.blockchainModuleManager;
@@ -23,8 +23,13 @@ class SyncService {
     }
 
     async initialize() {
-        this.logger.info('[DKG SYNC] Initializing SyncService');
+        if (!this.syncConfig.enabled) {
+            this.logger.info('[DKG SYNC] SyncService disabled');
+            return;
+        }
 
+        this.logger.info('[DKG SYNC] Initializing SyncService');
+        this.syncBatchSize = this.syncConfig.syncBatchSize;
         const blockchainIds = this.blockchainModuleManager.getImplementationNames();
         const promises = await Promise.all(
             blockchainIds.map(async (blockchainId) => {
@@ -160,7 +165,7 @@ class SyncService {
         const latestKnowledgeCollectionId = syncObject.latestKnowledgeCollectionId.toNumber();
 
         // Calculate upper bound
-        const maxId = Math.min(latestKnowledgeCollectionId, latestSyncedKc + SYNC_BATCH_SIZE);
+        const maxId = Math.min(latestKnowledgeCollectionId, latestSyncedKc + this.syncBatchSize);
 
         // Generate UALs from (latestSyncedKc + 1) to maxId
         for (let id = latestSyncedKc + 1; id <= maxId; id += 1) {
@@ -263,7 +268,7 @@ class SyncService {
         const missedKcForRetry = await this.repositoryModuleManager.getMissedKcForRetry(
             blockchainId,
             contract,
-            SYNC_BATCH_SIZE,
+            this.syncBatchSize,
         );
         if (missedKcForRetry.length === 0) {
             this.logger.info(`[SYNC] No missed KC for retry for blockchain ${blockchainId}`);
