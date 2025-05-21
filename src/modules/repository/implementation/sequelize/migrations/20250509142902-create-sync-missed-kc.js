@@ -92,6 +92,21 @@ export async function up({ context: { queryInterface, Sequelize } }) {
         `);
         }
 
+        const [[{ contractKcIdIndexExists }]] = await queryInterface.sequelize.query(`
+            SELECT COUNT(*) AS indexExists
+            FROM information_schema.statistics
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = '${blockchain}_sync_missed_kc'
+              AND INDEX_NAME = 'idx_${blockchain}_sync_missed_kc_contract_kc_id';
+        `);
+        if (!contractKcIdIndexExists) {
+            await queryInterface.addIndex(
+                `${blockchain}_sync_missed_kc`,
+                ['contract_address', 'kc_id'],
+                { name: `idx_${blockchain}_sync_missed_kc_contract_kc_id` },
+            );
+        }
+
         const [[{ retryIndexExists }]] = await queryInterface.sequelize.query(`
             SELECT COUNT(*) AS indexExists
             FROM information_schema.statistics
