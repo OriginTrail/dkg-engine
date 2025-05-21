@@ -17,11 +17,6 @@ export default (sequelize, DataTypes) => {
                 allowNull: false,
                 field: 'contract_address',
             },
-            blockchain: {
-                type: DataTypes.STRING,
-                allowNull: false,
-                field: 'blockchain',
-            },
             synced: {
                 type: DataTypes.BOOLEAN,
                 allowNull: false,

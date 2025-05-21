@@ -77,7 +77,7 @@
                             "port": "3306",
                             "host": "localhost",
                             "dialect": "mysql",
-                            "logging": true,
+                            "logging": false,
                             "pool": {
                                 "max": 120,
                                 "min": 0,
@@ -1020,7 +1020,13 @@
         "appDataPath": "data",
         "logLevel": "trace",
         "assetSync": {
-            "syncParanets": []
+            "syncParanets": [],
+            "dkgSync": {
+                "enabled": true,
+                "config": {
+                    "batchSize": 5
+                }
+            }
         },
         "auth": {
             "ipBasedAuthEnabled": true,

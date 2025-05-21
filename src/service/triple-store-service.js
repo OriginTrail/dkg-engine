@@ -324,6 +324,8 @@ class TripleStoreService {
         // This metadata is not validated
         const { remote, metadata } = KCs;
         const insert = {};
+        const createdMetadata = [];
+        const currentNamedGraphTriples = [];
         // remote { ual: { public: [triples], private: [triples] } }
         for (const ual of Object.keys(remote)) {
             const triples = remote[ual].public;
@@ -352,6 +354,16 @@ class TripleStoreService {
 
             for (const [index, kaUAL] of publicKnowledgeAssetsUALs.entries()) {
                 insert[`${kaUAL}/public`] = publicKnowledgeAssetsTriplesGrouped[index];
+                createdMetadata.push(`<${kaUAL}> <http://schema.org/states> "${kaUAL}:0" .`);
+                currentNamedGraphTriples.push(
+                    `<current:graph> <https://ontology.origintrail.io/dkg/1.0#hasNamedGraph> <${kaUAL}/public> .`,
+                );
+                createdMetadata.push(
+                    `<${ual}> <https://ontology.origintrail.io/dkg/1.0#hasKnowledgeAsset> <${kaUAL}> .`,
+                );
+                createdMetadata.push(
+                    `<${kaUAL}> <https://ontology.origintrail.io/dkg/1.0#hasNamedGraph> <${kaUAL}/public> .`,
+                );
             }
         }
 
@@ -360,6 +372,8 @@ class TripleStoreService {
             repository,
             insert,
             metadata,
+            createdMetadata,
+            currentNamedGraphTriples,
         );
     }
 
@@ -610,7 +624,6 @@ class TripleStoreService {
             await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphsOldInBatch(
                 this.repositoryImplementations[TRIPLE_STORE_REPOSITORY.DKG],
                 TRIPLE_STORE_REPOSITORY.DKG,
-                uals,
                 tokenIds,
                 contentType,
                 migrationFlag,

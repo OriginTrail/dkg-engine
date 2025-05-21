@@ -1,6 +1,7 @@
+import Sequelize from 'sequelize';
 import { NODE_ENVIRONMENTS } from '../../../../../constants/constants.js';
 
-class SyncMissedKcRepository {
+class BlockchainMissedKcRepository {
     constructor(models) {
         const nodeEnv = process.env.NODE_ENV;
         if (nodeEnv === NODE_ENVIRONMENTS.DEVELOPMENT || nodeEnv === NODE_ENVIRONMENTS.TEST) {
@@ -33,6 +34,78 @@ class SyncMissedKcRepository {
             ...options,
         });
     }
+
+    async getMissedKcForRetry(blockchain, contractAddress, limit, options) {
+        const blockchainName = blockchain.split(':')[0];
+        const model = this.models[blockchainName];
+
+        return model.findAll({
+            where: {
+                contract_address: contractAddress,
+                synced: false,
+                [Sequelize.Op.and]: [
+                    Sequelize.literal(`
+                        NOW() >= LEAST(
+                            DATE_ADD(updated_at, INTERVAL POW(2, retry_count) MINUTE),
+                            DATE_ADD(updated_at, INTERVAL 7 DAY)
+                        )
+                    `),
+                ],
+            },
+            limit,
+            ...options,
+        });
+    }
+
+    async incrementRetryCount(blockchain, records, options) {
+        const blockchainName = blockchain.split(':')[0];
+
+        const kcIds = [...new Set(records.map((r) => r.kcId))];
+        const contractAddresses = [...new Set(records.map((r) => r.contractAddress))];
+
+        const model = this.models[blockchainName];
+        const query = `
+            UPDATE ${blockchainName}_sync_missed_kc
+            SET retry_count = retry_count + 1
+            WHERE kc_id IN (:kcIds)
+            AND contract_address IN (:contractAddresses)
+        `;
+
+        return model.sequelize.query(query, {
+            replacements: {
+                kcIds,
+                contractAddresses,
+                blockchainId: blockchain,
+            },
+            type: model.sequelize.QueryTypes.UPDATE,
+            ...options,
+        });
+    }
+
+    async setSyncedToTrue(blockchain, records, options) {
+        const blockchainName = blockchain.split(':')[0];
+
+        const kcIds = [...new Set(records.map((r) => r.kcId))];
+        const contractAddresses = [...new Set(records.map((r) => r.contractAddress))];
+
+        const model = this.models[blockchainName];
+        const query = `
+            UPDATE ${blockchainName}_sync_missed_kc
+            SET synced = true
+            WHERE kc_id IN (:kcIds)
+            AND contract_address IN (:contractAddresses)
+        `;
+
+        return model.sequelize.query(query, {
+            replacements: {
+                kcIds,
+                contractAddresses,
+                blockchainId: blockchain,
+            },
+            type: model.sequelize.QueryTypes.UPDATE,
+            ...options,
+        });
+    }
 }
 
-export default SyncMissedKcRepository;
+export default BlockchainMissedKcRepository;

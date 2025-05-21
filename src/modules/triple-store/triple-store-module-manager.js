@@ -220,19 +220,13 @@ class TripleStoreModuleManager extends BaseModuleManager {
     async getKnowledgeCollectionNamedGraphsOldInBatch(
         implementationName,
         repository,
-        uals,
         tokenIds,
         visibility,
     ) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(
                 implementationName,
-            ).module.getKnowledgeCollectionNamedGraphsOldInBatch(
-                repository,
-                uals,
-                tokenIds,
-                visibility,
-            );
+            ).module.getKnowledgeCollectionNamedGraphsOldInBatch(repository, tokenIds, visibility);
         }
     }
 
@@ -390,12 +384,21 @@ class TripleStoreModuleManager extends BaseModuleManager {
         }
     }
 
-    async insertAssertionBatch(implementationName, repository, insertMap, metadata) {
+    async insertAssertionBatch(
+        implementationName,
+        repository,
+        insertMap,
+        metadata,
+        createdMetadata,
+        currentNamedGraphTriples,
+    ) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(implementationName).module.insertAssertionBatch(
                 repository,
                 insertMap,
                 metadata,
+                createdMetadata,
+                currentNamedGraphTriples,
             );
         }
     }

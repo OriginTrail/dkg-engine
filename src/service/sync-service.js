@@ -3,9 +3,11 @@ import {
     SYNC_INTERVAL,
     OPERATION_ID_STATUS,
     DKG_METADATA_PREDICATES,
+    SYNC_BATCH_SIZE,
 } from '../constants/constants.js';
 
 class SyncService {
+    // TODO: Send getter for Neuroweb fixed on last finalised block, there should be ethers flag
     constructor(ctx) {
         this.ctx = ctx;
         this.logger = ctx.logger;
@@ -17,6 +19,7 @@ class SyncService {
         this.commandExecutor = ctx.commandExecutor;
         this.operationIdService = ctx.operationIdService;
         this.operationIdService = ctx.operationIdService;
+        this.counter = 0;
     }
 
     async initialize() {
@@ -31,7 +34,9 @@ class SyncService {
 
                 // Check if operationalDB has all contract present in hub
                 const contracts =
-                    this.blockchainModuleManager.getAssetStorageContractsAddress(blockchainId);
+                    await this.blockchainModuleManager.getAssetStorageContractsAddress(
+                        blockchainId,
+                    );
                 const dbContracts = await this.repositoryModuleManager.getKCStorageContracts(
                     blockchainId,
                 );
@@ -80,6 +85,7 @@ class SyncService {
 
             try {
                 isRunning = true;
+                this.counter += 1;
                 this.logger.debug(`[DKG SYNC] Starting sync cycle for blockchain ${blockchainId}`);
 
                 // Proofing logic
@@ -100,6 +106,8 @@ class SyncService {
     }
 
     async runSync(blockchainId) {
+        // TODO: Add telemetry
+        // TODO: Add onchain registring how far you have synced DKG
         this.logger.debug(`[DKG SYNC] Running sync for blockchain ${blockchainId}`);
         const syncRecords = (
             await this.repositoryModuleManager.getSyncRecordForBlockchain(blockchainId)
@@ -135,156 +143,290 @@ class SyncService {
             }
         });
 
-        // Now find those that are missing construct uals:
-        const SYNC_BATCH_SIZE = 10; // Or inject this from config
-
         const contractPromises = Object.entries(latestKnowledgeCollectionIds).map(
             async ([contractAddress, syncObject]) => {
-                const uals = [];
-                const { latestSyncedKc } = syncObject;
-                const latestKnowledgeCollectionId =
-                    syncObject.latestKnowledgeCollectionId.toNumber();
-
-                // Calculate upper bound
-                const maxId = Math.min(
-                    latestKnowledgeCollectionId,
-                    latestSyncedKc + SYNC_BATCH_SIZE,
-                );
-
-                // Generate UALs from (latestSyncedKc + 1) to maxId
-                for (let id = latestSyncedKc + 1; id <= maxId; id += 1) {
-                    const ual = this.ualService.deriveUAL(blockchainId, contractAddress, id);
-                    uals.push(ual);
-                }
-
-                console.log(`Generated UALs for contract ${contractAddress}:`, uals);
-
-                if (uals.length === 0) {
-                    this.logger.info(`[DKG SYNC] No UALs to sync for blockchain ${blockchainId}`);
-                    return;
-                }
-
-                const batcGetOperationId = await this.operationIdService.generateOperationId(
-                    OPERATION_ID_STATUS.BATCH_GET.BATCH_GET_START,
-                );
-
-                this.commandExecutor.add({
-                    name: 'batchGetCommand',
-                    sequence: [],
-                    delay: 0,
-                    data: {
-                        operationId: batcGetOperationId,
-                        uals,
-                        blockchain: blockchainId,
-                        includeMetadata: true,
-                        contentType: 'all',
-                    },
-                    transactional: false,
-                });
-
-                const BATCH_GET_MAX_ATTEMPTS = 30;
-                let attempt = 0;
-                let batchGetResult;
-
-                // Poll for result
-                while (attempt < BATCH_GET_MAX_ATTEMPTS) {
-                    // eslint-disable-next-line no-await-in-loop
-                    await setTimeout(500);
-                    // eslint-disable-next-line no-await-in-loop
-                    batchGetResult = await this.operationIdService.getOperationIdRecord(
-                        batcGetOperationId,
-                    );
-                    attempt += 1;
-
-                    if (
-                        batchGetResult?.status === OPERATION_ID_STATUS.FAILED ||
-                        batchGetResult?.status === OPERATION_ID_STATUS.COMPLETED
-                    ) {
-                        break;
-                    }
-                }
-
-                if (batchGetResult?.status !== OPERATION_ID_STATUS.COMPLETED) {
-                    throw new Error(
-                        `[SYNC] Unable to Batch GET Knowledge Collection for blockchain: ${blockchainId}, GET result: ${JSON.stringify(
-                            batchGetResult,
-                        )}`,
-                    );
-                }
-
-                let insertFailed = false;
-                const data = await this.operationIdService.getCachedOperationIdData(
-                    batcGetOperationId,
-                );
-                console.log(JSON.stringify(data, null, 2));
-
-                if (Object.values(data.remote).length > 0) {
-                    // Update metadata timestamps
-                    const updatedMetadata = { ...data.metadata };
-                    Object.entries(updatedMetadata).forEach(([ual, triples]) => {
-                        updatedMetadata[ual] = triples.map((triple) => {
-                            if (triple.includes(DKG_METADATA_PREDICATES.PUBLISH_TIME)) {
-                                const splitTriple = triple.split(' ');
-                                return `${splitTriple[0]} ${
-                                    splitTriple[1]
-                                } "${new Date().toISOString()}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`;
-                            }
-                            return triple;
-                        });
-                    });
-                    data.metadata = updatedMetadata;
-
-                    try {
-                        await this.tripleStoreService.insertKnowledgeCollectionBatch('dkg', data);
-                    } catch (error) {
-                        this.logger.error(
-                            `[SYNC] Unable to insert Knowledge Collection for blockchain: ${blockchainId}`,
-                        );
-                        insertFailed = true;
-                    }
-                }
-
-                const missingUals = insertFailed
-                    ? uals.filter(
-                          (ual) =>
-                              !data.local.includes(ual) && !(data.remote[ual]?.public?.length > 0),
-                      )
-                    : uals.filter((ual) => !data.local.includes(ual));
-
-                const insertRecords = missingUals.map((ual) => {
-                    const { knowledgeCollectionId, contract } = this.ualService.resolveUAL(ual);
-                    return {
-                        kcId: knowledgeCollectionId,
-                        contractAddress: contract,
-                    };
-                });
-
-                const transaction = await this.repositoryModuleManager.transaction();
-                try {
-                    if (insertRecords.length > 0) {
-                        const error = 'KC not found on network';
-                        await this.repositoryModuleManager.insertMissedKc(
-                            blockchainId,
-                            insertRecords,
-                            error,
-                            { transaction },
-                        );
-                    }
-                    await this.repositoryModuleManager.updateLatestSyncedKc(
-                        blockchainId,
-                        contractAddress,
-                        latestSyncedKc + uals.length,
-                        { transaction },
-                    );
-                    await transaction.commit();
-                } catch (error) {
-                    await transaction.rollback();
-                    throw error;
-                }
+                // Run both sync tasks in parallel for this one contract
+                await Promise.all([
+                    this.syncNewKc(blockchainId, contractAddress, syncObject),
+                    this.syncMissedKc(blockchainId, contractAddress),
+                ]);
             },
         );
 
+        // Run all contracts in parallel
         await Promise.all(contractPromises);
+    }
+
+    async syncNewKc(blockchainId, contractAddress, syncObject) {
+        const uals = [];
+        const { latestSyncedKc } = syncObject;
+        const latestKnowledgeCollectionId = syncObject.latestKnowledgeCollectionId.toNumber();
+
+        // Calculate upper bound
+        const maxId = Math.min(latestKnowledgeCollectionId, latestSyncedKc + SYNC_BATCH_SIZE);
+
+        // Generate UALs from (latestSyncedKc + 1) to maxId
+        for (let id = latestSyncedKc + 1; id <= maxId; id += 1) {
+            const ual = this.ualService.deriveUAL(blockchainId, contractAddress, id);
+            uals.push(ual);
+        }
+
+        console.log(`Generated UALs for contract ${contractAddress}:`, uals);
+
+        if (uals.length === 0) {
+            this.logger.info(`[DKG SYNC] No UALs to sync for blockchain ${blockchainId}`);
+            return;
+        }
+
+        const { batchGetResult, batchGetOperationId } = await this.callBatchGet(uals, blockchainId);
+
+        if (batchGetResult?.status !== OPERATION_ID_STATUS.COMPLETED) {
+            throw new Error(
+                `[SYNC] Unable to Batch GET Knowledge Collection for blockchain: ${blockchainId}, GET result: ${JSON.stringify(
+                    batchGetResult,
+                )}`,
+            );
+        }
+
+        let insertFailed = false;
+        const data = await this.operationIdService.getCachedOperationIdData(batchGetOperationId);
+        console.log(JSON.stringify(data, null, 2));
+
+        if (Object.values(data.remote).length > 0) {
+            // Update metadata timestamps
+            const updatedMetadata = { ...data.metadata };
+            Object.entries(updatedMetadata).forEach(([ual, triples]) => {
+                updatedMetadata[ual] = triples.map((triple) => {
+                    if (triple.includes(DKG_METADATA_PREDICATES.PUBLISH_TIME)) {
+                        const splitTriple = triple.split(' ');
+                        return `${splitTriple[0]} ${
+                            splitTriple[1]
+                        } "${new Date().toISOString()}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`;
+                    }
+                    return triple;
+                });
+            });
+            data.metadata = updatedMetadata;
+
+            try {
+                await this.tripleStoreService.insertKnowledgeCollectionBatch('dkg', data);
+            } catch (error) {
+                this.logger.error(
+                    `[SYNC] Unable to insert Knowledge Collections for blockchain: ${blockchainId}, error: ${error.message}`,
+                );
+                insertFailed = true;
+            }
+        }
+
+        const missingUals = uals.filter((ual) => {
+            const isInLocal = data.local.includes(ual);
+            const hasPublic = data.remote[ual]?.public?.length > 0;
+
+            // Insert failed, so if it's not in local, it's a missing UAL
+            if (insertFailed) {
+                return !isInLocal;
+            }
+            // If it's not in local and has no public data, it's a missing UAL
+            return !isInLocal && !hasPublic;
+        });
+
+        const insertRecords = missingUals.map((ual) => {
+            const { knowledgeCollectionId, contract } = this.ualService.resolveUAL(ual);
+            return {
+                kcId: knowledgeCollectionId,
+                contractAddress: contract,
+            };
+        });
+
+        const transaction = await this.repositoryModuleManager.transaction();
+        try {
+            if (insertRecords.length > 0) {
+                const error = 'KC not found on network';
+                await this.repositoryModuleManager.insertMissedKc(
+                    blockchainId,
+                    insertRecords,
+                    error,
+                    { transaction },
+                );
+            }
+            await this.repositoryModuleManager.updateLatestSyncedKc(
+                blockchainId,
+                contractAddress,
+                latestSyncedKc + uals.length,
+                { transaction },
+            );
+            await transaction.commit();
+        } catch (error) {
+            await transaction.rollback();
+            throw error;
+        }
+    }
+
+    async syncMissedKc(blockchainId, contract) {
+        const missedKcForRetry = await this.repositoryModuleManager.getMissedKcForRetry(
+            blockchainId,
+            contract,
+            SYNC_BATCH_SIZE,
+        );
+        if (missedKcForRetry.length === 0) {
+            this.logger.info(`[SYNC] No missed KC for retry for blockchain ${blockchainId}`);
+            return;
+        }
+        // Contracut uals from object
+        const missedUals = missedKcForRetry.map((missedKc) => {
+            const missedKcJson = missedKc.toJSON();
+            return this.ualService.deriveUAL(
+                blockchainId,
+                missedKcJson.contractAddress,
+                missedKcJson.kcId,
+            );
+        });
+        // Call batch get
+        const { batchGetResult, batchGetOperationId } = await this.callBatchGet(
+            missedUals,
+            blockchainId,
+        );
+
+        if (batchGetResult?.status !== OPERATION_ID_STATUS.COMPLETED) {
+            throw new Error(
+                `[SYNC] Unable to Batch GET Knowledge Collection for blockchain: ${blockchainId}, GET result: ${JSON.stringify(
+                    batchGetResult,
+                )}`,
+            );
+        }
+
+        // Insert
+        let insertFailed = false;
+        const data = await this.operationIdService.getCachedOperationIdData(batchGetOperationId);
+        if (Object.values(data.remote).length > 0) {
+            // Update metadata timestamps
+            const updatedMetadata = { ...data.metadata };
+            Object.entries(updatedMetadata).forEach(([ual, triples]) => {
+                updatedMetadata[ual] = triples.map((triple) => {
+                    if (triple.includes(DKG_METADATA_PREDICATES.PUBLISH_TIME)) {
+                        const splitTriple = triple.split(' ');
+                        return `${splitTriple[0]} ${
+                            splitTriple[1]
+                        } "${new Date().toISOString()}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`;
+                    }
+                    return triple;
+                });
+            });
+            data.metadata = updatedMetadata;
+
+            try {
+                await this.tripleStoreService.insertKnowledgeCollectionBatch('dkg', data);
+            } catch (error) {
+                this.logger.error(
+                    `[SYNC] Unable to insert Knowledge Collection for blockchain: ${blockchainId}`,
+                );
+                insertFailed = true;
+            }
+        }
+
+        const missingUals = [];
+        const syncedUals = [];
+
+        missedUals.forEach((ual) => {
+            const isLocal = data.local.includes(ual);
+            const hasRemoteData = data.remote[ual]?.public?.length > 0;
+            // If insert failed, and KC not locally present, add it to missed UALs
+            if (insertFailed) {
+                if (!isLocal) {
+                    missingUals.push(ual);
+                }
+                syncedUals.push(ual);
+            }
+            // If insert was successful, and KC is locally present or fetched from remote node, add it to synced UALs
+            else if (isLocal || hasRemoteData) {
+                syncedUals.push(ual);
+            } else {
+                missingUals.push(ual);
+            }
+        });
+
+        const recordsToUpdateForRetry = missingUals.map((ual) => {
+            const { knowledgeCollectionId, contract: ualContract } =
+                this.ualService.resolveUAL(ual);
+            return {
+                kcId: knowledgeCollectionId,
+                contractAddress: ualContract,
+            };
+        });
+
+        const recordsToUpdateForSuccess = syncedUals.map((ual) => {
+            const { knowledgeCollectionId, contract: ualContract } =
+                this.ualService.resolveUAL(ual);
+            return {
+                kcId: knowledgeCollectionId,
+                contractAddress: ualContract,
+            };
+        });
+
+        const transaction = await this.repositoryModuleManager.transaction();
+        try {
+            if (recordsToUpdateForRetry.length > 0) {
+                await this.repositoryModuleManager.incrementRetryCount(
+                    blockchainId,
+                    recordsToUpdateForRetry,
+                    { transaction },
+                );
+            }
+            if (recordsToUpdateForSuccess.length > 0) {
+                await this.repositoryModuleManager.setSyncedToTrue(
+                    blockchainId,
+                    recordsToUpdateForSuccess,
+                    { transaction },
+                );
+            }
+            await transaction.commit();
+        } catch (error) {
+            await transaction.rollback();
+            throw error;
+        }
+    }
+
+    async callBatchGet(uals, blockchainId) {
+        const batchGetOperationId = await this.operationIdService.generateOperationId(
+            OPERATION_ID_STATUS.BATCH_GET.BATCH_GET_START,
+        );
+
+        await this.commandExecutor.add({
+            name: 'batchGetCommand',
+            sequence: [],
+            delay: 0,
+            data: {
+                operationId: batchGetOperationId,
+                uals,
+                blockchain: blockchainId,
+                includeMetadata: true,
+                contentType: 'all',
+            },
+            transactional: false,
+        });
+
+        const BATCH_GET_MAX_ATTEMPTS = 30;
+        let attempt = 0;
+        let batchGetResult;
+
+        // Poll for result
+        while (attempt < BATCH_GET_MAX_ATTEMPTS) {
+            // eslint-disable-next-line no-await-in-loop
+            await setTimeout(500);
+            // eslint-disable-next-line no-await-in-loop
+            batchGetResult = await this.operationIdService.getOperationIdRecord(
+                batchGetOperationId,
+            );
+            attempt += 1;
+
+            if (
+                batchGetResult?.status === OPERATION_ID_STATUS.FAILED ||
+                batchGetResult?.status === OPERATION_ID_STATUS.COMPLETED
+            ) {
+                break;
+            }
+        }
+        return { batchGetResult, batchGetOperationId };
     }
 
     // Add cleanup method to stop intervals

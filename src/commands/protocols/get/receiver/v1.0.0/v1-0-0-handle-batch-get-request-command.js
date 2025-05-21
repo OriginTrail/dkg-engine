@@ -6,6 +6,7 @@ import {
     NETWORK_MESSAGE_TYPES,
     OPERATION_ID_STATUS,
     MIGRATION_FLAG_PATH,
+    TRIPLES_VISIBILITY,
 } from '../../../../../constants/constants.js';
 
 class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
@@ -164,7 +165,7 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
             uals,
             tokenIds,
             migrationFlag,
-            'public',
+            TRIPLES_VISIBILITY.PUBLIC,
         );
 
         promises.push(assertionPromise);

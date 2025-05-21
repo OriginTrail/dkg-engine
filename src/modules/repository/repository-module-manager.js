@@ -560,11 +560,36 @@ class RepositoryModuleManager extends BaseModuleManager {
         );
     }
 
+    async getMissedKcForRetry(blockchain, contractAddress, limit, options) {
+        return this.getRepository('blockchain_missed_kc').getMissedKcForRetry(
+            blockchain,
+            contractAddress,
+            limit,
+            options,
+        );
+    }
+
     async updateLatestSyncedKc(blockchainId, contractAddress, latestSyncedKc, options = {}) {
         return this.getRepository('latest_synced_kc').updateLatestSyncedKc(
             blockchainId,
             contractAddress,
             latestSyncedKc,
+            options,
+        );
+    }
+
+    async incrementRetryCount(blockchain, records, options) {
+        return this.getRepository('blockchain_missed_kc').incrementRetryCount(
+            blockchain,
+            records,
+            options,
+        );
+    }
+
+    async updateSyncedKc(blockchain, records, options) {
+        return this.getRepository('blockchain_missed_kc').setSyncedToTrue(
+            blockchain,
+            records,
             options,
         );
     }

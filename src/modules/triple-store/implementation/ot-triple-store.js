@@ -126,7 +126,13 @@ class OtTripleStore {
         await this.queryVoid(repository, query);
     }
 
-    async insertAssertionBatch(repository, insertMap, metadata) {
+    async insertAssertionBatch(
+        repository,
+        insertMap,
+        metadata,
+        createdMetadata,
+        currentNamedGraphTriples,
+    ) {
         const graphsForDataInsert = [];
         for (const [ual, triples] of Object.entries(insertMap)) {
             const graph = `
@@ -142,13 +148,22 @@ class OtTripleStore {
                 ${Object.values(metadata)
                     .map((triples) => triples.join('\n'))
                     .join('\n')}
+                ${createdMetadata.join('\n')}
             }
         `;
+
+        const currentNamedGraphInsert = `
+            GRAPH <${BASE_NAMED_GRAPHS.CURRENT}> {
+                ${currentNamedGraphTriples.join('\n')}
+            }
+        `;
+
         const query = `
             PREFIX schema: <${SCHEMA_CONTEXT}>
             INSERT DATA {
                 ${graphsForDataInsert.join('\n')}
                 ${metadataGraphForInsert}
+                ${currentNamedGraphInsert}
             }
         `;
 
@@ -487,8 +502,7 @@ class OtTripleStore {
     }
 
     // TODO: Clean up unused arguments of this method
-    async getKnowledgeCollectionNamedGraphsOldInBatch(repository, uals, ualTokenIds, visibility) {
-        // TODO: Validate this query
+    async getKnowledgeCollectionNamedGraphsOldInBatch(repository, ualTokenIds, visibility) {
         const kaUALs = Array.from(Object.entries(ualTokenIds)).flatMap(([ual, tokenIds]) => {
             const arr = Array.from(
                 { length: tokenIds.endTokenId - tokenIds.startTokenId + 1 },
