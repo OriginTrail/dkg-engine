@@ -443,7 +443,7 @@ class SyncService {
 
     async callBatchGet(uals, blockchainId) {
         const batchGetOperationId = await this.operationIdService.generateOperationId(
-            OPERATION_ID_STATUS.BATCH_GET.BATCH_GET_START,
+            OPERATION_ID_STATUS.BATCH_GET.BATCH_GET_INIT,
         );
 
         await this.commandExecutor.add({

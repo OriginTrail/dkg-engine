@@ -61,6 +61,12 @@ class BatchGetCommand extends Command {
             paranetNodesAccessPolicy,
         } = command.data;
 
+        await this.operationIdService.updateOperationIdStatus(
+            operationId,
+            blockchain,
+            OPERATION_ID_STATUS.BATCH_GET.BATCH_GET_START,
+        );
+
         await this.repositoryModuleManager.createOperationRecord(
             this.operationService.getOperationName(),
             operationId,
