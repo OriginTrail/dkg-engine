@@ -61,7 +61,8 @@ class OTNode {
         await this.initializeRouters();
         await this.startNetworkModule();
         this.resumeCommandExecutor();
-        await this.initializeProofing();
+        // await this.initializeProofing();
+        await this.initializeSyncService();
         this.logger.info('Node is up and running!');
     }
 
@@ -262,6 +263,7 @@ class OTNode {
             this.logger.error(
                 `Unable to resume command executor queue. Error message: ${e.message}`,
             );
+
             this.stop(1);
         }
     }
@@ -402,6 +404,11 @@ class OTNode {
     async initializeProofing() {
         const proofingService = this.container.resolve('proofingService');
         await proofingService.initialize();
+    }
+
+    async initializeSyncService() {
+        const syncService = this.container.resolve('syncService');
+        await syncService.initialize();
     }
 
     stop(code = 0) {
