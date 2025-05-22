@@ -91,7 +91,6 @@ class SyncService {
 
             try {
                 isRunning = true;
-                this.counter += 1;
                 this.logger.debug(`[DKG SYNC] Starting sync cycle for blockchain ${blockchainId}`);
 
                 // Proofing logic

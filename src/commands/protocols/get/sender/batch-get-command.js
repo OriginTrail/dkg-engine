@@ -239,7 +239,7 @@ class BatchGetCommand extends Command {
         await this.operationIdService.updateOperationIdStatus(
             operationId,
             blockchain,
-            OPERATION_ID_STATUS.GET.GET_SHARD_START,
+            OPERATION_ID_STATUS.BATCH_GET.BATCH_GET_FIND_SHARD_START,
         );
 
         let nodesInfo = [];
@@ -273,7 +273,7 @@ class BatchGetCommand extends Command {
                 operationId,
                 blockchain,
                 `Unable to find enough nodes for operationId: ${operationId}. Minimum number of nodes required: 1`,
-                ERROR_TYPE.FIND_SHARD.GET_FIND_SHARD_ERROR,
+                ERROR_TYPE.FIND_SHARD.BATCH_GET_FIND_SHARD_ERROR,
                 true,
             );
             return Command.empty();
@@ -282,7 +282,7 @@ class BatchGetCommand extends Command {
         await this.operationIdService.updateOperationIdStatus(
             operationId,
             blockchain,
-            OPERATION_ID_STATUS.GET.GET_SHARD_END,
+            OPERATION_ID_STATUS.BATCH_GET.BATCH_GET_FIND_SHARD_END,
         );
 
         let index = 0;
