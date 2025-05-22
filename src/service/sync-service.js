@@ -93,7 +93,6 @@ class SyncService {
                 isRunning = true;
                 this.logger.debug(`[DKG SYNC] Starting sync cycle for blockchain ${blockchainId}`);
 
-                // Proofing logic
                 await this.runSync(blockchainId);
                 this.logger.debug(`[DKG SYNC] Completed sync cycle for blockchain ${blockchainId}`);
             } catch (error) {
