@@ -12,7 +12,7 @@ class EpochRewardsClaimedRepository {
         return this.model.update(epochRewardsClaimed, options);
     }
 
-    async getNonClaimedClaimRewardsServiceRecordsForBlockchainId(blockchainId) {
+    async getNonClaimedEpochClaimedRewardsRecordsForBlockchainId(blockchainId) {
         return this.model.findAll({
             where: {
                 blockchainId,
@@ -22,7 +22,7 @@ class EpochRewardsClaimedRepository {
         });
     }
 
-    async getLatestClaimedClaimRewardsServiceRecordForBlockchainId(blockchainId) {
+    async getLatestEpochClaimedRewardsRecordForBlockchainId(blockchainId) {
         return this.model.max('epoch', {
             where: {
                 blockchainId,
