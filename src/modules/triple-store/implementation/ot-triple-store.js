@@ -499,7 +499,6 @@ class OtTripleStore {
         return assertion;
     }
 
-    // TODO: Clean up unused arguments of this method
     async getKnowledgeCollectionNamedGraphsOldInBatch(repository, ualTokenIds, visibility) {
         const kaUALs = Array.from(Object.entries(ualTokenIds)).flatMap(([ual, tokenIds]) => {
             const arr = Array.from(
