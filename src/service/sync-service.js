@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { setTimeout } from 'timers/promises';
 import {
     SYNC_INTERVAL,
@@ -156,6 +157,14 @@ class SyncService {
             const totalMissedKc = Object.values(this.syncStatus[blockchainId]).reduce(
                 (acc, curr) => acc + curr.missedKc,
                 0,
+            );
+            this.operationIdService.emitChangeEvent(
+                'SYNC_PROGRESS_STATUS',
+                uuidv4(),
+                blockchainId,
+                totalLatestSyncedKc,
+                totalMissedKc,
+                totallatestKnowledgeCollectionId,
             );
 
             const totalMissedKcChecked =
