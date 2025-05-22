@@ -3,6 +3,7 @@ import {
     SYNC_INTERVAL,
     OPERATION_ID_STATUS,
     DKG_METADATA_PREDICATES,
+    TRIPLE_STORE_REPOSITORY,
 } from '../constants/constants.js';
 
 class SyncService {
@@ -18,8 +19,6 @@ class SyncService {
         this.validationService = ctx.validationService;
         this.commandExecutor = ctx.commandExecutor;
         this.operationIdService = ctx.operationIdService;
-        this.operationIdService = ctx.operationIdService;
-        this.counter = 0;
     }
 
     async initialize() {
@@ -173,8 +172,6 @@ class SyncService {
             uals.push(ual);
         }
 
-        console.log(`Generated UALs for contract ${contractAddress}:`, uals);
-
         if (uals.length === 0) {
             this.logger.info(`[DKG SYNC] No UALs to sync for blockchain ${blockchainId}`);
             return;
@@ -192,7 +189,6 @@ class SyncService {
 
         let insertFailed = false;
         const data = await this.operationIdService.getCachedOperationIdData(batchGetOperationId);
-        console.log(JSON.stringify(data, null, 2));
 
         if (Object.values(data.remote).length > 0) {
             // Update metadata timestamps
@@ -211,7 +207,10 @@ class SyncService {
             data.metadata = updatedMetadata;
 
             try {
-                await this.tripleStoreService.insertKnowledgeCollectionBatch('dkg', data);
+                await this.tripleStoreService.insertKnowledgeCollectionBatch(
+                    TRIPLE_STORE_REPOSITORY.DKG,
+                    data,
+                );
             } catch (error) {
                 this.logger.error(
                     `[SYNC] Unable to insert Knowledge Collections for blockchain: ${blockchainId}, error: ${error.message}`,
