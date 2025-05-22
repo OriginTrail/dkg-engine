@@ -44,6 +44,21 @@ export const up = async ({ context: { queryInterface, Sequelize } }) => {
             name: 'idx_epoch_rewards_claimed',
         });
     }
+
+    const [[{ indexExists: epochRewardsClaimedIdxEpochExists }]] = await queryInterface.sequelize
+        .query(`
+          SELECT COUNT(*) AS indexExists
+          FROM information_schema.statistics
+          WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'epoch_rewards_claimed'
+          AND INDEX_NAME = 'idx_epoch';
+    `);
+
+    if (!epochRewardsClaimedIdxEpochExists) {
+        await queryInterface.addIndex('epoch_rewards_claimed', ['blockchain_id', 'epoch'], {
+            name: 'idx_epoch',
+        });
+    }
 };
 
 export const down = async ({ context: { queryInterface } }) => {
@@ -57,6 +72,19 @@ export const down = async ({ context: { queryInterface } }) => {
     `);
     if (epochRewardsClaimedIdxEpochRewardsClaimedExists) {
         await queryInterface.removeIndex('epoch_rewards_claimed', 'idx_epoch_rewards_claimed');
+    }
+    await queryInterface.dropTable('epoch_rewards_claimed');
+
+    const [[{ indexExists: epochRewardsClaimedIdxEpochExists }]] = await queryInterface.sequelize
+        .query(`
+          SELECT COUNT(*) AS indexExists
+          FROM information_schema.statistics
+          WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'epoch_rewards_claimed'
+          AND INDEX_NAME = 'idx_epoch';
+    `);
+    if (epochRewardsClaimedIdxEpochExists) {
+        await queryInterface.removeIndex('epoch_rewards_claimed', 'idx_epoch');
     }
     await queryInterface.dropTable('epoch_rewards_claimed');
 };

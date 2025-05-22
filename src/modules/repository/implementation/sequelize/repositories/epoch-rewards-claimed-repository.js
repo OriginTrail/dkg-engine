@@ -22,6 +22,14 @@ class EpochRewardsClaimedRepository {
         });
     }
 
+    async getLatestClaimedClaimRewardsServiceRecordForBlockchainId(blockchainId) {
+        return this.model.max('epoch', {
+            where: {
+                blockchainId,
+            },
+        });
+    }
+
     async deleteEpochRewardsClaimedRepositoryRecord(id, options = {}) {
         return this.model.destroy({
             where: { id },
