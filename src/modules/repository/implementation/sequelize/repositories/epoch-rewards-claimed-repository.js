@@ -12,6 +12,16 @@ class EpochRewardsClaimedRepository {
         return this.model.update(epochRewardsClaimed, options);
     }
 
+    async getNonClaimedClaimRewardsServiceRecordsForBlockchainId(blockchainId) {
+        return this.model.findOne({
+            where: {
+                blockchainId,
+                claimed: false,
+            },
+            order: [['createdAt', 'DESC']],
+        });
+    }
+
     async deleteEpochRewardsClaimedRepositoryRecord(id, options = {}) {
         return this.model.destroy({
             where: { id },
