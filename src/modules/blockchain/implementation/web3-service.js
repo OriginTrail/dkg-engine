@@ -1217,6 +1217,10 @@ class Web3Service {
         return block.timestamp;
     }
 
+    getAssetStorageContractsAddress() {
+        return Object.keys(this.assetStorageContracts);
+    }
+
     // SUPPORT FOR OLD CONTRACTS
     async getLatestAssertionId(assetContractAddress, tokenId) {
         const assetStorageContractInstance =

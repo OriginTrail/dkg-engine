@@ -446,7 +446,7 @@ class GetCommand extends Command {
             [contract, knowledgeCollectionId],
         );
         const paranetContainsKnowledgeCollection =
-            this.blockchainModuleManager.isKnowledgeCollectionRegistered(
+            await this.blockchainModuleManager.isKnowledgeCollectionRegistered(
                 blockchain,
                 paranetId,
                 knowledgeCollectionOnchainId,

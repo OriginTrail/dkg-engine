@@ -193,6 +193,10 @@
         "appDataPath": "data",
         "logLevel": "info",
         "assetSync": {
+            "syncDKG": {
+                "enabled": true,
+                "syncBatchSize": 5
+            },
             "syncParanets": []
         },
         "auth": {
@@ -387,6 +391,10 @@
         "appDataPath": "data",
         "logLevel": "trace",
         "assetSync": {
+            "syncDKG": {
+                "enabled": false,
+                "syncBatchSize": 20
+            },
             "syncParanets": []
         },
         "auth": {
@@ -609,6 +617,10 @@
         "appDataPath": "data",
         "logLevel": "trace",
         "assetSync": {
+            "syncDKG": {
+                "enabled": false,
+                "syncBatchSize": 20
+            },
             "syncParanets": []
         },
         "auth": {
@@ -800,6 +812,10 @@
         "appDataPath": "data",
         "logLevel": "trace",
         "assetSync": {
+            "syncDKG": {
+                "enabled": false,
+                "syncBatchSize": 20
+            },
             "syncParanets": []
         },
         "auth": {
@@ -1020,6 +1036,10 @@
         "appDataPath": "data",
         "logLevel": "trace",
         "assetSync": {
+            "syncDKG": {
+                "enabled": false,
+                "syncBatchSize": 20
+            },
             "syncParanets": []
         },
         "auth": {
