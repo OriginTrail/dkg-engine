@@ -1,8 +1,4 @@
-import {
-    DEFAULT_GET_STATE,
-    NETWORK_MESSAGE_TYPES,
-    TRIPLE_STORE_REPOSITORY,
-} from '../../constants/constants.js';
+import { NETWORK_MESSAGE_TYPES } from '../../constants/constants.js';
 import BaseController from './base-rpc-controller.js';
 
 class BatchGetRpcController extends BaseController {
@@ -35,10 +31,6 @@ class BatchGetRpcController extends BaseController {
                 uals: message.data.uals,
                 blockchain: message.data.blockchain,
                 tokenIds: message.data.tokenIds,
-                state: message.data.state ?? DEFAULT_GET_STATE,
-                paranetUAL: message.data.paranetUAL,
-                paranetId: message.data.paranetId,
-                repository: message.data.repository ?? TRIPLE_STORE_REPOSITORY.DKG,
                 includeMetadata: message.data.includeMetadata,
             },
             transactional: false,

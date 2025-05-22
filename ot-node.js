@@ -259,26 +259,6 @@ class OTNode {
         try {
             const commandExecutor = this.container.resolve('commandExecutor');
             commandExecutor.resumeQueue();
-            // commandExecutor.add({
-            //     name: 'batchGetCommand',
-            //     sequence: [],
-            //     delay: 0,
-            //     data: {
-            //         operationId: '123',
-            //         uals: [
-            //             'did:dkg:hardhat1:31337/0xd5724171c2b7f0aa717a324626050bd05767e2c6/1',
-            //             'did:dkg:hardhat1:31337/0xd5724171c2b7f0aa717a324626050bd05767e2c6/2',
-            //             'did:dkg:hardhat1:31337/0xd5724171c2b7f0aa717a324626050bd05767e2c6/3',
-            //             'did:dkg:hardhat1:31337/0xd5724171c2b7f0aa717a324626050bd05767e2c6/4',
-            //             'did:dkg:hardhat1:31337/0xd5724171c2b7f0aa717a324626050bd05767e2c6/5',
-            //             'did:dkg:hardhat1:31337/0xd5724171c2b7f0aa717a324626050bd05767e2c6/6',
-            //         ],
-            //         blockchain: 'hardhat1:31337',
-            //         includeMetadata: true,
-            //         contentType: 'all',
-            //     },
-            //     transactional: false,
-            // });
         } catch (e) {
             this.logger.error(
                 `Unable to resume command executor queue. Error message: ${e.message}`,

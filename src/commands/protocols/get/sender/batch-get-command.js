@@ -194,7 +194,6 @@ class BatchGetCommand extends Command {
 
         const finalResult = { local: [], remote: {}, metadata: {} };
 
-        // Whant happens when KC not in TS???
         const localGetResultValid = await this.validateBatchResponse(
             batchAssertions,
             blockchain,
@@ -204,7 +203,6 @@ class BatchGetCommand extends Command {
         );
 
         // Filter what we have locally and add those ual to finalResult local
-
         const ualPresentLocally = Object.keys(localGetResultValid).filter(
             (ual) => localGetResultValid[ual],
         );
@@ -231,7 +229,6 @@ class BatchGetCommand extends Command {
 
             return Command.empty();
         }
-        // this.logger.debug(`Could not find asset with UAL: ${ual} locally`);
 
         await this.operationIdService.updateOperationIdStatus(
             operationId,
@@ -355,13 +352,6 @@ class BatchGetCommand extends Command {
             }
             // Otherwise, continue with the next batch
             index += BATCH_SIZE;
-
-            // await this.handleError(
-            //     operationId,
-            //     blockchain,
-            //     `No node responded successfully for GET for ${ual}. Minimum required responses: ${this.minAckResponses}. Operation id: ${operationId}`,
-            //     ERROR_TYPE.FIND_SHARD.GET_ERROR,
-            // );
         }
         await this.operationService.markOperationAsCompleted(operationId, blockchain, finalResult, [
             OPERATION_ID_STATUS.GET.GET_LOCAL_END,

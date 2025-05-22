@@ -236,7 +236,7 @@ export const PERMANENT_COMMANDS = [
     'otnodeUpdateCommand',
     'sendTelemetryCommand',
     'startParanetSyncCommands',
-    // 'dialPeersCommand',
+    'dialPeersCommand',
     'shardingTableCheckCommand',
     'commandsCleanerCommand',
     'operationIdCleanerCommand',
@@ -1071,4 +1071,3 @@ export const CHUNK_SIZE = 32;
 export const BATCH_GET_BATCH_SIZE = 5;
 
 export const SYNC_INTERVAL = 12 * 1000;
-export const SYNC_BATCH_SIZE = 2;
