@@ -13,7 +13,7 @@ class EpochRewardsClaimedRepository {
     }
 
     async getNonClaimedClaimRewardsServiceRecordsForBlockchainId(blockchainId) {
-        return this.model.findOne({
+        return this.model.findAll({
             where: {
                 blockchainId,
                 claimed: false,
