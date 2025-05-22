@@ -190,32 +190,7 @@ class BatchGetCommand extends Command {
         );
         promises.push(assertionPromise);
 
-        if (includeMetadata) {
-            const metadataPromise = this.tripleStoreService.getAssertionMetadataBatch(uals);
-            promises.push(metadataPromise);
-        }
-
-        const [batchAssertions, metadata] = await Promise.all(promises);
-
-        console.log(batchAssertions, metadata);
-
-        // const responseData = {
-        //     batchAssertion,
-        //     // ...(includeMetadata && metadata && { metadata }),
-        // };
-        // let localGetPassed = true;
-        // if (paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED) {
-        //     if (Array.isArray(assertion?.public)) {
-        //         const assertionShouldHavePrivateTriples = assertion?.public?.some((triple) =>
-        //             triple.includes(`${PRIVATE_ASSERTION_PREDICATE}`),
-        //         );
-        //         if (assertionShouldHavePrivateTriples) {
-        //             localGetPassed = assertion?.private?.length > 0;
-        //         }
-        //     } else {
-        //         localGetPassed = false;
-        //     }
-        // }
+        const [batchAssertions] = await Promise.all(promises);
 
         const finalResult = { local: [], remote: {}, metadata: {} };
 
@@ -227,8 +202,6 @@ class BatchGetCommand extends Command {
             contentType,
             finalResult,
         );
-
-        console.log(localGetResultValid);
 
         // Filter what we have locally and add those ual to finalResult local
 
@@ -629,8 +602,6 @@ class BatchGetCommand extends Command {
                         contract,
                         knowledgeCollectionId,
                     );
-                    console.log(ual);
-                    console.log(assertion.private);
 
                     // If not permissioned and there are private triples, validate
                     if (assertion?.private?.length) {
