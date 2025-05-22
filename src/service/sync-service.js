@@ -19,6 +19,7 @@ class SyncService {
         this.validationService = ctx.validationService;
         this.commandExecutor = ctx.commandExecutor;
         this.operationIdService = ctx.operationIdService;
+        this.syncStatus = {};
     }
 
     async initialize() {
@@ -144,6 +145,30 @@ class SyncService {
             }
         });
 
+        if (this.syncStatus && this.syncStatus[blockchainId]) {
+            const totallatestKnowledgeCollectionId = Object.values(
+                this.syncStatus[blockchainId],
+            ).reduce((acc, curr) => acc + curr.latestKnowledgeCollectionId, 0);
+            const totalLatestSyncedKc = Object.values(this.syncStatus[blockchainId]).reduce(
+                (acc, curr) => acc + curr.latestSyncedKc,
+                0,
+            );
+            const totalMissedKc = Object.values(this.syncStatus[blockchainId]).reduce(
+                (acc, curr) => acc + curr.missedKc,
+                0,
+            );
+
+            const totalMissedKcChecked =
+                !Number.isFinite(totalMissedKc) || Number.isNaN(totalMissedKc) ? 0 : totalMissedKc;
+            const syncPrecentage =
+                (100 * (totalLatestSyncedKc - totalMissedKcChecked)) /
+                totallatestKnowledgeCollectionId;
+
+            this.logger.info(
+                `[DKG SYNC] DKG Sync for blockchain ${blockchainId} Status: ${syncPrecentage}%`,
+            );
+        }
+
         const contractPromises = Object.entries(latestKnowledgeCollectionIds).map(
             async ([contractAddress, syncObject]) => {
                 // Run both sync tasks in parallel for this one contract
@@ -162,6 +187,15 @@ class SyncService {
         const uals = [];
         const { latestSyncedKc } = syncObject;
         const latestKnowledgeCollectionId = syncObject.latestKnowledgeCollectionId.toNumber();
+        if (!this.syncStatus[blockchainId]) {
+            this.syncStatus[blockchainId] = {};
+        }
+        if (!this.syncStatus[blockchainId][contractAddress]) {
+            this.syncStatus[blockchainId][contractAddress] = {};
+        }
+        this.syncStatus[blockchainId][contractAddress].latestSyncedKc = latestSyncedKc;
+        this.syncStatus[blockchainId][contractAddress].latestKnowledgeCollectionId =
+            latestKnowledgeCollectionId;
 
         // Calculate upper bound
         const maxId = Math.min(latestKnowledgeCollectionId, latestSyncedKc + this.syncBatchSize);
@@ -269,6 +303,18 @@ class SyncService {
             contract,
             this.syncBatchSize,
         );
+        const missedKcForRetryCount = await this.repositoryModuleManager.getMissedKcForRetryCount(
+            blockchainId,
+            contract,
+        );
+        if (!this.syncStatus[blockchainId]) {
+            this.syncStatus[blockchainId] = {};
+        }
+        if (!this.syncStatus[blockchainId][contract]) {
+            this.syncStatus[blockchainId][contract] = {};
+        }
+        this.syncStatus[blockchainId][contract].missedKc = missedKcForRetryCount;
+
         if (missedKcForRetry.length === 0) {
             this.logger.info(`[SYNC] No missed KC for retry for blockchain ${blockchainId}`);
             return;

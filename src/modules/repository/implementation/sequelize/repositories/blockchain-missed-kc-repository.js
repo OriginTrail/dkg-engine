@@ -106,6 +106,16 @@ class BlockchainMissedKcRepository {
             ...options,
         });
     }
+
+    async getMissedKcForRetryCount(blockchain, contractAddress, options) {
+        const blockchainName = blockchain.split(':')[0];
+        const model = this.models[blockchainName];
+
+        return model.count({
+            where: { contract_address: contractAddress, synced: false },
+            ...options,
+        });
+    }
 }
 
 export default BlockchainMissedKcRepository;

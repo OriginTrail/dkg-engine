@@ -593,6 +593,14 @@ class RepositoryModuleManager extends BaseModuleManager {
             options,
         );
     }
+
+    async getMissedKcForRetryCount(blockchain, contractAddress, options) {
+        return this.getRepository('blockchain_missed_kc').getMissedKcForRetryCount(
+            blockchain,
+            contractAddress,
+            options,
+        );
+    }
 }
 
 export default RepositoryModuleManager;
