@@ -459,19 +459,16 @@ class SyncService {
             transactional: false,
         });
 
-        const BATCH_GET_MAX_ATTEMPTS = 30;
-        let attempt = 0;
         let batchGetResult;
 
         // Poll for result
-        while (attempt < BATCH_GET_MAX_ATTEMPTS) {
+        while (true) {
             // eslint-disable-next-line no-await-in-loop
-            await setTimeout(500);
+            await setTimeout(1000);
             // eslint-disable-next-line no-await-in-loop
             batchGetResult = await this.operationIdService.getOperationIdRecord(
                 batchGetOperationId,
             );
-            attempt += 1;
 
             if (
                 batchGetResult?.status === OPERATION_ID_STATUS.FAILED ||
