@@ -399,10 +399,10 @@ class OTNode {
         tripleStoreService.initializeRepositories();
     }
 
-    async initializeProofing() {
-        const proofingService = this.container.resolve('proofingService');
-        await proofingService.initialize();
-    }
+    // async initializeProofing() {
+    //     const proofingService = this.container.resolve('proofingService');
+    //     await proofingService.initialize();
+    // }
 
     stop(code = 0) {
         this.logger.info('Stopping node...');
