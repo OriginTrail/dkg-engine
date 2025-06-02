@@ -6,6 +6,7 @@ import {
     NETWORK_MESSAGE_TYPES,
     OPERATION_ID_STATUS,
     MIGRATION_FLAG_PATH,
+    TRIPLE_STORE_REPOSITORY,
     TRIPLES_VISIBILITY,
 } from '../../../../../constants/constants.js';
 
@@ -161,9 +162,9 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
         }
 
         const assertionPromise = this.tripleStoreService.getAssertionsInBatch(
+            TRIPLE_STORE_REPOSITORY.DKG,
             uals,
             tokenIds,
-            migrationFlag,
             TRIPLES_VISIBILITY.PUBLIC,
         );
 

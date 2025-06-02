@@ -222,7 +222,7 @@ class SyncService {
 
         if (batchGetResult?.status !== OPERATION_ID_STATUS.COMPLETED) {
             throw new Error(
-                `[SYNC] Unable to Batch GET Knowledge Collection for blockchain: ${blockchainId}, GET result: ${JSON.stringify(
+                `[DKG SYNC] Unable to Batch GET Knowledge Collection for blockchain: ${blockchainId}, GET result: ${JSON.stringify(
                     batchGetResult,
                 )}`,
             );
@@ -372,7 +372,7 @@ class SyncService {
                 await this.tripleStoreService.insertKnowledgeCollectionBatch('dkg', data);
             } catch (error) {
                 this.logger.error(
-                    `[SYNC] Unable to insert Knowledge Collection for blockchain: ${blockchainId}`,
+                    `[DKG SYNC] Unable to insert Knowledge Collection for blockchain: ${blockchainId}`,
                 );
                 insertFailed = true;
             }
