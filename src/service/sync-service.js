@@ -120,6 +120,11 @@ class SyncService {
         // TODO: Add telemetry
         // TODO: Add onchain registring how far you have synced DKG
         this.logger.debug(`[DKG SYNC] Running sync for blockchain ${blockchainId}`);
+        this.operationIdService.emitChangeEvent(
+            OPERATION_ID_STATUS.SYNC.SYNC_START,
+            uuidv4(),
+            blockchainId,
+        );
         const syncRecords = (
             await this.repositoryModuleManager.getSyncRecordForBlockchain(blockchainId)
         ).map((syncRecord) => syncRecord.toJSON());
@@ -445,6 +450,11 @@ class SyncService {
             await transaction.rollback();
             throw error;
         }
+        this.operationIdService.emitChangeEvent(
+            OPERATION_ID_STATUS.SYNC.SYNC_END,
+            uuidv4(),
+            blockchainId,
+        );
     }
 
     async callBatchGet(uals, blockchainId) {
