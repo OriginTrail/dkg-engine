@@ -44,6 +44,9 @@ class BatchGetCommand extends Command {
         this.operationIdService.emitChangeEvent(
             OPERATION_ID_STATUS.BATCH_GET.BATCH_GET_FAILED,
             operationId,
+            blockchain,
+            errorMessage,
+            errorType,
         );
     }
 
