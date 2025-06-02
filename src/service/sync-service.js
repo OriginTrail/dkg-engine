@@ -99,6 +99,13 @@ class SyncService {
                 this.logger.error(
                     `[DKG SYNC] Error in sync mechanism for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
                 );
+                this.operationIdService.emitChangeEvent(
+                    OPERATION_ID_STATUS.SYNC.SYNC_FAILED,
+                    uuidv4(),
+                    blockchainId,
+                    error.message,
+                    error.stack,
+                );
             } finally {
                 isRunning = false;
             }
@@ -157,7 +164,7 @@ class SyncService {
                 0,
             );
             this.operationIdService.emitChangeEvent(
-                'SYNC_PROGRESS_STATUS',
+                OPERATION_ID_STATUS.SYNC.SYNC_PROGRESS_STATUS,
                 uuidv4(),
                 blockchainId,
                 totalLatestSyncedKc,
