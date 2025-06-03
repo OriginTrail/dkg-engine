@@ -8,6 +8,7 @@ import {
     DEFAULT_COMMAND_DELAY_IN_MILLS,
     COMMAND_QUEUE_PARALLELISM,
     DEFAULT_COMMAND_PRIORITY,
+    SIX_HOURS_IN_MS,
 } from '../constants/constants.js';
 
 /**
@@ -414,6 +415,9 @@ class CommandExecutor {
         command.priority = command.priority ?? DEFAULT_COMMAND_PRIORITY;
         command.isBlocking = command.isBlocking ?? false;
         command.status = COMMAND_STATUS.PENDING;
+        if (!command.deadlineAt) {
+            command.deadlineAt = command.readyAt + SIX_HOURS_IN_MS;
+        }
 
         if (!command.data) {
             const commandInstance = this.commandResolver.resolve(command.name);
@@ -480,15 +484,16 @@ class CommandExecutor {
                 continue;
             }
 
-            if (!command?.parentId) {
-                continue;
+            if (command?.parentId) {
+                // eslint-disable-next-line no-await-in-loop
+                const parent = await this.repositoryModuleManager.getCommandWithId(
+                    command.parentId,
+                );
+                if (parent && parent.status !== 'COMPLETED') {
+                    continue;
+                }
             }
 
-            // eslint-disable-next-line no-await-in-loop
-            const parent = await this.repositoryModuleManager.getCommandWithId(command.parentId);
-            if (parent && parent.status !== 'COMPLETED') {
-                continue;
-            }
             commands.push(command);
         }
 

@@ -23,6 +23,8 @@ export const ASK_BATCH_SIZE = 20;
 
 export const RPC_PROVIDER_STALL_TIMEOUT = 60 * 1000;
 
+export const SIX_HOURS_IN_MS = 6 * 60 * 60 * 1000;
+
 export const UINT256_MAX_BN = ethers.constants.MaxUint256;
 
 export const UINT128_MAX_BN = BigNumber.from(2).pow(128).sub(1);
