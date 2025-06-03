@@ -657,6 +657,10 @@ class TripleStoreService {
                 ` ${splitLine.length > 4 ? `\t${splitLine.slice(4).join('\t')}` : ''}` +
                 `.`;
 
+            if (!results[ual]) {
+                results[ual] = {};
+            }
+
             if (
                 ualKAWithVisibility.includes(TRIPLES_VISIBILITY.PRIVATE) &&
                 contentType !== TRIPLES_VISIBILITY.PUBLIC

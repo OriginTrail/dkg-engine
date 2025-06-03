@@ -608,7 +608,7 @@ class BatchGetCommand extends Command {
                     }
                     validationResults[ual] = true;
                 } catch (e) {
-                    this.logger.error(`Validation failed for UAL ${ual}:`, e);
+                    this.logger.error(`Validation failed for UAL ${ual}: ${e.name}, ${e.message}`);
                     validationResults[ual] = false;
                 }
             }),
