@@ -361,9 +361,6 @@ class TripleStoreService {
                 createdMetadata.push(
                     `<${ual}> <https://ontology.origintrail.io/dkg/1.0#hasKnowledgeAsset> <${kaUAL}> .`,
                 );
-                createdMetadata.push(
-                    `<${kaUAL}> <https://ontology.origintrail.io/dkg/1.0#hasNamedGraph> <${kaUAL}/public> .`,
-                );
             }
         }
 
