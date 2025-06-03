@@ -5,6 +5,8 @@ import {
     OPERATION_ID_STATUS,
     DKG_METADATA_PREDICATES,
     TRIPLE_STORE_REPOSITORY,
+    SYNC_BATCH_GET_MAX_ATTEMPTS,
+    SYNC_BATCH_GET_WAIT_TIME,
 } from '../constants/constants.js';
 
 class SyncService {
@@ -460,11 +462,11 @@ class SyncService {
         });
 
         let batchGetResult;
-
+        let attempts = 0;
         // Poll for result
-        while (true) {
+        while (attempts < SYNC_BATCH_GET_MAX_ATTEMPTS) {
             // eslint-disable-next-line no-await-in-loop
-            await setTimeout(1000);
+            await setTimeout(SYNC_BATCH_GET_WAIT_TIME);
             // eslint-disable-next-line no-await-in-loop
             batchGetResult = await this.operationIdService.getOperationIdRecord(
                 batchGetOperationId,
@@ -476,6 +478,7 @@ class SyncService {
             ) {
                 break;
             }
+            attempts += 1;
         }
         return { batchGetResult, batchGetOperationId };
     }
