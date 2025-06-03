@@ -17,6 +17,8 @@ export const GET_MIN_NUM_OF_NODE_REPLICATIONS = 1;
 
 export const FINALITY_BATCH_SIZE = 1;
 
+export const SIX_HOURS_IN_MS = 6 * 60 * 60 * 1000;
+
 export const FINALITY_MIN_NUM_OF_NODE_REPLICATIONS = 1;
 
 export const ASK_BATCH_SIZE = 20;
