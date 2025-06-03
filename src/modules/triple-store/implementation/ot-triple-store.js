@@ -501,7 +501,6 @@ class OtTripleStore {
     }
 
     async getKnowledgeCollectionNamedGraphsOldInBatch(repository, ualTokenIds, visibility) {
-        const key = Object.keys(ualTokenIds)[0];
         const kaUALs = Array.from(Object.entries(ualTokenIds)).flatMap(([ual, tokenIds]) => {
             const arr = Array.from(
                 { length: tokenIds.endTokenId - tokenIds.startTokenId + 1 },
@@ -537,9 +536,6 @@ class OtTripleStore {
             }
         `;
 
-        // Write query to log file
-        await this.writeQueryToLog(key, query);
-
         const result = await axios.post(this.repositories[repository].sparqlEndpoint, query, {
             headers: {
                 'Content-Type': 'application/sparql-query',
@@ -547,31 +543,6 @@ class OtTripleStore {
             },
         });
         return result.data;
-    }
-
-    async writeQueryToLog(key, query) {
-        const fs = await import('fs/promises');
-        const path = await import('path');
-
-        // Use process.cwd() instead of home directory to ensure we have write permissions
-        const queryLogDir = path.join(process.cwd(), 'querylog');
-
-        try {
-            // Create directory if it doesn't exist
-            await fs.mkdir(queryLogDir, { recursive: true });
-
-            // Sanitize the key to create a valid filename
-            const sanitizedKey = key.replace(/[^a-zA-Z0-9]/g, '_');
-
-            // Write query to file
-            const filePath = path.join(queryLogDir, `query_${sanitizedKey}.sparql`);
-            await fs.writeFile(filePath, query, 'utf8');
-
-            this.logger.debug(`Query logged to ${filePath}`);
-        } catch (error) {
-            this.logger.error(`Failed to write query log: ${error.message}`);
-            // Don't throw the error, just log it and continue
-        }
     }
 
     async getKnowledgeCollectionNamedGraphs(repository, ual, knowledgeAssetId, visibility) {
