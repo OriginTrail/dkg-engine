@@ -1075,3 +1075,5 @@ export const CHUNK_SIZE = 32;
 export const BATCH_GET_BATCH_SIZE = 5;
 
 export const SYNC_INTERVAL = 12 * 1000;
+export const SYNC_BATCH_GET_WAIT_TIME = 1000;
+export const SYNC_BATCH_GET_MAX_ATTEMPTS = 15 * 60;
