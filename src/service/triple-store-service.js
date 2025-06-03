@@ -615,71 +615,34 @@ class TripleStoreService {
         return nquads;
     }
 
-    async getAssertionsInBatch(uals, tokenIds, migrationFlag, contentType) {
-        // if (migrationFlag === '0') {
-        const result =
-            await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphsOldInBatch(
-                this.repositoryImplementations[TRIPLE_STORE_REPOSITORY.DKG],
-                TRIPLE_STORE_REPOSITORY.DKG,
-                tokenIds,
-                contentType,
-                migrationFlag,
-            );
-        // TODO: This only returns \n ???
-        // } else {
-        //     result = await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphsInBatch(
-        //         this.repositoryImplementations[TRIPLE_STORE_REPOSITORY.DKG],
-        //         TRIPLE_STORE_REPOSITORY.DKG,
-        //         uals,
-        //         contentType,
-        //     );
-        // }
-
-        const results = {};
-        uals.forEach((ual) => {
-            results[ual] = {};
-        });
-
-        for (const line of result.split('\n')) {
-            if (line === '') {
-                continue;
-            }
-            const splitLine = line.split('\t');
-            const ualKAWithVisibility = splitLine[0];
-            const ual = ualKAWithVisibility.replace(/[<>]/g, '').split('/').slice(0, -2).join('/');
-            // Join first 3 elements with spaces (subject, predicate, object)
-            // and the rest with tabs (any additional elements)
-            const triple =
-                `${splitLine.slice(1, 4).join(' ')}` +
-                ` ${splitLine.length > 4 ? `\t${splitLine.slice(4).join('\t')}` : ''}` +
-                `.`;
-
-            if (!results[ual]) {
-                results[ual] = {};
-            }
-
-            if (
-                ualKAWithVisibility.includes(TRIPLES_VISIBILITY.PRIVATE) &&
-                contentType !== TRIPLES_VISIBILITY.PUBLIC
-            ) {
-                if (results[ual].private) {
-                    results[ual].private.push(triple);
-                } else {
-                    results[ual].private = [triple];
+    async getAssertionsInBatch(repository, uals, ualTokenIds, visibility = 'public') {
+        const results = await Promise.all(
+            uals.map(async (ual) => {
+                const nquads =
+                    await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphsOld(
+                        this.repositoryImplementations[repository],
+                        repository,
+                        // TODO: Add state with implemented update
+                        `${ual}`,
+                        ualTokenIds[ual],
+                        visibility,
+                    );
+                if (nquads?.public) {
+                    nquads.public = nquads.public.split('\n').filter((line) => line !== '');
                 }
-            } else if (
-                ualKAWithVisibility.includes(TRIPLES_VISIBILITY.PUBLIC) &&
-                contentType !== TRIPLES_VISIBILITY.PRIVATE
-            ) {
-                if (results[ual].public) {
-                    results[ual].public.push(triple);
-                } else {
-                    results[ual].public = [triple];
+                if (nquads?.private) {
+                    nquads.private = nquads.private.split('\n').filter((line) => line !== '');
                 }
-            }
+
+                return nquads;
+            }),
+        );
+        const result = {};
+        for (const [index, ual] of uals.entries()) {
+            result[ual] = results[index];
         }
 
-        return results;
+        return result;
     }
 
     async getV6Assertion(repository, assertionId) {

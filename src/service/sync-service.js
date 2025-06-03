@@ -5,6 +5,9 @@ import {
     OPERATION_ID_STATUS,
     DKG_METADATA_PREDICATES,
     TRIPLE_STORE_REPOSITORY,
+    BATCH_GET_UAL_MAX_LIMIT,
+    SYNC_BATCH_GET_MAX_ATTEMPTS,
+    SYNC_BATCH_GET_WAIT_TIME,
 } from '../constants/constants.js';
 
 class SyncService {
@@ -99,6 +102,13 @@ class SyncService {
                 this.logger.error(
                     `[DKG SYNC] Error in sync mechanism for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
                 );
+                this.operationIdService.emitChangeEvent(
+                    OPERATION_ID_STATUS.SYNC.SYNC_FAILED,
+                    uuidv4(),
+                    blockchainId,
+                    error.message,
+                    error.stack,
+                );
             } finally {
                 isRunning = false;
             }
@@ -113,6 +123,11 @@ class SyncService {
         // TODO: Add telemetry
         // TODO: Add onchain registring how far you have synced DKG
         this.logger.debug(`[DKG SYNC] Running sync for blockchain ${blockchainId}`);
+        this.operationIdService.emitChangeEvent(
+            OPERATION_ID_STATUS.SYNC.SYNC_START,
+            uuidv4(),
+            blockchainId,
+        );
         const syncRecords = (
             await this.repositoryModuleManager.getSyncRecordForBlockchain(blockchainId)
         ).map((syncRecord) => syncRecord.toJSON());
@@ -157,7 +172,7 @@ class SyncService {
                 0,
             );
             this.operationIdService.emitChangeEvent(
-                'SYNC_PROGRESS_STATUS',
+                OPERATION_ID_STATUS.SYNC.SYNC_PROGRESS_STATUS,
                 uuidv4(),
                 blockchainId,
                 totalLatestSyncedKc,
@@ -205,7 +220,11 @@ class SyncService {
             latestKnowledgeCollectionId;
 
         // Calculate upper bound
-        const maxId = Math.min(latestKnowledgeCollectionId, latestSyncedKc + this.syncBatchSize);
+        const maxId = Math.min(
+            latestKnowledgeCollectionId,
+            latestSyncedKc + this.syncBatchSize,
+            latestSyncedKc + BATCH_GET_UAL_MAX_LIMIT,
+        );
 
         // Generate UALs from (latestSyncedKc + 1) to maxId
         for (let id = latestSyncedKc + 1; id <= maxId; id += 1) {
@@ -222,7 +241,7 @@ class SyncService {
 
         if (batchGetResult?.status !== OPERATION_ID_STATUS.COMPLETED) {
             throw new Error(
-                `[SYNC] Unable to Batch GET Knowledge Collection for blockchain: ${blockchainId}, GET result: ${JSON.stringify(
+                `[DKG SYNC] Unable to Batch GET Knowledge Collection for blockchain: ${blockchainId}, GET result: ${JSON.stringify(
                     batchGetResult,
                 )}`,
             );
@@ -308,8 +327,11 @@ class SyncService {
         const missedKcForRetry = await this.repositoryModuleManager.getMissedKcForRetry(
             blockchainId,
             contract,
-            this.syncBatchSize,
+            this.syncBatchSize > BATCH_GET_UAL_MAX_LIMIT
+                ? BATCH_GET_UAL_MAX_LIMIT
+                : this.syncBatchSize,
         );
+
         const missedKcForRetryCount = await this.repositoryModuleManager.getMissedKcForRetryCount(
             blockchainId,
             contract,
@@ -372,7 +394,7 @@ class SyncService {
                 await this.tripleStoreService.insertKnowledgeCollectionBatch('dkg', data);
             } catch (error) {
                 this.logger.error(
-                    `[SYNC] Unable to insert Knowledge Collection for blockchain: ${blockchainId}`,
+                    `[DKG SYNC] Unable to insert Knowledge Collection for blockchain: ${blockchainId}`,
                 );
                 insertFailed = true;
             }
@@ -438,6 +460,11 @@ class SyncService {
             await transaction.rollback();
             throw error;
         }
+        this.operationIdService.emitChangeEvent(
+            OPERATION_ID_STATUS.SYNC.SYNC_END,
+            uuidv4(),
+            blockchainId,
+        );
     }
 
     async callBatchGet(uals, blockchainId) {
@@ -459,19 +486,16 @@ class SyncService {
             transactional: false,
         });
 
-        const BATCH_GET_MAX_ATTEMPTS = 30;
-        let attempt = 0;
         let batchGetResult;
-
+        let attempts = 0;
         // Poll for result
-        while (attempt < BATCH_GET_MAX_ATTEMPTS) {
+        while (attempts < SYNC_BATCH_GET_MAX_ATTEMPTS) {
             // eslint-disable-next-line no-await-in-loop
-            await setTimeout(500);
+            await setTimeout(SYNC_BATCH_GET_WAIT_TIME);
             // eslint-disable-next-line no-await-in-loop
             batchGetResult = await this.operationIdService.getOperationIdRecord(
                 batchGetOperationId,
             );
-            attempt += 1;
 
             if (
                 batchGetResult?.status === OPERATION_ID_STATUS.FAILED ||
@@ -479,6 +503,7 @@ class SyncService {
             ) {
                 break;
             }
+            attempts += 1;
         }
         return { batchGetResult, batchGetOperationId };
     }
