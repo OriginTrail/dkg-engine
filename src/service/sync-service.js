@@ -5,6 +5,7 @@ import {
     OPERATION_ID_STATUS,
     DKG_METADATA_PREDICATES,
     TRIPLE_STORE_REPOSITORY,
+    BATCH_GET_UAL_MAX_LIMIT,
 } from '../constants/constants.js';
 
 class SyncService {
@@ -217,7 +218,11 @@ class SyncService {
             latestKnowledgeCollectionId;
 
         // Calculate upper bound
-        const maxId = Math.min(latestKnowledgeCollectionId, latestSyncedKc + this.syncBatchSize);
+        const maxId = Math.min(
+            latestKnowledgeCollectionId,
+            latestSyncedKc + this.syncBatchSize,
+            latestSyncedKc + BATCH_GET_UAL_MAX_LIMIT,
+        );
 
         // Generate UALs from (latestSyncedKc + 1) to maxId
         for (let id = latestSyncedKc + 1; id <= maxId; id += 1) {
@@ -320,8 +325,11 @@ class SyncService {
         const missedKcForRetry = await this.repositoryModuleManager.getMissedKcForRetry(
             blockchainId,
             contract,
-            this.syncBatchSize,
+            this.syncBatchSize > BATCH_GET_UAL_MAX_LIMIT
+                ? BATCH_GET_UAL_MAX_LIMIT
+                : this.syncBatchSize,
         );
+
         const missedKcForRetryCount = await this.repositoryModuleManager.getMissedKcForRetryCount(
             blockchainId,
             contract,
