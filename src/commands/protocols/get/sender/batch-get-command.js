@@ -12,6 +12,8 @@ import {
     PRIVATE_HASH_SUBJECT_PREFIX,
     OPERATION_STATUS,
     BATCH_GET_BATCH_SIZE as BATCH_SIZE,
+    TRIPLE_STORE_REPOSITORY,
+    TRIPLES_VISIBILITY,
 } from '../../../../constants/constants.js';
 
 class BatchGetCommand extends Command {
@@ -42,6 +44,9 @@ class BatchGetCommand extends Command {
         this.operationIdService.emitChangeEvent(
             OPERATION_ID_STATUS.BATCH_GET.BATCH_GET_FAILED,
             operationId,
+            blockchain,
+            errorMessage,
+            errorType,
         );
     }
 
@@ -108,51 +113,6 @@ class BatchGetCommand extends Command {
                 throw error;
             }
         }
-        // if (paranetUAL) {
-        //     const {
-        //         blockchain: paranetBlockchain,
-        //         contract: paranetContract,
-        //         knowledgeCollectionId: paranetKnowledgeCollectionId,
-        //         knowledgeAssetId: paranetKnowledgeAssetId,
-        //     } = this.ualService.resolveUAL(paranetUAL);
-        //     paranetId = this.paranetService.constructParanetId(
-        //         paranetContract,
-        //         paranetKnowledgeCollectionId,
-        //         paranetKnowledgeAssetId,
-        //     );
-
-        //     if (!paranetSync && migrationFlag === '0') {
-        //         // query the paranet repository if the migration is not yet finished
-        //         repository = this.paranetService.getParanetRepositoryName(paranetUAL);
-        //         const repositoryExists =
-        //             this.tripleStoreModuleManager.repositoryInitilized(repository);
-
-        //         if (!repositoryExists) {
-        //             repository = TRIPLE_STORE_REPOSITORIES.DKG;
-        //         }
-        //     }
-
-        //     const { isValid: paranetIsValid, errorMessage: paranetErrorMessage } =
-        //         await this.validateParanet(
-        //             operationId,
-        //             paranetUAL,
-        //             paranetBlockchain,
-        //             paranetKnowledgeAssetId,
-        //             paranetNodesAccessPolicy,
-        //             paranetId,
-        //             blockchain,
-        //             uals,
-        //         );
-        //     if (!paranetIsValid) {
-        //         await this.handleError(
-        //             operationId,
-        //             blockchain,
-        //             paranetErrorMessage,
-        //             ERROR_TYPE.GET.GET_VALIDATE_ASSET_ERROR,
-        //         );
-        //         return Command.empty();
-        //     }
-        // }
         await this.operationIdService.updateOperationIdStatus(
             operationId,
             blockchain,
@@ -189,10 +149,10 @@ class BatchGetCommand extends Command {
 
         const promises = [];
         const assertionPromise = this.tripleStoreService.getAssertionsInBatch(
+            TRIPLE_STORE_REPOSITORY.DKG,
             uals,
             tokenIds,
-            migrationFlag,
-            contentType,
+            TRIPLES_VISIBILITY.PUBLIC,
         );
         promises.push(assertionPromise);
 

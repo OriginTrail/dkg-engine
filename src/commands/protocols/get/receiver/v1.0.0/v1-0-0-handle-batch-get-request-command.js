@@ -6,7 +6,9 @@ import {
     NETWORK_MESSAGE_TYPES,
     OPERATION_ID_STATUS,
     MIGRATION_FLAG_PATH,
+    TRIPLE_STORE_REPOSITORY,
     TRIPLES_VISIBILITY,
+    BATCH_GET_UAL_MAX_LIMIT,
 } from '../../../../../constants/constants.js';
 
 class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
@@ -24,17 +26,8 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
     }
 
     async prepareMessage(commandData) {
-        const {
-            operationId,
-            blockchain,
-            tokenIds,
-            uals,
-            includeMetadata,
-            // paranetUAL,
-            // remotePeerId,
-            // repository,
-            // contentType,
-        } = commandData;
+        const { operationId, blockchain, includeMetadata } = commandData;
+        let { uals, tokenIds } = commandData;
 
         await this.operationIdService.updateOperationIdStatus(
             operationId,
@@ -42,106 +35,9 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
             this.operationStartEvent,
         );
 
-        // if (paranetUAL) {
-        //     const {
-        //         contract: paranetContract,
-        //         knowledgeCollectionId: paranetKnowledgeCollectionId,
-        //         knowledgeAssetId: paranetKnowledgeAssetId,
-        //     } = this.ualService.resolveUAL(paranetUAL);
-        //     const paranetId = this.paranetService.constructParanetId(
-        //         paranetContract,
-        //         paranetKnowledgeCollectionId,
-        //         paranetKnowledgeAssetId,
-        //     );
-        //     const paranetNodeAccessPolicy = await this.blockchainModuleManager.getNodesAccessPolicy(
-        //         blockchain,
-        //         paranetId,
-        //     );
-        //     if (paranetNodeAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED) {
-        //         const knowledgeCollectionOnchainId = this.cryptoService.keccak256EncodePacked(
-        //             ['address', 'uint256'],
-        //             [contract, knowledgeCollectionId],
-        //         );
-        //         const [isKCInParanet, paranetPermissionedNodes] = await Promise.all([
-        //             this.blockchainModuleManager.isKnowledgeCollectionRegistered(
-        //                 blockchain,
-        //                 paranetId,
-        //                 knowledgeCollectionOnchainId,
-        //             ),
-        //             this.blockchainModuleManager.getPermissionedNodes(blockchain, paranetId),
-        //         ]);
-
-        //         if (!isKCInParanet) {
-        //             return {
-        //                 messageType: NETWORK_MESSAGE_TYPES.RESPONSES.NACK,
-        //                 messageData: {
-        //                     errorMessage: `Knowledge collection ${knowledgeCollectionId} is not registered in the Paranet (${paranetId}) with UAL: ${paranetUAL}`,
-        //                 },
-        //             };
-        //         }
-        //         const paranetPermissionedPeerIds = paranetPermissionedNodes.map((node) =>
-        //             this.cryptoService.convertHexToAscii(node.nodeId),
-        //         );
-
-        //         if (!paranetPermissionedPeerIds.includes(remotePeerId)) {
-        //             return {
-        //                 messageType: NETWORK_MESSAGE_TYPES.RESPONSES.NACK,
-        //                 messageData: {
-        //                     errorMessage: `Remote peer ${remotePeerId} is not a part of the Paranet (${paranetId}) with UAL: ${paranetUAL}`,
-        //                 },
-        //             };
-        //         }
-
-        //         const currentPeerId = this.networkModuleManager.getPeerId().toB58String();
-        //         if (!paranetPermissionedPeerIds.includes(currentPeerId)) {
-        //             return {
-        //                 messageType: NETWORK_MESSAGE_TYPES.RESPONSES.NACK,
-        //                 messageData: {
-        //                     errorMessage: `This node is not a part of the Paranet (${paranetId}) with UAL: ${paranetUAL}`,
-        //                 },
-        //             };
-        //         }
-        //         const promises = [];
-        //         promises.push(
-        //             this.tripleStoreService.getAssertion(
-        //                 blockchain,
-        //                 contract,
-        //                 knowledgeCollectionId,
-        //                 knowledgeAssetId,
-        //                 tokenIds,
-        //                 migrationFlag,
-        //                 TRIPLES_VISIBILITY.ALL,
-        //                 repository,
-        //             ),
-        //         );
-
-        //         if (includeMetadata) {
-        //             const metadataPromise = this.tripleStoreService.getAssertionMetadata(
-        //                 blockchain,
-        //                 contract,
-        //                 knowledgeCollectionId,
-        //                 knowledgeAssetId,
-        //             );
-        //             promises.push(metadataPromise);
-        //         }
-
-        //         const [assertion, metadata] = await Promise.all(promises);
-
-        //         if (assertion?.public?.length) {
-        //             return {
-        //                 messageType: NETWORK_MESSAGE_TYPES.RESPONSES.ACK,
-        //                 messageData: { assertion, metadata },
-        //             };
-        //         }
-
-        //         return {
-        //             messageType: NETWORK_MESSAGE_TYPES.RESPONSES.NACK,
-        //             messageData: {
-        //                 errorMessage: `Unable to find assertion ${ual} for Paranet (${paranetId}) with UAL: ${paranetUAL}`,
-        //             },
-        //         };
-        //     }
-        // }
+        // Trim uals and tokenIds to the max limit of BATCH_GET_UAL_MAX_LIMIT
+        uals = uals.slice(0, BATCH_GET_UAL_MAX_LIMIT);
+        tokenIds = Object.fromEntries(Object.entries(tokenIds).slice(0, BATCH_GET_UAL_MAX_LIMIT));
 
         const promises = [];
 
@@ -161,9 +57,9 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
         }
 
         const assertionPromise = this.tripleStoreService.getAssertionsInBatch(
+            TRIPLE_STORE_REPOSITORY.DKG,
             uals,
             tokenIds,
-            migrationFlag,
             TRIPLES_VISIBILITY.PUBLIC,
         );
 
