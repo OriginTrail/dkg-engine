@@ -1,4 +1,5 @@
 import { QueryEngine as Engine } from '@comunica/query-sparql';
+import axios from 'axios';
 import { setTimeout } from 'timers/promises';
 import {
     SCHEMA_CONTEXT,
@@ -535,7 +536,13 @@ class OtTripleStore {
             }
         `;
 
-        return this.selectTSV(repository, query);
+        const result = await axios.post(this.repositories[repository].sparqlEndpoint, query, {
+            headers: {
+                'Content-Type': 'application/sparql-query',
+                Accept: 'text/tab-separated-values',
+            },
+        });
+        return result.data;
     }
 
     async getKnowledgeCollectionNamedGraphs(repository, ual, knowledgeAssetId, visibility) {
@@ -608,27 +615,6 @@ class OtTripleStore {
         }
 
         return assertion;
-    }
-
-    async getKnowledgeCollectionNamedGraphsInBatch(repository, uals) {
-        const query = `
-            PREFIX dkg: <https://ontology.origintrail.io/dkg/1.0#>
-            SELECT ?g ?s ?p ?o
-            WHERE {
-                GRAPH <metadata:graph> {
-                    VALUES ?ual {
-                        ${uals.map((ual) => `<${ual}>`).join('\n')}
-                    }
-                    ?ual dkg:hasNamedGraph ?g .
-                }
-
-                GRAPH ?g {
-                    ?s ?p ?o
-                }
-            }
-        `;
-
-        return this.selectTSV(repository, query);
     }
 
     async getMetadataInBatch(repository, uals) {
@@ -887,23 +873,6 @@ class OtTripleStore {
         }
 
         return response;
-    }
-
-    async selectTSV(repository, query) {
-        const result = await this.queryEngine.query(
-            query,
-            this.repositories[repository].queryContext,
-        );
-
-        const { data } = await this.queryEngine.resultToString(result, 'text/tab-separated-values');
-
-        let response = '';
-
-        for await (const chunk of data) {
-            response += chunk;
-        }
-        // Remove top line of TSV
-        return response.indexOf('\n') > -1 ? response.slice(response.indexOf('\n') + 1) : response;
     }
 
     async reinitialize() {
