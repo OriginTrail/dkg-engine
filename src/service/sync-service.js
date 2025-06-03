@@ -123,9 +123,10 @@ class SyncService {
         // TODO: Add telemetry
         // TODO: Add onchain registring how far you have synced DKG
         this.logger.debug(`[DKG SYNC] Running sync for blockchain ${blockchainId}`);
+        const syncOperationId = uuidv4();
         this.operationIdService.emitChangeEvent(
             OPERATION_ID_STATUS.SYNC.SYNC_START,
-            uuidv4(),
+            syncOperationId,
             blockchainId,
         );
         const syncRecords = (
@@ -173,7 +174,7 @@ class SyncService {
             );
             this.operationIdService.emitChangeEvent(
                 OPERATION_ID_STATUS.SYNC.SYNC_PROGRESS_STATUS,
-                uuidv4(),
+                syncOperationId,
                 blockchainId,
                 totalLatestSyncedKc,
                 totalMissedKc,
@@ -203,6 +204,11 @@ class SyncService {
 
         // Run all contracts in parallel
         await Promise.all(contractPromises);
+        this.operationIdService.emitChangeEvent(
+            OPERATION_ID_STATUS.SYNC.SYNC_END,
+            syncOperationId,
+            blockchainId,
+        );
     }
 
     async syncNewKc(blockchainId, contractAddress, syncObject) {
@@ -460,11 +466,6 @@ class SyncService {
             await transaction.rollback();
             throw error;
         }
-        this.operationIdService.emitChangeEvent(
-            OPERATION_ID_STATUS.SYNC.SYNC_END,
-            uuidv4(),
-            blockchainId,
-        );
     }
 
     async callBatchGet(uals, blockchainId) {
