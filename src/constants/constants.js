@@ -23,6 +23,8 @@ export const ASK_BATCH_SIZE = 20;
 
 export const RPC_PROVIDER_STALL_TIMEOUT = 60 * 1000;
 
+export const SIX_HOURS_IN_MS = 6 * 60 * 60 * 1000;
+
 export const UINT256_MAX_BN = ethers.constants.MaxUint256;
 
 export const UINT128_MAX_BN = BigNumber.from(2).pow(128).sub(1);
@@ -663,6 +665,12 @@ export const OPERATION_ID_STATUS = {
         PUBLISH_FINALITY_END: 'PUBLISH_FINALITY_END',
         PUBLISH_FINALITY_FETCH_FROM_NODES_END: 'PUBLISH_FINALITY_FETCH_FROM_NODES_END',
     },
+    SYNC: {
+        SYNC_START: 'SYNC_START',
+        SYNC_END: 'SYNC_END',
+        SYNC_PROGRESS_STATUS: 'SYNC_PROGRESS_STATUS',
+        SYNC_FAILED: 'SYNC_FAILED',
+    },
 };
 
 export const OPERATIONS = {
@@ -1073,5 +1081,8 @@ export const REORG_PROOFING_BUFFER = 60 * 1000;
 export const CHUNK_SIZE = 32;
 
 export const BATCH_GET_BATCH_SIZE = 5;
+export const BATCH_GET_UAL_MAX_LIMIT = 1000;
 
 export const SYNC_INTERVAL = 12 * 1000;
+export const SYNC_BATCH_GET_WAIT_TIME = 1000;
+export const SYNC_BATCH_GET_MAX_ATTEMPTS = 15 * 60;
