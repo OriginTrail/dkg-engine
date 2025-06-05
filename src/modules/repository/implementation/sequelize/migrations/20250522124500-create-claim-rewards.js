@@ -59,6 +59,38 @@ export const up = async ({ context: { queryInterface, Sequelize } }) => {
             name: 'idx_epoch',
         });
     }
+
+    const [[{ triggerInsertExists }]] = await queryInterface.sequelize.query(`
+        SELECT COUNT(*) AS triggerInsertExists
+        FROM information_schema.triggers
+        WHERE trigger_schema = DATABASE() AND trigger_name = 'after_insert_epoch_rewards_claimed';
+    `);
+    if (triggerInsertExists === 0) {
+        await queryInterface.sequelize.query(`
+            CREATE TRIGGER after_insert_epoch_rewards_claimed
+            BEFORE INSERT ON epoch_rewards_claimed
+            FOR EACH ROW
+            BEGIN
+                SET NEW.created_at = NOW();
+            END;
+        `);
+    }
+
+    const [[{ triggerUpdateExists }]] = await queryInterface.sequelize.query(`
+        SELECT COUNT(*) AS triggerUpdateExists
+        FROM information_schema.triggers
+        WHERE trigger_schema = DATABASE() AND trigger_name = 'after_update_epoch_rewards_claimed';
+    `);
+    if (triggerUpdateExists === 0) {
+        await queryInterface.sequelize.query(`
+            CREATE TRIGGER after_update_epoch_rewards_claimed
+            BEFORE UPDATE ON epoch_rewards_claimed
+            FOR EACH ROW
+            BEGIN
+                SET NEW.updated_at = NOW();
+            END;
+        `);
+    }
 };
 
 export const down = async ({ context: { queryInterface } }) => {
