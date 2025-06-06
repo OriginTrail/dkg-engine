@@ -1,7 +1,5 @@
 <a name="readme-top"></a>
-
 ---
-
 <br />
 <div align="center">
   <a href="https://github.com/OriginTrail/ot-node">
