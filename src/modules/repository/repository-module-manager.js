@@ -526,39 +526,6 @@ class RepositoryModuleManager extends BaseModuleManager {
         );
     }
 
-    async createEpochClaimedRewardsRecord(epochClaimedRewards, options) {
-        return this.getRepository('epoch_rewards_claimed').createEpochClaimedRewardsRecord(
-            epochClaimedRewards,
-            options,
-        );
-    }
-
-    async updateEpochClaimedRewardsRecord(epochClaimedRewards, options) {
-        return this.getRepository('epoch_rewards_claimed').updateEpochClaimedRewardsRecord(
-            epochClaimedRewards,
-            options,
-        );
-    }
-
-    async deleteEpochClaimedRewardsRecord(epochClaimedRewardsId, options) {
-        return this.getRepository('epoch_rewards_claimed').deleteEpochClaimedRewardsRecord(
-            epochClaimedRewardsId,
-            options,
-        );
-    }
-
-    async getNonClaimedEpochClaimedRewardsRecordsForBlockchainId(blockchainId) {
-        return this.getRepository(
-            'epoch_rewards_claimed',
-        ).getNonClaimedEpochClaimedRewardsRecordsForBlockchainId(blockchainId);
-    }
-
-    async getLatestEpochClaimedRewardsRecordForBlockchainId(blockchainId) {
-        return this.getRepository(
-            'epoch_rewards_claimed',
-        ).getLatestEpochClaimedRewardsRecordForBlockchainId(blockchainId);
-    }
-
     async saveFinalityAck(publishOperationId, ual, peerId, options = {}) {
         return this.getRepository('finality_status').saveFinalityAck(
             publishOperationId,

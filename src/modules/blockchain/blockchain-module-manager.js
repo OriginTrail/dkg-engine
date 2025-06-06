@@ -309,10 +309,6 @@ class BlockchainModuleManager extends BaseModuleManager {
         return this.callImplementationFunction(blockchain, 'getBlockTimestamp', [blockNumber]);
     }
 
-    async claimRewards(blockchain, identityId, epoch) {
-        return this.callImplementationFunction(blockchain, 'claimRewards', [identityId, epoch]);
-    }
-
     async getNodeDelegatorAddresses(blockchain, identityId) {
         return this.callImplementationFunction(blockchain, 'getNodeDelegatorAddresses', [
             identityId,

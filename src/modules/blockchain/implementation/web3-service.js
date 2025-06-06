@@ -1217,13 +1217,6 @@ class Web3Service {
         return block.timestamp;
     }
 
-    async claimRewards(identityId, epoch) {
-        return this.callContractFunction(this.contracts.RandomSampling, 'claimRewards', [
-            identityId,
-            epoch,
-        ]);
-    }
-
     async getNodeDelegatorAddresses(identityId) {
         return this.callContractFunction(
             this.contracts.DelegatorsInfo,
