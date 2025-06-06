@@ -1,4 +1,4 @@
-import { CLAIM_REWARDS_BATCH_SIZE, CLAIM_REWARDS_INTERVAL } from '../constants/constants';
+import { CLAIM_REWARDS_BATCH_SIZE, CLAIM_REWARDS_INTERVAL } from '../constants/constants.js';
 
 class ClaimRewardsService {
     constructor(ctx) {
