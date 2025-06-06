@@ -294,6 +294,7 @@ export const ABIs = {
     Paranet: require('dkg-evm-module/abi/Paranet.json'),
     RandomSampling: require('dkg-evm-module/abi/RandomSampling.json'),
     RandomSamplingStorage: require('dkg-evm-module/abi/RandomSamplingStorage.json'),
+    DelegatorsInfo: require('dkg-evm-module/abi/DelegatorsInfo.json'),
 };
 
 export const CONTRACT_FUNCTION_PRIORITY = {};
@@ -1049,3 +1050,5 @@ export const CHUNK_SIZE = 32;
 export const CLAIM_REWARDS_INTERVAL = 12 * 1000;
 export const CLAIM_REWARDS_MAX_ATTEMPTS = 120;
 export const REORG_CLAIM_REWARDS_BUFFER = 60 * 1000;
+
+export const CLAIM_REWARDS_BATCH_SIZE = 10;

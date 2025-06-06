@@ -313,6 +313,31 @@ class BlockchainModuleManager extends BaseModuleManager {
         return this.callImplementationFunction(blockchain, 'claimRewards', [identityId, epoch]);
     }
 
+    async getNodeDelegatorAddresses(blockchain, identityId) {
+        return this.callImplementationFunction(blockchain, 'getNodeDelegatorAddresses', [
+            identityId,
+        ]);
+    }
+
+    async hasEverDelegated(blockchain, identityId, address) {
+        return this.callImplementationFunction(blockchain, 'hasEverDelegated', [
+            identityId,
+            address,
+        ]);
+    }
+
+    async getCurrentEpoch(blockchain) {
+        return this.callImplementationFunction(blockchain, 'getCurrentEpoch', []);
+    }
+
+    async batchClaimDelegatorRewards(blockchain, identityId, epochs, delegators) {
+        return this.callImplementationFunction(blockchain, 'batchClaimDelegatorRewards', [
+            identityId,
+            epochs,
+            delegators,
+        ]);
+    }
+
     // SUPPORT FOR OLD CONTRACTS
     async getLatestAssertionId(blockchain, assetContractAddress, tokenId) {
         return this.callImplementationFunction(blockchain, 'getLatestAssertionId', [
