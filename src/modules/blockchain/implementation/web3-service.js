@@ -1217,7 +1217,51 @@ class Web3Service {
         return block.timestamp;
     }
 
-    getAssetStorageContractsAddress() {
+    async getDelegators(identityId) {
+        return this.callContractFunction(this.contracts.DelegatorsInfo, 'getDelegators', [
+            identityId,
+        ]);
+    }
+
+    async hasEverDelegated(identityId, address) {
+        return this.callContractFunction(this.contracts.DelegatorsInfo, 'hasEverDelegatedToNode', [
+            identityId,
+            address,
+        ]);
+    }
+
+    async getCurrentEpoch() {
+        return this.callContractFunction(this.contracts.Chronos, 'getCurrentEpoch', []);
+    }
+
+    async getLastClaimedEpoch(identityId, address) {
+        return this.callContractFunction(this.contracts.DelegatorsInfo, 'getLastClaimedEpoch', [
+            identityId,
+            address,
+        ]);
+    }
+
+    async batchClaimDelegatorRewards(identityId, epochs, delegators) {
+        return new Promise((resolve, reject) => {
+            this.queueTransaction(
+                this.contracts.Staking,
+                'batchClaimDelegatorRewards',
+                [identityId, epochs, delegators],
+                (result) => {
+                    if (result.error) {
+                        reject(result.error);
+                    } else {
+                        resolve({
+                            success: true,
+                            result: result.result,
+                        });
+                    }
+                },
+            );
+        });
+    }
+
+    async getAssetStorageContractsAddress() {
         return Object.keys(this.assetStorageContracts);
     }
 
