@@ -1,4 +1,4 @@
-import { CLAIM_REWARDS_BATCH_SIZE } from '../constants/constants';
+import { CLAIM_REWARDS_BATCH_SIZE, CLAIM_REWARDS_INTERVAL } from '../constants/constants';
 
 class ClaimRewardsService {
     constructor(ctx) {
@@ -28,6 +28,72 @@ class ClaimRewardsService {
     }
 
     async claimRewardsMechanism(blockchainId) {
+        this.logger.debug(
+            `[CLAIM] Setting up claim rewards mechanism for blockchain ${blockchainId}`,
+        );
+        // Flag to track if mechanism is running
+        let isRunning = false;
+
+        // Set up interval
+        const interval = setInterval(async () => {
+            // Skip if already running
+            if (isRunning) {
+                this.logger.debug(
+                    `[CLAIM] Claim rewards mechanism for ${blockchainId} still running, skipping this interval`,
+                );
+                return;
+            }
+
+            try {
+                isRunning = true;
+                this.logger.debug(
+                    `[CLAIM] Starting claim rewards cycle for blockchain ${blockchainId}`,
+                );
+
+                // Proofing logic
+                await this.claimRewards(blockchainId);
+                this.logger.debug(
+                    `[CLAIM] Completed claim rewards cycle for blockchain ${blockchainId}`,
+                );
+            } catch (error) {
+                this.logger.error(
+                    `[CLAIM] Error in claim rewards mechanism for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
+                );
+            } finally {
+                isRunning = false;
+            }
+        }, CLAIM_REWARDS_INTERVAL);
+
+        // Store interval reference for cleanup
+        this[`${blockchainId}Interval`] = interval;
+        this.logger.info(
+            `[CLAIM] Claim rewards mechanism initialized for blockchain ${blockchainId}`,
+        );
+
+        // Run immediately on startup
+        try {
+            isRunning = true;
+            this.logger.debug(
+                `[CLAIM] Running initial claim rewards cycle for blockchain ${blockchainId}`,
+            );
+            await this.claimRewards(blockchainId);
+        } catch (error) {
+            this.logger.error(
+                `[CLAIM] Error in initial claim rewards run for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
+            );
+            this.operationIdService.emitChangeEvent(
+                'CLAIM_REWARDS_ERROR',
+                this.generateOperationId(blockchainId, 0, 0),
+                blockchainId,
+                error.message,
+                error.stack,
+            );
+        } finally {
+            isRunning = false;
+        }
+    }
+
+    async claimRewards(blockchainId) {
         const identityId = await this.blockchainModuleManager.getIdentityId(blockchainId);
         const nodeDelegatorAddresses = await this.blockchainModuleManager.getNodeDelegatorAddresses(
             blockchainId,
