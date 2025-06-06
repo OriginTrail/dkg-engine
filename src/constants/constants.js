@@ -23,6 +23,8 @@ export const ASK_BATCH_SIZE = 20;
 
 export const RPC_PROVIDER_STALL_TIMEOUT = 60 * 1000;
 
+export const SIX_HOURS_IN_MS = 6 * 60 * 60 * 1000;
+
 export const UINT256_MAX_BN = ethers.constants.MaxUint256;
 
 export const UINT128_MAX_BN = BigNumber.from(2).pow(128).sub(1);
@@ -250,6 +252,7 @@ export const PERMANENT_COMMANDS = [
     'finalityResponseCleanerCommand',
     'askCleanerCommand',
     'askResponseCleanerCommand',
+    'batchGetCleanerCommand',
 ];
 
 export const MAX_COMMAND_DELAY_IN_MILLS = 14400 * 60 * 1000; // 10 days
@@ -381,6 +384,9 @@ export const NETWORK_MESSAGE_TIMEOUT_MILLS = {
     FINALITY: {
         REQUEST: 60 * 1000,
     },
+    BATCH_GET: {
+        REQUEST: 60 * 1000,
+    },
 };
 
 export const MAX_OPEN_SESSIONS = 10;
@@ -436,6 +442,9 @@ export const ERROR_TYPE = {
         GET_REQUEST_REMOTE_ERROR: 'GetRequestRemoteError',
         GET_ERROR: 'GetError',
     },
+    BATCH_GET: {
+        BATCH_GET_ERROR: 'BatchGetError',
+    },
     LOCAL_STORE: {
         LOCAL_STORE_ERROR: 'LocalStoreError',
     },
@@ -454,6 +463,7 @@ export const ERROR_TYPE = {
         PUBLISH_FIND_SHARD_ERROR: 'PublishFindShardError',
         UPDATE_FIND_SHARD_ERROR: 'UpdateFindShardError',
         GET_FIND_SHARD_ERROR: 'GetFindShardError',
+        BATCH_GET_FIND_SHARD_ERROR: 'BatchGetFindShardError',
     },
     ASK: {
         ASK_ERROR: 'AskError',
@@ -593,6 +603,22 @@ export const OPERATION_ID_STATUS = {
         GET_END: 'GET_END',
         GET_FAILED: 'GET_FAILED',
     },
+    BATCH_GET: {
+        BATCH_GET_INIT: 'BATCH_GET_INIT',
+        BATCH_GET_START: 'BATCH_GET_START',
+        BATCH_GET_END: 'BATCH_GET_END',
+        BATCH_GET_FAILED: 'BATCH_GET_FAILED',
+        BATCH_GET_VALIDATE_ASSET_START: 'BATCH_GET_VALIDATE_ASSET_START',
+        BATCH_GET_VALIDATE_ASSET_END: 'BATCH_GET_VALIDATE_ASSET_END',
+        BATCH_GET_VALIDATE_ASSET_ERROR: 'BATCH_GET_VALIDATE_ASSET_ERROR',
+        BATCH_GET_LOCAL_START: 'BATCH_GET_LOCAL_START',
+        BATCH_GET_LOCAL_END: 'BATCH_GET_LOCAL_END',
+        BATCH_GET_REMOTE_START: 'BATCH_GET_REMOTE_START',
+        BATCH_GET_REMOTE_END: 'BATCH_GET_REMOTE_END',
+        BATCH_GET_REQUEST_REMOTE_ERROR: 'BATCH_GET_REQUEST_REMOTE_ERROR',
+        BATCH_GET_FIND_SHARD_START: 'BATCH_GET_FIND_SHARD_START',
+        BATCH_GET_FIND_SHARD_END: 'BATCH_GET_FIND_SHARD_END',
+    },
     QUERY: {
         QUERY_INIT_START: 'QUERY_INIT_START',
         QUERY_INIT_END: 'QUERY_INIT_END',
@@ -640,6 +666,12 @@ export const OPERATION_ID_STATUS = {
         PUBLISH_FINALITY_END: 'PUBLISH_FINALITY_END',
         PUBLISH_FINALITY_FETCH_FROM_NODES_END: 'PUBLISH_FINALITY_FETCH_FROM_NODES_END',
     },
+    SYNC: {
+        SYNC_START: 'SYNC_START',
+        SYNC_END: 'SYNC_END',
+        SYNC_PROGRESS_STATUS: 'SYNC_PROGRESS_STATUS',
+        SYNC_FAILED: 'SYNC_FAILED',
+    },
 };
 
 export const OPERATIONS = {
@@ -647,6 +679,7 @@ export const OPERATIONS = {
     FINALITY: 'finality',
     // UPDATE: 'update',
     GET: 'get',
+    BATCH_GET: 'batchGet',
     ASK: 'ask',
 };
 
@@ -867,6 +900,7 @@ export const NETWORK_PROTOCOLS = {
     STORE: ['/store/1.0.0'],
     // UPDATE: ['/update/1.0.0'],
     GET: ['/get/1.0.0'],
+    BATCH_GET: ['/batch-get/1.0.0'],
     ASK: ['/ask/1.0.0'],
     FINALITY: ['/finality/1.0.0'],
 };
@@ -1047,5 +1081,13 @@ export const PROOFING_MAX_ATTEMPTS = 120;
 export const REORG_PROOFING_BUFFER = 60 * 1000;
 export const CHUNK_SIZE = 32;
 
+
 export const CLAIM_REWARDS_INTERVAL = 60 * 60 * 1000;
 export const CLAIM_REWARDS_BATCH_SIZE = 10;
+
+export const BATCH_GET_BATCH_SIZE = 5;
+export const BATCH_GET_UAL_MAX_LIMIT = 1000;
+
+export const SYNC_INTERVAL = 12 * 1000;
+export const SYNC_BATCH_GET_WAIT_TIME = 1000;
+export const SYNC_BATCH_GET_MAX_ATTEMPTS = 15 * 60;

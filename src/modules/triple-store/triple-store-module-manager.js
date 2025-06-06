@@ -190,6 +190,19 @@ class TripleStoreModuleManager extends BaseModuleManager {
         }
     }
 
+    async getKnowledgeCollectionNamedGraphsInBatch(
+        implementationName,
+        repository,
+        uals,
+        visibility,
+    ) {
+        if (this.getImplementation(implementationName)) {
+            return this.getImplementation(
+                implementationName,
+            ).module.getKnowledgeCollectionNamedGraphsInBatch(repository, uals, visibility);
+        }
+    }
+
     async getKnowledgeCollectionNamedGraphsOld(
         implementationName,
         repository,
@@ -201,6 +214,28 @@ class TripleStoreModuleManager extends BaseModuleManager {
             return this.getImplementation(
                 implementationName,
             ).module.getKnowledgeCollectionNamedGraphsOld(repository, ual, tokenIds, visibility);
+        }
+    }
+
+    async getKnowledgeCollectionNamedGraphsOldInBatch(
+        implementationName,
+        repository,
+        tokenIds,
+        visibility,
+    ) {
+        if (this.getImplementation(implementationName)) {
+            return this.getImplementation(
+                implementationName,
+            ).module.getKnowledgeCollectionNamedGraphsOldInBatch(repository, tokenIds, visibility);
+        }
+    }
+
+    async getMetadataInBatch(implementationName, repository, uals) {
+        if (this.getImplementation(implementationName)) {
+            return this.getImplementation(implementationName).module.getMetadataInBatch(
+                repository,
+                uals,
+            );
         }
     }
 
@@ -346,6 +381,25 @@ class TripleStoreModuleManager extends BaseModuleManager {
     async ask(implementationName, repository, query) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(implementationName).module.ask(repository, query);
+        }
+    }
+
+    async insertAssertionBatch(
+        implementationName,
+        repository,
+        insertMap,
+        metadata,
+        createdMetadata,
+        currentNamedGraphTriples,
+    ) {
+        if (this.getImplementation(implementationName)) {
+            return this.getImplementation(implementationName).module.insertAssertionBatch(
+                repository,
+                insertMap,
+                metadata,
+                createdMetadata,
+                currentNamedGraphTriples,
+            );
         }
     }
 

@@ -334,6 +334,10 @@ class BlockchainModuleManager extends BaseModuleManager {
         ]);
     }
 
+    async getAssetStorageContractsAddress(blockchain) {
+        return this.callImplementationFunction(blockchain, 'getAssetStorageContractsAddress');
+    }
+
     // SUPPORT FOR OLD CONTRACTS
     async getLatestAssertionId(blockchain, assetContractAddress, tokenId) {
         return this.callImplementationFunction(blockchain, 'getLatestAssertionId', [

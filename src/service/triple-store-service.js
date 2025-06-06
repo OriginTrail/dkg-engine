@@ -316,6 +316,64 @@ class TripleStoreService {
         return totalNumberOfTriplesInserted;
     }
 
+    async insertKnowledgeCollectionBatch(repository, KCs) {
+        // this.logger.info(
+        //     `Inserting Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
+        //         `to the Triple Store's ${repository} repository.`,
+        // );
+        // This metadata is not validated
+        const { remote, metadata } = KCs;
+        const insert = {};
+        const createdMetadata = [];
+        const currentNamedGraphTriples = [];
+        // remote { ual: { public: [triples], private: [triples] } }
+        for (const ual of Object.keys(remote)) {
+            const triples = remote[ual].public;
+            const filteredPublic = [];
+            const privateHashTriples = [];
+
+            triples.forEach((triple) => {
+                if (triple.startsWith(`<${PRIVATE_HASH_SUBJECT_PREFIX}`)) {
+                    privateHashTriples.push(triple);
+                } else {
+                    filteredPublic.push(triple);
+                }
+            });
+
+            const publicKnowledgeAssetsTriplesGrouped = kcTools.groupNquadsBySubject(
+                filteredPublic,
+                true,
+            );
+            publicKnowledgeAssetsTriplesGrouped.push(
+                ...kcTools.groupNquadsBySubject(privateHashTriples, true),
+            );
+
+            const publicKnowledgeAssetsUALs = publicKnowledgeAssetsTriplesGrouped.map(
+                (_, index) => `${ual}/${index + 1}`,
+            );
+
+            for (const [index, kaUAL] of publicKnowledgeAssetsUALs.entries()) {
+                insert[`${kaUAL}/public`] = publicKnowledgeAssetsTriplesGrouped[index];
+                createdMetadata.push(`<${kaUAL}> <http://schema.org/states> "${kaUAL}:0" .`);
+                currentNamedGraphTriples.push(
+                    `<current:graph> <https://ontology.origintrail.io/dkg/1.0#hasNamedGraph> <${kaUAL}/public> .`,
+                );
+                createdMetadata.push(
+                    `<${ual}> <https://ontology.origintrail.io/dkg/1.0#hasKnowledgeAsset> <${kaUAL}> .`,
+                );
+            }
+        }
+
+        await this.tripleStoreModuleManager.insertAssertionBatch(
+            TRIPLE_STORE_REPOSITORY.DKG,
+            repository,
+            insert,
+            metadata,
+            createdMetadata,
+            currentNamedGraphTriples,
+        );
+    }
+
     async deletePublishTimestampMetadata(repository, ual) {
         await this.tripleStoreModuleManager.deletePublishTimestampMetadata(
             this.repositoryImplementations[repository],
@@ -557,6 +615,36 @@ class TripleStoreService {
         return nquads;
     }
 
+    async getAssertionsInBatch(repository, uals, ualTokenIds, visibility = 'public') {
+        const results = await Promise.all(
+            uals.map(async (ual) => {
+                const nquads =
+                    await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphsOld(
+                        this.repositoryImplementations[repository],
+                        repository,
+                        // TODO: Add state with implemented update
+                        `${ual}`,
+                        ualTokenIds[ual],
+                        visibility,
+                    );
+                if (nquads?.public) {
+                    nquads.public = nquads.public.split('\n').filter((line) => line !== '');
+                }
+                if (nquads?.private) {
+                    nquads.private = nquads.private.split('\n').filter((line) => line !== '');
+                }
+
+                return nquads;
+            }),
+        );
+        const result = {};
+        for (const [index, ual] of uals.entries()) {
+            result[ual] = results[index];
+        }
+
+        return result;
+    }
+
     async getV6Assertion(repository, assertionId) {
         this.logger.debug(
             `Getting Assertion with the ID: ${assertionId} from the Triple Store's ${repository} repository.`,
@@ -622,6 +710,27 @@ class TripleStoreService {
         }
 
         return nquads;
+    }
+
+    async getAssertionMetadataBatch(uals) {
+        const metadataTriples = await this.tripleStoreModuleManager.getMetadataInBatch(
+            this.repositoryImplementations[TRIPLE_STORE_REPOSITORY.DKG],
+            TRIPLE_STORE_REPOSITORY.DKG,
+            uals,
+        );
+
+        const metadata = {};
+        for (const line of metadataTriples.split('\n').filter((result) => result !== '')) {
+            const splitLine = line.split(' ');
+            const ual = splitLine[0].replace(/[<>]/g, '');
+            if (!metadata[ual]) {
+                metadata[ual] = [line];
+            } else {
+                metadata[ual].push(line);
+            }
+        }
+
+        return metadata;
     }
 
     async getLatestAssertionId(repository, ual) {

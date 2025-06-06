@@ -34,7 +34,7 @@ class ProofingService {
             promises.push(this.proofingMechanism(blockchainId));
         }
         await Promise.all(promises);
-        this.logger.info('[PROOFING]P roofingService initialization completed');
+        this.logger.info('[PROOFING] ProofingService initialization completed');
     }
 
     async proofingMechanism(blockchainId) {

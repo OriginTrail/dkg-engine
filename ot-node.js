@@ -63,6 +63,8 @@ class OTNode {
         this.resumeCommandExecutor();
         await this.initializeProofing();
         await this.initializeClaimRewards();
+        await this.initializeSyncService();
+
         this.logger.info('Node is up and running!');
     }
 
@@ -263,6 +265,7 @@ class OTNode {
             this.logger.error(
                 `Unable to resume command executor queue. Error message: ${e.message}`,
             );
+
             this.stop(1);
         }
     }
@@ -408,6 +411,10 @@ class OTNode {
     async initializeClaimRewards() {
         const claimRewardsService = this.container.resolve('claimRewardsService');
         await claimRewardsService.initialize();
+
+    async initializeSyncService() {
+        const syncService = this.container.resolve('syncService');
+        await syncService.initialize();
     }
 
     stop(code = 0) {

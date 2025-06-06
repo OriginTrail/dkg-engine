@@ -1255,6 +1255,9 @@ class Web3Service {
             );
         });
     }
+    async getAssetStorageContractsAddress() {
+        return Object.keys(this.assetStorageContracts);
+    }
 
     // SUPPORT FOR OLD CONTRACTS
     async getLatestAssertionId(assetContractAddress, tokenId) {
