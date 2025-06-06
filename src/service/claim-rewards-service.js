@@ -11,7 +11,6 @@ class ClaimRewardsService {
         this.validationService = ctx.validationService;
         this.commandExecutor = ctx.commandExecutor;
         this.operationIdService = ctx.operationIdService;
-        this.operationIdService = ctx.operationIdService;
     }
 
     async initialize() {
@@ -116,24 +115,27 @@ class ClaimRewardsService {
             // This means node never claimed and delegated before introduction of random sampling
             // If he staked or claimed before the value would have been set correctly
             const delegatorAddresses = lastClaimedEpochAddressesMap['0'];
-            delegatorAddresses.map(async (delegatorAddress) => {
-                const hasEverDelegated = await this.blockchainModuleManager.hasEverDelegated(
-                    blockchainId,
-                    identityId,
-                    delegatorAddress,
-                );
-                // TODO: How will this impact mainnet where this function landed at same time as proofing
-                if (!hasEverDelegated) {
-                    if (lastClaimedEpochAddressesMap[`${currentEpoch - 1}`]) {
-                        lastClaimedEpochAddressesMap[`${currentEpoch - 1}`].push(
-                            ...delegatorAddresses,
-                        );
-                    } else {
-                        // This means node never claimed and delegated before introduction of random sampling
-                        lastClaimedEpochAddressesMap[`${currentEpoch - 1}`] = delegatorAddresses;
+            await Promise.all(
+                delegatorAddresses.map(async (delegatorAddress) => {
+                    const hasEverDelegated = await this.blockchainModuleManager.hasEverDelegated(
+                        blockchainId,
+                        identityId,
+                        delegatorAddress,
+                    );
+                    // TODO: How will this impact mainnet where this function landed at same time as proofing
+                    if (!hasEverDelegated) {
+                        if (lastClaimedEpochAddressesMap[`${currentEpoch - 1}`]) {
+                            lastClaimedEpochAddressesMap[`${currentEpoch - 1}`].push(
+                                ...delegatorAddresses,
+                            );
+                        } else {
+                            // This means node never claimed and delegated before introduction of random sampling
+                            lastClaimedEpochAddressesMap[`${currentEpoch - 1}`] =
+                                delegatorAddresses;
+                        }
                     }
-                }
-            });
+                }),
+            );
         }
         const sortedEpochs = Object.keys(lastClaimedEpochAddressesMap)
             .map(Number) // convert keys to numbers
