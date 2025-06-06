@@ -94,21 +94,24 @@ class ClaimRewardsService {
 
     async claimRewards(blockchainId) {
         const identityId = await this.blockchainModuleManager.getIdentityId(blockchainId);
-        const nodeDelegatorAddresses = await this.blockchainModuleManager.getNodeDelegatorAddresses(
+        const nodeDelegatorAddresses = await this.blockchainModuleManager.getDelegators(
             blockchainId,
             identityId,
         );
         const lastClaimedEpochAddressesMap = {};
-        nodeDelegatorAddresses.map(async (delegatorAddress) => {
-            const lastClaimedEpoch = await this.blockchainModuleManager.getLastClaimedEpoch(
-                blockchainId,
-                delegatorAddress,
-            );
-            if (!lastClaimedEpochAddressesMap[`${lastClaimedEpoch}`]) {
-                lastClaimedEpochAddressesMap[`${lastClaimedEpoch}`] = [];
-            }
-            lastClaimedEpochAddressesMap[`${lastClaimedEpoch}`].push(delegatorAddress);
-        });
+        await Promise.all(
+            nodeDelegatorAddresses.map(async (delegatorAddress) => {
+                const lastClaimedEpoch = await this.blockchainModuleManager.getLastClaimedEpoch(
+                    blockchainId,
+                    identityId,
+                    delegatorAddress,
+                );
+                if (!lastClaimedEpochAddressesMap[`${lastClaimedEpoch}`]) {
+                    lastClaimedEpochAddressesMap[`${lastClaimedEpoch}`] = [];
+                }
+                lastClaimedEpochAddressesMap[`${lastClaimedEpoch}`].push(delegatorAddress);
+            }),
+        );
         const currentEpoch = await this.blockchainModuleManager.getCurrentEpoch(blockchainId);
         if (lastClaimedEpochAddressesMap['0'] && lastClaimedEpochAddressesMap['0'].length > 0) {
             // This means delegator never claimed for the node, but is in the list of delegators
@@ -149,12 +152,14 @@ class ClaimRewardsService {
                     const batch = delegatorAddresses.slice(i, i + CLAIM_REWARDS_BATCH_SIZE);
                     // TODO: Sending transaction from the node works with transaction queue, when tx is sent queue checks if theres is another one and sends it if exists
                     try {
-                        // eslint-disable-next-line no-await-in-loop
-                        const batchClaimed = await this.blockchainModuleManager.claimRewards(
-                            blockchainId,
-                            [epoch + 1],
-                            batch,
-                        );
+                        const batchClaimed =
+                            // eslint-disable-next-line no-await-in-loop
+                            await this.blockchainModuleManager.batchClaimDelegatorRewards(
+                                blockchainId,
+                                identityId,
+                                [epoch + 1],
+                                batch,
+                            );
                         if (batchClaimed.success) {
                             this.logger.info(
                                 `[CLAIM] Claimed rewards for batch ${batch} in epoch ${

@@ -1217,12 +1217,10 @@ class Web3Service {
         return block.timestamp;
     }
 
-    async getNodeDelegatorAddresses(identityId) {
-        return this.callContractFunction(
-            this.contracts.DelegatorsInfo,
-            'getNodeDelegatorAddresses',
-            [identityId],
-        );
+    async getDelegators(identityId) {
+        return this.callContractFunction(this.contracts.DelegatorsInfo, 'getDelegators', [
+            identityId,
+        ]);
     }
 
     async hasEverDelegated(identityId, address) {
@@ -1234,6 +1232,13 @@ class Web3Service {
 
     async getCurrentEpoch() {
         return this.callContractFunction(this.contracts.Chronos, 'getCurrentEpoch', []);
+    }
+
+    async getLastClaimedEpoch(identityId, address) {
+        return this.callContractFunction(this.contracts.DelegatorsInfo, 'getLastClaimedEpoch', [
+            identityId,
+            address,
+        ]);
     }
 
     async batchClaimDelegatorRewards(identityId, epochs, delegators) {
@@ -1255,6 +1260,7 @@ class Web3Service {
             );
         });
     }
+
     async getAssetStorageContractsAddress() {
         return Object.keys(this.assetStorageContracts);
     }
