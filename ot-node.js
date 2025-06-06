@@ -411,6 +411,7 @@ class OTNode {
     async initializeClaimRewards() {
         const claimRewardsService = this.container.resolve('claimRewardsService');
         await claimRewardsService.initialize();
+    }
 
     async initializeSyncService() {
         const syncService = this.container.resolve('syncService');
