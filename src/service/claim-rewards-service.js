@@ -112,7 +112,9 @@ class ClaimRewardsService {
                 lastClaimedEpochAddressesMap[`${lastClaimedEpoch}`].push(delegatorAddress);
             }),
         );
-        const currentEpoch = await this.blockchainModuleManager.getCurrentEpoch(blockchainId);
+        const currentEpoch = Number(
+            (await this.blockchainModuleManager.getCurrentEpoch(blockchainId)).toString(),
+        );
         if (lastClaimedEpochAddressesMap['0'] && lastClaimedEpochAddressesMap['0'].length > 0) {
             // This means delegator never claimed for the node, but is in the list of delegators
             // This means node never claimed and delegated before introduction of random sampling
