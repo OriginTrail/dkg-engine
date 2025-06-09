@@ -80,13 +80,13 @@ class ClaimRewardsService {
             this.logger.error(
                 `[CLAIM] Error in initial claim rewards run for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
             );
-            this.operationIdService.emitChangeEvent(
-                'CLAIM_REWARDS_ERROR',
-                this.generateOperationId(blockchainId, 0, 0),
-                blockchainId,
-                error.message,
-                error.stack,
-            );
+            // this.operationIdService.emitChangeEvent(
+            //     'CLAIM_REWARDS_ERROR',
+            //     this.generateOperationId(blockchainId, 0, 0),
+            //     blockchainId,
+            //     error.message,
+            //     error.stack,
+            // );
         } finally {
             isRunning = false;
         }
@@ -134,7 +134,6 @@ class ClaimRewardsService {
                                 ...delegatorAddresses,
                             );
                         } else {
-                            // This means node never claimed and delegated before introduction of random sampling
                             lastClaimedEpochAddressesMap[`${currentEpoch - 1}`] =
                                 delegatorAddresses;
                         }
@@ -142,17 +141,19 @@ class ClaimRewardsService {
                 }),
             );
         }
+        if (lastClaimedEpochAddressesMap[`0`]) {
+            delete lastClaimedEpochAddressesMap[`0`];
+        }
         const sortedEpochs = Object.keys(lastClaimedEpochAddressesMap)
             .map(Number) // convert keys to numbers
             .sort((a, b) => a - b); // sort numerically ascending
 
-        for (const epoch of sortedEpochs) {
+        for (let i = 0; i < sortedEpochs.length; i += 1) {
+            const epoch = sortedEpochs[i];
             const delegatorAddresses = lastClaimedEpochAddressesMap[epoch.toString()];
-            // do something with epoch and delegatorAddresses
             if (epoch + 1 !== currentEpoch) {
-                for (let i = 0; i < delegatorAddresses.length; i += CLAIM_REWARDS_BATCH_SIZE) {
-                    const batch = delegatorAddresses.slice(i, i + CLAIM_REWARDS_BATCH_SIZE);
-                    // TODO: Sending transaction from the node works with transaction queue, when tx is sent queue checks if theres is another one and sends it if exists
+                for (let j = 0; j < delegatorAddresses.length; j += CLAIM_REWARDS_BATCH_SIZE) {
+                    const batch = delegatorAddresses.slice(j, j + CLAIM_REWARDS_BATCH_SIZE);
                     try {
                         const batchClaimed =
                             // eslint-disable-next-line no-await-in-loop
@@ -173,6 +174,12 @@ class ClaimRewardsService {
                                 lastClaimedEpochAddressesMap[`${epoch + 1}`].push(...batch);
                             } else {
                                 lastClaimedEpochAddressesMap[`${epoch + 1}`] = batch;
+                                // lastClaimedEpochAddressesMap[`${epoch + 1}`] didn't exist before so we need to also update sortedEpochs
+                                if (i === sortedEpochs.length - 1) {
+                                    sortedEpochs.push(epoch + 1);
+                                } else {
+                                    sortedEpochs.splice(i + 1, 0, epoch + 1);
+                                }
                             }
                         } else {
                             this.logger.error(
