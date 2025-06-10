@@ -175,11 +175,8 @@ class ClaimRewardsService {
                             } else {
                                 lastClaimedEpochAddressesMap[`${epoch + 1}`] = batch;
                                 // lastClaimedEpochAddressesMap[`${epoch + 1}`] didn't exist before so we need to also update sortedEpochs
-                                if (i === sortedEpochs.length - 1) {
-                                    sortedEpochs.push(epoch + 1);
-                                } else {
-                                    sortedEpochs.splice(i + 1, 0, epoch + 1);
-                                }
+                                // splice handles if i + 1 === sortedEpochs.length
+                                sortedEpochs.splice(i + 1, 0, epoch + 1);
                             }
                         } else {
                             this.logger.error(
