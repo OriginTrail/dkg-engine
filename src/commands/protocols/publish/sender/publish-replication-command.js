@@ -80,24 +80,21 @@ class PublishReplicationCommand extends Command {
                     true,
                 );
 
-                this.operationIdService.emitChangeEvent(
-                    OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_FAILED,
-                    operationId,
-                );
+                this.operationIdService.emitChangeEvent(OPERATION_ID_STATUS.FAILED, operationId);
                 return Command.empty();
             }
 
             await this.operationIdService.updateOperationIdStatus(
                 operationId,
                 blockchain,
-                OPERATION_ID_STATUS.PUBLISH.PUBLISH_FIND_NODES_END,
+                OPERATION_ID_STATUS.FAILED,
             );
 
             try {
                 await this.operationIdService.updateOperationIdStatus(
                     operationId,
                     blockchain,
-                    OPERATION_ID_STATUS.LOCAL_STORE.LOCAL_STORE_START,
+                    OPERATION_ID_STATUS.PUBLISH.PUBLISH_REPLICATE_START,
                 );
                 const batchSizePar = this.operationService.getBatchSize(batchSize);
 
@@ -127,17 +124,12 @@ class PublishReplicationCommand extends Command {
                         null,
                     );
                 }
-
-                await this.operationIdService.updateOperationIdStatus(
-                    operationId,
-                    blockchain,
-                    OPERATION_ID_STATUS.LOCAL_STORE.LOCAL_STORE_END,
-                );
             } catch (e) {
                 await this.handleError(operationId, blockchain, e.message, this.errorType, true);
                 this.operationIdService.emitChangeEvent(
-                    OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_FAILED,
+                    OPERATION_ID_STATUS.FAILED,
                     operationId,
+                    blockchain,
                 );
                 return Command.empty();
             }
@@ -151,14 +143,15 @@ class PublishReplicationCommand extends Command {
             // Run all message sending operations in parallel
             await Promise.all(
                 shardNodes.map((node) =>
-                    this.sendAndHandleMessage(node, operationId, message, command),
+                    this.sendAndHandleMessage(node, operationId, message, command, blockchain),
                 ),
             );
         } catch (e) {
             await this.handleError(operationId, blockchain, e.message, this.errorType, true);
             this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_FAILED,
+                OPERATION_ID_STATUS.FAILED,
                 operationId,
+                blockchain,
             );
             return Command.empty();
         }
@@ -166,7 +159,7 @@ class PublishReplicationCommand extends Command {
         return Command.empty();
     }
 
-    async sendAndHandleMessage(node, operationId, message, command) {
+    async sendAndHandleMessage(node, operationId, message, command, blockchain) {
         const response = await this.messagingService.sendProtocolMessage(
             node,
             operationId,
@@ -200,8 +193,9 @@ class PublishReplicationCommand extends Command {
                 responseData,
             );
             this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_FAILED,
+                OPERATION_ID_STATUS.FAILED,
                 operationId,
+                blockchain,
             );
         }
     }
