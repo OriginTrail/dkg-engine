@@ -471,6 +471,7 @@ class SyncService {
     async callBatchGet(uals, blockchainId) {
         const batchGetOperationId = await this.operationIdService.generateOperationId(
             OPERATION_ID_STATUS.BATCH_GET.BATCH_GET_INIT,
+            blockchainId,
         );
 
         await this.commandExecutor.add({

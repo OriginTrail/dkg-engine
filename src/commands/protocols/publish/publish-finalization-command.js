@@ -33,6 +33,7 @@ class PublishFinalizationCommand extends Command {
         const { blockchain, contractAddress } = event;
         const operationId = await this.operationIdService.generateOperationId(
             OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_START,
+            blockchain,
             publishOperationId,
         );
         let transaction;
