@@ -421,7 +421,7 @@ class TripleStoreService {
                 `${ual}`,
                 knowledgeAssetId,
                 visibility,
-                this.tripleStoreModuleManager.config.timeout.get,
+                this.config.modules.tripleStore.timeout.get,
             );
         } else {
             this.logger.debug(`Getting Assertion with the UAL: ${ual}.`);
@@ -433,7 +433,7 @@ class TripleStoreService {
                     ual,
                     knowledgeAssetId,
                     visibility,
-                    this.tripleStoreModuleManager.config.timeout.get,
+                    this.config.modules.tripleStore.timeout.get,
                 );
             } else {
                 nquads = await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphsOld(
@@ -442,7 +442,7 @@ class TripleStoreService {
                     ual,
                     tokenIds,
                     visibility,
-                    this.tripleStoreModuleManager.config.timeout.get,
+                    this.config.modules.tripleStore.timeout.get,
                 );
             }
         }
@@ -542,12 +542,14 @@ class TripleStoreService {
                 this.repositoryImplementations[repository],
                 repository,
                 ual,
+                this.config.modules.tripleStore.timeout.get,
             );
         } else {
             nquads = await this.tripleStoreModuleManager.getKnowledgeCollectionMetadata(
                 this.repositoryImplementations[repository],
                 repository,
                 ual,
+                this.config.modules.tripleStore.timeout.get,
             );
         }
         nquads = nquads.split('\n').filter((line) => line !== '');
@@ -608,60 +610,13 @@ class TripleStoreService {
         );
     }
 
-    async moveToHistoricAndDeleteAssertion(ual, stateIndex) {
-        // Find all named graph that exist for given UAL
-        const ualNamedGraphs = this.tripleStoreModuleManager.findAllNamedGraphsByUAL(
-            TRIPLE_STORE_REPOSITORY.DKG,
-            ual,
-        );
-        let stateNamedGraphExistInHistoric = [];
-        const ulaNamedGraphsWithState = [];
-        const checkPromises = [];
-        // Check if they already exist in historic
-        for (const ulaNamedGraph of ualNamedGraphs) {
-            const parts = ulaNamedGraph.split('/');
-            parts[parts.length - 2] = `${parts[parts.length - 2]}:${stateIndex}`;
-            const ulaNamedGraphWithState = parts.join('/');
-            ulaNamedGraphsWithState.push(ulaNamedGraphWithState);
-            checkPromises.push(
-                this.tripleStoreModuleManager.namedGraphExist(
-                    TRIPLE_STORE_REPOSITORY.DKG_HISTORIC,
-                    ulaNamedGraphWithState,
-                ),
-            );
-        }
-        stateNamedGraphExistInHistoric = await Promise.all(checkPromises);
-        // const insertPromises = [];
-
-        // Insert them in UAL:latestStateIndex - 1 named graph in historic
-        for (const [index, promiseResult] of stateNamedGraphExistInHistoric.entries()) {
-            if (!promiseResult) {
-                const nquads = await this.tripleStoreModuleManager.getAssertionFromNamedGraph(
-                    TRIPLE_STORE_REPOSITORY.DKG,
-                    ualNamedGraphs[index],
-                );
-                await this.tripleStoreModuleManager.insetAssertionInNamedGraph(
-                    TRIPLE_STORE_REPOSITORY.DKG_HISTORIC,
-                    ulaNamedGraphsWithState[index],
-                    nquads,
-                );
-            }
-        }
-
-        await this.tripleStoreModuleManager.deleteKnowledgeCollectionNamedGraphs(
-            TRIPLE_STORE_REPOSITORY.DKG,
-            ualNamedGraphs,
-        );
-
-        return ualNamedGraphs;
-    }
-
-    async getKnowledgeAssetNamedGraph(repository, ual, visibility) {
+    async getKnowledgeAssetNamedGraph(repository, ual, visibility, timeout) {
         return this.tripleStoreModuleManager.getKnowledgeAssetNamedGraph(
             this.repositoryImplementations[repository],
             repository,
             ual,
             visibility,
+            timeout,
         );
     }
 

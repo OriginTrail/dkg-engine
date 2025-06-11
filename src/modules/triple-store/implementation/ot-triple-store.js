@@ -765,7 +765,7 @@ class OtTripleStore {
         await this.queryVoid(repository, query);
     }
 
-    async getKnowledgeCollectionMetadata(repository, ual) {
+    async getKnowledgeCollectionMetadata(repository, ual, timeout) {
         const query = `
         CONSTRUCT {
             <${ual}> ?p ?o .
@@ -777,10 +777,10 @@ class OtTripleStore {
         }
     `;
 
-        return this.construct(repository, query);
+        return this.construct(repository, query, timeout);
     }
 
-    async getKnowledgeAssetMetadata(repository, ual) {
+    async getKnowledgeAssetMetadata(repository, ual, timeout) {
         const query = `
             CONSTRUCT { <${ual}> ?p ?o . }
             WHERE {
@@ -790,7 +790,7 @@ class OtTripleStore {
             }
         `;
 
-        return this.construct(repository, query);
+        return this.construct(repository, query, timeout);
     }
 
     async knowledgeCollectionMetadataExists(repository, ual) {

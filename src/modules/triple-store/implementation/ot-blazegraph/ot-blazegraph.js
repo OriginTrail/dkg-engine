@@ -88,16 +88,15 @@ class OtBlazegraph extends OtTripleStore {
                 'Content-Type': 'application/sparql-query',
                 'X-BIGDATA-MAX-QUERY-MILLIS': timeout,
             },
-            responseType: 'stream',
         });
 
-        const { data } = await this.queryEngine.resultToString(result.data, mediaType);
+        console.log(result.data.results);
 
         let response = '';
 
-        for await (const chunk of data) {
-            response += chunk;
-        }
+        // for await (const chunk of data) {
+        //     response += chunk;
+        // }
 
         // Handle Blazegraph special characters corruption
         if (this.hasUnicodeCodePoints(response)) {

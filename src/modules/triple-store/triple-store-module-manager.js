@@ -316,20 +316,22 @@ class TripleStoreModuleManager extends BaseModuleManager {
         }
     }
 
-    async getKnowledgeCollectionMetadata(implementationName, repository, ual) {
+    async getKnowledgeCollectionMetadata(implementationName, repository, ual, timeout) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(implementationName).module.getKnowledgeCollectionMetadata(
                 repository,
                 ual,
+                timeout,
             );
         }
     }
 
-    async getKnowledgeAssetMetadata(implementationName, repository, ual) {
+    async getKnowledgeAssetMetadata(implementationName, repository, ual, timeout) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(implementationName).module.getKnowledgeAssetMetadata(
                 repository,
                 ual,
+                timeout,
             );
         }
     }
