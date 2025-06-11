@@ -1,5 +1,6 @@
 import axios from 'axios';
 import OtTripleStore from '../ot-triple-store.js';
+import { MEDIA_TYPES } from '../../../../constants/constants.js';
 
 class OtBlazegraph extends OtTripleStore {
     async initialize(config, logger) {
@@ -69,12 +70,28 @@ class OtBlazegraph extends OtTripleStore {
         return Buffer.from(input, 'utf8').toString();
     }
 
-    async _executeQuery(repository, query, mediaType) {
-        const result = await this.queryEngine.query(
-            query,
-            this.repositories[repository].queryContext,
-        );
-        const { data } = await this.queryEngine.resultToString(result, mediaType);
+    async construct(repository, query, timeout) {
+        return this._executeQuery(repository, query, MEDIA_TYPES.N_QUADS, timeout);
+    }
+
+    async select(repository, query, timeout) {
+        // todo: add media type once bug is fixed
+        // no media type is passed because of comunica bug
+        // https://github.com/comunica/comunica/issues/1034
+        const result = await this._executeQuery(repository, query, timeout);
+        return result ? JSON.parse(result) : [];
+    }
+
+    async _executeQuery(repository, query, mediaType, timeout) {
+        const result = await axios.post(this.repositories[repository].sparqlEndpoint, query, {
+            headers: {
+                'Content-Type': 'application/sparql-query',
+                'X-BIGDATA-MAX-QUERY-MILLIS': timeout,
+            },
+            responseType: 'stream',
+        });
+
+        const { data } = await this.queryEngine.resultToString(result.data, mediaType);
 
         let response = '';
 

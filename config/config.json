@@ -91,6 +91,12 @@
             },
             "tripleStore": {
                 "enabled": true,
+                "timeout": {
+                    "query": 900000,
+                    "get": 10000,
+                    "batchGet": 60000,
+                    "insert": 300000
+                },
                 "implementation": {
                     "ot-blazegraph": {
                         "enabled": false,

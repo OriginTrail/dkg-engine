@@ -569,6 +569,7 @@ class TripleStoreService {
                 `${ual}`,
                 knowledgeAssetId,
                 visibility,
+                this.tripleStoreModuleManager.config.timeout.get,
             );
         } else {
             this.logger.debug(`Getting Assertion with the UAL: ${ual}.`);
@@ -580,6 +581,7 @@ class TripleStoreService {
                     ual,
                     knowledgeAssetId,
                     visibility,
+                    this.tripleStoreModuleManager.config.timeout.get,
                 );
             } else {
                 nquads = await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphsOld(
@@ -588,6 +590,7 @@ class TripleStoreService {
                     ual,
                     tokenIds,
                     visibility,
+                    this.tripleStoreModuleManager.config.timeout.get,
                 );
             }
         }
@@ -743,12 +746,13 @@ class TripleStoreService {
         return nquads;
     }
 
-    async construct(query, repository = TRIPLE_STORE_REPOSITORY.DKG) {
+    async construct(query, repository = TRIPLE_STORE_REPOSITORY.DKG, timeout = 60000) {
         return this.tripleStoreModuleManager.construct(
             this.repositoryImplementations[repository] ??
                 this.repositoryImplementations[TRIPLE_STORE_REPOSITORY.DKG],
             repository,
             query,
+            timeout,
         );
     }
 
@@ -809,12 +813,13 @@ class TripleStoreService {
         );
     }
 
-    async select(query, repository = TRIPLE_STORE_REPOSITORY.DKG) {
+    async select(query, repository = TRIPLE_STORE_REPOSITORY.DKG, timeout = 60000) {
         return this.tripleStoreModuleManager.select(
             this.repositoryImplementations[repository] ??
                 this.repositoryImplementations[TRIPLE_STORE_REPOSITORY.DKG],
             repository,
             query,
+            timeout,
         );
     }
 

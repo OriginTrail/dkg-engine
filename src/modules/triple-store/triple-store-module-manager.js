@@ -177,6 +177,7 @@ class TripleStoreModuleManager extends BaseModuleManager {
         ual,
         knowledgeAssetId,
         visibility,
+        timeout,
     ) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(
@@ -186,6 +187,7 @@ class TripleStoreModuleManager extends BaseModuleManager {
                 ual,
                 knowledgeAssetId,
                 visibility,
+                timeout,
             );
         }
     }
@@ -209,11 +211,18 @@ class TripleStoreModuleManager extends BaseModuleManager {
         ual,
         tokenIds,
         visibility,
+        timeout,
     ) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(
                 implementationName,
-            ).module.getKnowledgeCollectionNamedGraphsOld(repository, ual, tokenIds, visibility);
+            ).module.getKnowledgeCollectionNamedGraphsOld(
+                repository,
+                ual,
+                tokenIds,
+                visibility,
+                timeout,
+            );
         }
     }
 
@@ -222,11 +231,17 @@ class TripleStoreModuleManager extends BaseModuleManager {
         repository,
         tokenIds,
         visibility,
+        timeout,
     ) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(
                 implementationName,
-            ).module.getKnowledgeCollectionNamedGraphsOldInBatch(repository, tokenIds, visibility);
+            ).module.getKnowledgeCollectionNamedGraphsOldInBatch(
+                repository,
+                tokenIds,
+                visibility,
+                timeout,
+            );
         }
     }
 
@@ -256,12 +271,13 @@ class TripleStoreModuleManager extends BaseModuleManager {
         }
     }
 
-    async getKnowledgeAssetNamedGraph(implementationName, repository, ual, visibility) {
+    async getKnowledgeAssetNamedGraph(implementationName, repository, ual, visibility, timeout) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(implementationName).module.getKnowledgeAssetNamedGraph(
                 repository,
                 ual,
                 visibility,
+                timeout,
             );
         }
     }
@@ -335,15 +351,23 @@ class TripleStoreModuleManager extends BaseModuleManager {
         }
     }
 
-    async construct(implementationName, repository, query) {
+    async construct(implementationName, repository, query, timeout) {
         if (this.getImplementation(implementationName)) {
-            return this.getImplementation(implementationName).module.construct(repository, query);
+            return this.getImplementation(implementationName).module.construct(
+                repository,
+                query,
+                timeout,
+            );
         }
     }
 
-    async select(implementationName, repository, query) {
+    async select(implementationName, repository, query, timeout) {
         if (this.getImplementation(implementationName)) {
-            return this.getImplementation(implementationName).module.select(repository, query);
+            return this.getImplementation(implementationName).module.select(
+                repository,
+                query,
+                timeout,
+            );
         }
     }
 

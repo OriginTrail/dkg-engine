@@ -451,7 +451,7 @@ class OtTripleStore {
         await this.queryVoid(repository, query);
     }
 
-    async getKnowledgeCollectionNamedGraphsOld(repository, ual, tokenIds, visibility) {
+    async getKnowledgeCollectionNamedGraphsOld(repository, ual, tokenIds, visibility, timeout) {
         const namedGraphs = Array.from(
             { length: tokenIds.endTokenId - tokenIds.startTokenId + 1 },
             (_, i) => tokenIds.startTokenId + i,
@@ -476,7 +476,7 @@ class OtTripleStore {
                         .join('\n')}
                 }
               }`;
-            assertion.public = await this.construct(repository, query);
+            assertion.public = await this.construct(repository, query, timeout);
         }
         if (visibility === TRIPLES_VISIBILITY.PRIVATE || visibility === TRIPLES_VISIBILITY.ALL) {
             const query = `
@@ -494,13 +494,18 @@ class OtTripleStore {
                         .join('\n')}
                 }
               }`;
-            assertion.private = await this.construct(repository, query);
+            assertion.private = await this.construct(repository, query, timeout);
         }
 
         return assertion;
     }
 
-    async getKnowledgeCollectionNamedGraphsOldInBatch(repository, ualTokenIds, visibility) {
+    async getKnowledgeCollectionNamedGraphsOldInBatch(
+        repository,
+        ualTokenIds,
+        visibility,
+        timeout,
+    ) {
         const kaUALs = Array.from(Object.entries(ualTokenIds)).flatMap(([ual, tokenIds]) => {
             const arr = Array.from(
                 { length: tokenIds.endTokenId - tokenIds.startTokenId + 1 },
@@ -540,12 +545,19 @@ class OtTripleStore {
             headers: {
                 'Content-Type': 'application/sparql-query',
                 Accept: 'text/tab-separated-values',
+                'X-BIGDATA-MAX-QUERY-MILLIS': timeout,
             },
         });
         return result.data;
     }
 
-    async getKnowledgeCollectionNamedGraphs(repository, ual, knowledgeAssetId, visibility) {
+    async getKnowledgeCollectionNamedGraphs(
+        repository,
+        ual,
+        knowledgeAssetId,
+        visibility,
+        timeout,
+    ) {
         const assertion = {};
         let publicPrivateMetadataConnections = null;
 
@@ -583,6 +595,7 @@ class OtTripleStore {
                 publicPrivateMetadataConnections = await this.select(
                     repository,
                     getNamedGraphsQuery,
+                    timeout,
                 );
             }
             return publicPrivateMetadataConnections
@@ -593,11 +606,11 @@ class OtTripleStore {
         if (visibility === TRIPLES_VISIBILITY.PUBLIC || visibility === TRIPLES_VISIBILITY.ALL) {
             if (knowledgeAssetId) {
                 const singleGraph = await buildSingleGraph(TRIPLES_VISIBILITY.PUBLIC);
-                assertion.public = await this.construct(repository, singleGraph);
+                assertion.public = await this.construct(repository, singleGraph, timeout);
             } else {
                 const publicGraphs = await buildAllGraphs('/public');
                 assertion.public = publicGraphs.length
-                    ? await this.construct(repository, getConstructQuery(publicGraphs))
+                    ? await this.construct(repository, getConstructQuery(publicGraphs), timeout)
                     : '';
             }
         }
@@ -605,11 +618,11 @@ class OtTripleStore {
         if (visibility === TRIPLES_VISIBILITY.PRIVATE || visibility === TRIPLES_VISIBILITY.ALL) {
             if (knowledgeAssetId) {
                 const singleGraph = await buildSingleGraph(TRIPLES_VISIBILITY.PRIVATE);
-                assertion.private = await this.construct(repository, singleGraph);
+                assertion.private = await this.construct(repository, singleGraph, timeout);
             } else {
                 const privateGraphs = await buildAllGraphs('/private');
                 assertion.private = privateGraphs.length
-                    ? await this.construct(repository, getConstructQuery(privateGraphs))
+                    ? await this.construct(repository, getConstructQuery(privateGraphs), timeout)
                     : '';
             }
         }
@@ -655,7 +668,7 @@ class OtTripleStore {
         await this.queryVoid(repository, query);
     }
 
-    async getKnowledgeAssetNamedGraph(repository, ual, visibility) {
+    async getKnowledgeAssetNamedGraph(repository, ual, visibility, timeout) {
         let whereClause;
 
         switch (visibility) {
@@ -696,7 +709,7 @@ class OtTripleStore {
             ${whereClause}
         `;
 
-        return this.construct(repository, query);
+        return this.construct(repository, query, timeout);
     }
 
     async knowledgeAssetNamedGraphExists(repository, name) {

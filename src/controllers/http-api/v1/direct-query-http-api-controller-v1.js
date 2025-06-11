@@ -15,6 +15,7 @@ class DirectQueryController extends BaseController {
         this.paranetService = ctx.paranetService;
         this.ualService = ctx.ualService;
         this.operationIdService = ctx.operationIdService;
+        this.tripleStoreModuleManager = ctx.tripleStoreModuleManager;
     }
 
     async handleRequest(req, res) {
@@ -73,8 +74,16 @@ class DirectQueryController extends BaseController {
                 case QUERY_TYPES.CONSTRUCT: {
                     if (Array.isArray(repository)) {
                         const [dataV6, dataV8] = await Promise.all([
-                            this.tripleStoreService.construct(query, repository[0]),
-                            this.tripleStoreService.construct(query, repository[1]),
+                            this.tripleStoreService.construct(
+                                query,
+                                repository[0],
+                                this.config.tripleStore.timeout.query,
+                            ),
+                            this.tripleStoreService.construct(
+                                query,
+                                repository[1],
+                                this.config.tripleStore.timeout.query,
+                            ),
                         ]);
 
                         data = this.dataService.removeDuplicateObjectsFromArray([
@@ -82,7 +91,11 @@ class DirectQueryController extends BaseController {
                             ...dataV8,
                         ]);
                     } else {
-                        data = await this.tripleStoreService.construct(query, repository);
+                        data = await this.tripleStoreService.construct(
+                            query,
+                            repository,
+                            this.config.tripleStore.timeout.query,
+                        );
                     }
 
                     break;
@@ -90,8 +103,16 @@ class DirectQueryController extends BaseController {
                 case QUERY_TYPES.SELECT: {
                     if (Array.isArray(repository)) {
                         const [dataV6, dataV8] = await Promise.all([
-                            this.tripleStoreService.select(query, repository[0]),
-                            this.tripleStoreService.select(query, repository[1]),
+                            this.tripleStoreService.select(
+                                query,
+                                repository[0],
+                                this.config.tripleStore.timeout.query,
+                            ),
+                            this.tripleStoreService.select(
+                                query,
+                                repository[1],
+                                this.config.tripleStore.timeout.query,
+                            ),
                         ]);
 
                         data = this.dataService.removeDuplicateObjectsFromArray([
@@ -99,7 +120,11 @@ class DirectQueryController extends BaseController {
                             ...dataV8,
                         ]);
                     } else {
-                        data = await this.tripleStoreService.select(query, repository);
+                        data = await this.tripleStoreService.select(
+                            query,
+                            repository,
+                            this.config.tripleStore.timeout.query,
+                        );
                     }
 
                     break;
