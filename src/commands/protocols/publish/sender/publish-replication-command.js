@@ -80,7 +80,11 @@ class PublishReplicationCommand extends Command {
                     true,
                 );
 
-                this.operationIdService.emitChangeEvent(OPERATION_ID_STATUS.FAILED, operationId);
+                this.operationIdService.emitChangeEvent(
+                    OPERATION_ID_STATUS.FAILED,
+                    operationId,
+                    blockchain,
+                );
                 return Command.empty();
             }
 
