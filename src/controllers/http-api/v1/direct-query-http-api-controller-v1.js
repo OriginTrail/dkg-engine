@@ -95,7 +95,7 @@ class DirectQueryController extends BaseController {
                         data = await this.tripleStoreService.construct(
                             query,
                             repository,
-                            this.config.tripleStore.timeout.query,
+                            this.config.modules.tripleStore.timeout.query,
                         );
                     }
 

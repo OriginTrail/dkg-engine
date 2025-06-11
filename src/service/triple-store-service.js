@@ -481,6 +481,7 @@ class TripleStoreService {
                         `${ual}`,
                         ualTokenIds[ual],
                         visibility,
+                        this.config.modules.tripleStore.timeout.batchGet,
                     );
                 if (nquads?.public) {
                     nquads.public = nquads.public.split('\n').filter((line) => line !== '');

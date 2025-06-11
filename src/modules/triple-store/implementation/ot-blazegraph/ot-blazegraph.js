@@ -78,7 +78,7 @@ class OtBlazegraph extends OtTripleStore {
         // todo: add media type once bug is fixed
         // no media type is passed because of comunica bug
         // https://github.com/comunica/comunica/issues/1034
-        const result = await this._executeQuery(repository, query, timeout);
+        const result = await this._executeQuery(repository, query, MEDIA_TYPES.JSON, timeout);
         return result ? JSON.parse(result) : [];
     }
 
@@ -87,52 +87,53 @@ class OtBlazegraph extends OtTripleStore {
             headers: {
                 'Content-Type': 'application/sparql-query',
                 'X-BIGDATA-MAX-QUERY-MILLIS': timeout,
-                Accept: 'application/json',
+                Accept: mediaType,
             },
         });
+        let response;
+        if (mediaType === MEDIA_TYPES.JSON) {
+            const { bindings } = result.data.results;
 
-        const { bindings } = result.data.results;
+            let output = '[\n';
 
-        let output = '[\n';
+            bindings.forEach((binding, bindingIndex) => {
+                let string = '  {\n';
 
-        bindings.forEach((binding, bindingIndex) => {
-            let string = '  {\n';
+                const keys = Object.keys(binding);
 
-            const keys = Object.keys(binding);
+                keys.forEach((key, index) => {
+                    let value = '';
+                    const entry = binding[key];
 
-            keys.forEach((key, index) => {
-                let value = '';
-                const entry = binding[key];
+                    if (entry.datatype) {
+                        // e.g., "\"6900000\"^^http://www.w3.org/2001/XMLSchema#integer"
+                        value = `"\\"${entry.value}\\"^^${entry.datatype}"`;
+                    } else if (entry['xml:lang']) {
+                        // e.g., "\"text here\"@en"
+                        value = `"\\"${entry.value}\\"@${entry['xml:lang']}"`;
+                    } else if (entry.type === 'uri') {
+                        value = `"${entry.value}"`;
+                    } else {
+                        // Escape any double quotes inside the string value itself
+                        const escaped = entry.value.replace(/"/g, '\\"');
+                        value = `"\\"${escaped}\\""`;
+                    }
 
-                if (entry.datatype) {
-                    // e.g., "\"6900000\"^^http://www.w3.org/2001/XMLSchema#integer"
-                    value = `"\\"${entry.value}\\"^^${entry.datatype}"`;
-                } else if (entry['xml:lang']) {
-                    // e.g., "\"text here\"@en"
-                    value = `"\\"${entry.value}\\"@${entry['xml:lang']}"`;
-                } else if (entry.type === 'uri') {
-                    value = `"${entry.value}"`;
-                } else {
-                    // Escape any double quotes inside the string value itself
-                    const escaped = entry.value.replace(/"/g, '\\"');
-                    value = `"\\"${escaped}\\""`;
-                }
+                    const isLast = index === keys.length - 1;
+                    string += `    "${key}": ${value}${isLast ? '' : ','}\n`;
+                });
 
-                const isLast = index === keys.length - 1;
-                string += `    "${key}": ${value}${isLast ? '' : ','}\n`;
+                const isLastBinding = bindingIndex === bindings.length - 1;
+                string += `  }${isLastBinding ? '\n' : ',\n'}`;
+
+                output += string;
             });
 
-            const isLastBinding = bindingIndex === bindings.length - 1;
-            string += `  }${isLastBinding ? '\n' : ',\n'}`;
-
-            output += string;
-        });
-
-        output += ']';
-
-        console.log(output);
-
-        let response = output;
+            output += ']';
+            response = output;
+        } else {
+            response = result.data;
+        }
 
         // Handle Blazegraph special characters corruption
         if (this.hasUnicodeCodePoints(response)) {

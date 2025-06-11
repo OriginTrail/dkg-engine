@@ -200,7 +200,7 @@
         "logLevel": "info",
         "assetSync": {
             "syncDKG": {
-                "enabled": false,
+                "enabled": true,
                 "syncBatchSize": 5
             },
             "syncParanets": []
