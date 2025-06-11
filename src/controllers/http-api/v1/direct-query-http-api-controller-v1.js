@@ -9,6 +9,7 @@ import {
 class DirectQueryController extends BaseController {
     constructor(ctx) {
         super(ctx);
+        this.config = ctx.config;
         this.fileService = ctx.fileService;
         this.dataService = ctx.dataService;
         this.tripleStoreService = ctx.tripleStoreService;
@@ -77,12 +78,12 @@ class DirectQueryController extends BaseController {
                             this.tripleStoreService.construct(
                                 query,
                                 repository[0],
-                                this.config.tripleStore.timeout.query,
+                                this.config.modules.tripleStore.timeout.query,
                             ),
                             this.tripleStoreService.construct(
                                 query,
                                 repository[1],
-                                this.config.tripleStore.timeout.query,
+                                this.config.modules.tripleStore.timeout.query,
                             ),
                         ]);
 
@@ -106,12 +107,12 @@ class DirectQueryController extends BaseController {
                             this.tripleStoreService.select(
                                 query,
                                 repository[0],
-                                this.config.tripleStore.timeout.query,
+                                this.config.modules.tripleStore.timeout.query,
                             ),
                             this.tripleStoreService.select(
                                 query,
                                 repository[1],
-                                this.config.tripleStore.timeout.query,
+                                this.config.modules.tripleStore.timeout.query,
                             ),
                         ]);
 
@@ -123,7 +124,7 @@ class DirectQueryController extends BaseController {
                         data = await this.tripleStoreService.select(
                             query,
                             repository,
-                            this.config.tripleStore.timeout.query,
+                            this.config.modules.tripleStore.timeout.query,
                         );
                     }
 
