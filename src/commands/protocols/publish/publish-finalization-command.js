@@ -45,7 +45,12 @@ class PublishFinalizationCommand extends Command {
             ]);
         } catch (error) {
             this.logger.error(`Failed to get transaction or block timestamp: ${error.message}`);
-            this.operationIdService.emitChangeEvent(OPERATION_ID_STATUS.FAILED, publishOperationId);
+            this.operationIdService.emitChangeEvent(
+                OPERATION_ID_STATUS.FAILED,
+                operationId,
+                blockchain,
+                publishOperationId,
+            );
             return Command.empty();
         }
         const metadata = {
@@ -64,7 +69,12 @@ class PublishFinalizationCommand extends Command {
             publisherPeerId = result.remotePeerId;
         } catch (error) {
             this.logger.error(`Failed to read cached publish data: ${error.message}`); // TODO: Make this log more descriptive
-            this.operationIdService.emitChangeEvent(OPERATION_ID_STATUS.FAILED, publishOperationId);
+            this.operationIdService.emitChangeEvent(
+                OPERATION_ID_STATUS.FAILED,
+                operationId,
+                blockchain,
+                publishOperationId,
+            );
             return Command.empty();
         }
 
@@ -82,7 +92,12 @@ class PublishFinalizationCommand extends Command {
             );
         } catch (e) {
             this.logger.error(`Failed to validate publish data: ${e.message}`);
-            this.operationIdService.emitChangeEvent(OPERATION_ID_STATUS.FAILED, publishOperationId);
+            this.operationIdService.emitChangeEvent(
+                OPERATION_ID_STATUS.FAILED,
+                operationId,
+                blockchain,
+                publishOperationId,
+            );
             return Command.empty();
         }
 
@@ -150,7 +165,9 @@ class PublishFinalizationCommand extends Command {
         } catch (e) {
             await this.handleError(operationId, blockchain, e.message, this.errorType, true);
             this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_FAILED,
+                OPERATION_ID_STATUS.FAILED,
+                operationId,
+                blockchain,
                 publishOperationId,
             );
         }
