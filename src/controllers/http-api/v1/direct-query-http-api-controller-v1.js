@@ -16,7 +16,6 @@ class DirectQueryController extends BaseController {
         this.paranetService = ctx.paranetService;
         this.ualService = ctx.ualService;
         this.operationIdService = ctx.operationIdService;
-        this.tripleStoreModuleManager = ctx.tripleStoreModuleManager;
     }
 
     async handleRequest(req, res) {
