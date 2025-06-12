@@ -98,6 +98,7 @@ class TripleStoreService {
                 publicKnowledgeAssetsUALs,
                 publicKnowledgeAssetsTriplesGrouped,
                 TRIPLES_VISIBILITY.PUBLIC,
+                this.config.modules.tripleStore.timeout.insert,
             ),
         );
 
@@ -108,6 +109,7 @@ class TripleStoreService {
                 knowledgeCollectionUAL,
                 publicKnowledgeAssetsUALs,
                 TRIPLES_VISIBILITY.PUBLIC,
+                this.config.modules.tripleStore.timeout.insert,
             ),
         );
 
@@ -173,6 +175,7 @@ class TripleStoreService {
                     privateKnowledgeAssetsUALs,
                     privateKnowledgeAssetsTriplesGrouped,
                     TRIPLES_VISIBILITY.PRIVATE,
+                    this.config.modules.tripleStore.timeout.insert,
                 ),
             );
             promises.push(
@@ -182,6 +185,7 @@ class TripleStoreService {
                     knowledgeCollectionUAL,
                     privateKnowledgeAssetsUALs,
                     TRIPLES_VISIBILITY.PRIVATE,
+                    this.config.modules.tripleStore.timeout.insert,
                 ),
             );
             // current metadata triple relates to which named graph that represents Knowledge Asset hold the lates(current) data
@@ -217,6 +221,7 @@ class TripleStoreService {
                 knowledgeCollectionUAL,
                 paranetUAL,
                 contentType,
+                this.config.modules.tripleStore.timeout.insert,
             );
             totalNumberOfTriplesInserted += allPossibleNamedGraphs.length; // one triple will be created for each Knowledge Asset inserted into paranet
             this.logger.info(`Adding connection triples for paranet: ${paranetUAL}`);
@@ -248,6 +253,7 @@ class TripleStoreService {
                 this.repositoryImplementations[repository],
                 repository,
                 metadataTriples,
+                this.config.modules.tripleStore.timeout.insert,
             ),
         );
 
@@ -371,6 +377,7 @@ class TripleStoreService {
             metadata,
             createdMetadata,
             currentNamedGraphTriples,
+            this.config.modules.tripleStore.timeout.insert,
         );
     }
 
@@ -637,14 +644,6 @@ class TripleStoreService {
                 this.repositoryImplementations[TRIPLE_STORE_REPOSITORY.DKG],
             repository,
             query,
-        );
-    }
-
-    async queryVoid(repository, query, namedGraphs = null, labels = null) {
-        return this.tripleStoreModuleManager.queryVoid(
-            this.repositoryImplementations[repository],
-            repository,
-            this.buildQuery(query, namedGraphs, labels),
         );
     }
 

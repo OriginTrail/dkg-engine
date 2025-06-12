@@ -5,16 +5,6 @@ class TripleStoreModuleManager extends BaseModuleManager {
         return this.getImplementation().module.initializeParanetRepository(repository);
     }
 
-    async insetAssertionInNamedGraph(implementationName, repository, namedGraph, nquads) {
-        if (this.getImplementation(implementationName)) {
-            return this.getImplementation(implementationName).module.insetAssertionInNamedGraph(
-                repository,
-                namedGraph,
-                nquads,
-            );
-        }
-    }
-
     repositoryInitilized(repository) {
         return this.getImplementation().module.repositoryInitilized(repository);
     }
@@ -120,6 +110,7 @@ class TripleStoreModuleManager extends BaseModuleManager {
         uals,
         assetsNQuads,
         visibility,
+        timeout,
     ) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(
@@ -129,6 +120,7 @@ class TripleStoreModuleManager extends BaseModuleManager {
                 uals,
                 assetsNQuads,
                 visibility,
+                timeout,
             );
         }
     }
@@ -139,6 +131,7 @@ class TripleStoreModuleManager extends BaseModuleManager {
         knowledgeCollectionUal,
         paranetUAL,
         contentType,
+        timeout,
     ) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(
@@ -148,17 +141,19 @@ class TripleStoreModuleManager extends BaseModuleManager {
                 knowledgeCollectionUal,
                 paranetUAL,
                 contentType,
+                timeout,
             );
         }
     }
 
-    async insertMetadataTriples(implementationName, repository, kcUal, uals, visibility) {
+    async insertMetadataTriples(implementationName, repository, kcUal, uals, visibility, timeout) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(implementationName).module.insertMetadataTriples(
                 repository,
                 kcUal,
                 uals,
                 visibility,
+                timeout,
             );
         }
     }
@@ -291,11 +286,16 @@ class TripleStoreModuleManager extends BaseModuleManager {
         }
     }
 
-    async insertKnowledgeCollectionMetadata(implementationName, repository, metadataNQuads) {
+    async insertKnowledgeCollectionMetadata(
+        implementationName,
+        repository,
+        metadataNQuads,
+        timeout,
+    ) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(
                 implementationName,
-            ).module.insertKnowledgeCollectionMetadata(repository, metadataNQuads);
+            ).module.insertKnowledgeCollectionMetadata(repository, metadataNQuads, timeout);
         }
     }
 
@@ -417,6 +417,7 @@ class TripleStoreModuleManager extends BaseModuleManager {
         metadata,
         createdMetadata,
         currentNamedGraphTriples,
+        timeout,
     ) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(implementationName).module.insertAssertionBatch(
@@ -425,6 +426,7 @@ class TripleStoreModuleManager extends BaseModuleManager {
                 metadata,
                 createdMetadata,
                 currentNamedGraphTriples,
+                timeout,
             );
         }
     }

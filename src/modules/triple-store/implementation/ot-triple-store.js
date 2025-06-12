@@ -114,25 +114,13 @@ class OtTripleStore {
         await Promise.all(ensureConnectionPromises);
     }
 
-    async insetAssertionInNamedGraph(repository, namedGraph, nquads) {
-        const query = `
-            PREFIX schema: <${SCHEMA_CONTEXT}>
-            INSERT DATA {
-                GRAPH <${namedGraph}> { 
-                    ${nquads.join('\n')}
-                } 
-            }
-        `;
-
-        await this.queryVoid(repository, query);
-    }
-
     async insertAssertionBatch(
         repository,
         insertMap,
         metadata,
         createdMetadata,
         currentNamedGraphTriples,
+        timeout,
     ) {
         const graphsForDataInsert = [];
         for (const [ual, triples] of Object.entries(insertMap)) {
@@ -168,7 +156,7 @@ class OtTripleStore {
             }
         `;
 
-        await this.queryVoid(repository, query);
+        await this.queryVoid(repository, query, timeout);
     }
 
     async deleteUniqueKnowledgeCollectionTriplesFromUnifiedGraph(repository, namedGraph, ual) {
@@ -328,6 +316,7 @@ class OtTripleStore {
         uals,
         assetsNQuads,
         visibility,
+        timeout,
         retries = 5,
         retryDelay = 10,
     ) {
@@ -353,7 +342,7 @@ class OtTripleStore {
 
         while (attempts < retries && !success) {
             try {
-                await this.queryVoid(repository, query);
+                await this.queryVoid(repository, query, timeout);
                 success = true;
             } catch (error) {
                 attempts += 1;
@@ -376,7 +365,13 @@ class OtTripleStore {
         }
     }
 
-    async createParanetKnoledgeCollectionConnection(repository, kcUAL, paranetUAL, contentType) {
+    async createParanetKnoledgeCollectionConnection(
+        repository,
+        kcUAL,
+        paranetUAL,
+        contentType,
+        timeout,
+    ) {
         const getNamedGraphsQuery = `
             PREFIX dkg: <https://ontology.origintrail.io/dkg/1.0#>
             SELECT ?g WHERE {
@@ -407,10 +402,10 @@ class OtTripleStore {
         }
         `;
 
-        await this.queryVoid(repository, query);
+        await this.queryVoid(repository, query, timeout);
     }
 
-    async insertMetadataTriples(repository, kcUAL, kaUALs, visibility) {
+    async insertMetadataTriples(repository, kcUAL, kaUALs, visibility, timeout) {
         const currentTriples = kaUALs
             .map(
                 (ual) =>
@@ -440,7 +435,7 @@ class OtTripleStore {
             }
         `;
 
-        await this.queryVoid(repository, query);
+        await this.queryVoid(repository, query, timeout);
     }
 
     async deleteKnowledgeCollectionNamedGraphs(repository, namedGraphs) {
@@ -724,7 +719,7 @@ class OtTripleStore {
         return this.ask(repository, query);
     }
 
-    async insertKnowledgeCollectionMetadata(repository, metadataNQuads) {
+    async insertKnowledgeCollectionMetadata(repository, metadataNQuads, timeout) {
         const query = `
             PREFIX schema: <${SCHEMA_CONTEXT}>
             INSERT DATA {
@@ -734,7 +729,7 @@ class OtTripleStore {
             }
         `;
 
-        await this.queryVoid(repository, query);
+        await this.queryVoid(repository, query, timeout);
     }
 
     async deleteKnowledgeCollectionMetadata(repository, uals) {

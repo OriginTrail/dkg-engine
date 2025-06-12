@@ -160,10 +160,11 @@ class OtBlazegraph extends OtTripleStore {
         }
     }
 
-    async queryVoid(repository, query) {
+    async queryVoid(repository, query, timeout) {
         return axios.post(this.repositories[repository].sparqlEndpoint, query, {
             headers: {
                 'Content-Type': 'application/sparql-update; charset=UTF-8',
+                'X-BIGDATA-MAX-QUERY-MILLIS': timeout,
             },
         });
     }

@@ -416,8 +416,9 @@ class SyncService {
             if (insertFailed) {
                 if (!isLocal) {
                     missingUals.push(ual);
+                } else {
+                    syncedUals.push(ual);
                 }
-                syncedUals.push(ual);
             }
             // If insert was successful, and KC is locally present or fetched from remote node, add it to synced UALs
             else if (isLocal || hasRemoteData) {
