@@ -340,6 +340,7 @@ class ProofingService {
         let getResult;
         const getOperationId = await this.operationIdService.generateOperationId(
             OPERATION_ID_STATUS.GET.GET_START,
+            blockchainId,
         );
         await this.commandExecutor.add({
             name: 'getCommand',

@@ -490,6 +490,7 @@ class BlockchainEventListenerCommand extends Command {
 
         const operationId = await this.operationIdService.generateOperationId(
             OPERATION_ID_STATUS.UPDATE_FINALIZATION.UPDATE_FINALIZATION_START,
+            blockchain,
         );
 
         let datasetPath;

@@ -26,6 +26,7 @@ class PublishController extends BaseController {
 
         const operationId = await this.operationIdService.generateOperationId(
             OPERATION_ID_STATUS.PUBLISH.PUBLISH_START,
+            blockchain,
         );
 
         await this.operationIdService.updateOperationIdStatus(

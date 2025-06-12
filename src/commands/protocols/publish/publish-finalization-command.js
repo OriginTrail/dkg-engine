@@ -33,6 +33,7 @@ class PublishFinalizationCommand extends Command {
         const { blockchain, contractAddress } = event;
         const operationId = await this.operationIdService.generateOperationId(
             OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_START,
+            blockchain,
             publishOperationId,
         );
         let transaction;
@@ -45,7 +46,9 @@ class PublishFinalizationCommand extends Command {
         } catch (error) {
             this.logger.error(`Failed to get transaction or block timestamp: ${error.message}`);
             this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_FAILED,
+                OPERATION_ID_STATUS.FAILED,
+                operationId,
+                blockchain,
                 publishOperationId,
             );
             return Command.empty();
@@ -67,7 +70,9 @@ class PublishFinalizationCommand extends Command {
         } catch (error) {
             this.logger.error(`Failed to read cached publish data: ${error.message}`); // TODO: Make this log more descriptive
             this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_FAILED,
+                OPERATION_ID_STATUS.FAILED,
+                operationId,
+                blockchain,
                 publishOperationId,
             );
             return Command.empty();
@@ -88,7 +93,9 @@ class PublishFinalizationCommand extends Command {
         } catch (e) {
             this.logger.error(`Failed to validate publish data: ${e.message}`);
             this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_FAILED,
+                OPERATION_ID_STATUS.FAILED,
+                operationId,
+                blockchain,
                 publishOperationId,
             );
             return Command.empty();
@@ -158,7 +165,9 @@ class PublishFinalizationCommand extends Command {
         } catch (e) {
             await this.handleError(operationId, blockchain, e.message, this.errorType, true);
             this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_FAILED,
+                OPERATION_ID_STATUS.FAILED,
+                operationId,
+                blockchain,
                 publishOperationId,
             );
         }
