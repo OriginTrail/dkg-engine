@@ -92,7 +92,7 @@
             "tripleStore": {
                 "enabled": true,
                 "timeout": {
-                    "query": 900000,
+                    "query": 90000,
                     "get": 10000,
                     "batchGet": 60000,
                     "insert": 300000
