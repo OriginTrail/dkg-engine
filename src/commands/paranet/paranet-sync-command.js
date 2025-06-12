@@ -150,6 +150,7 @@ class ParanetSyncCommand extends Command {
 
         const getOperationId = await this.operationIdService.generateOperationId(
             OPERATION_ID_STATUS.GET.GET_START,
+            blockchain,
         );
 
         // #region GET (LOCAL)

@@ -48,8 +48,8 @@ class MessagingService {
 
     async handleAckResponse(operationService, blockchain, operationId, responseData) {
         await operationService.processResponse(
-            blockchain,
             operationId,
+            blockchain,
             OPERATION_REQUEST_STATUS.COMPLETED,
             responseData,
         );
@@ -58,8 +58,8 @@ class MessagingService {
 
     async handleNackResponse(operationService, blockchain, operationId, responseData) {
         await operationService.processResponse(
-            blockchain,
             operationId,
+            blockchain,
             OPERATION_REQUEST_STATUS.FAILED,
             {
                 errorMessage: `Received NACK response. Error: ${responseData.errorMessage}`,
@@ -70,8 +70,8 @@ class MessagingService {
 
     async handleUnknownResponse(operationService, blockchain, operationId) {
         await operationService.processResponse(
-            blockchain,
             operationId,
+            blockchain,
             OPERATION_REQUEST_STATUS.FAILED,
             {
                 errorMessage: `Received unknown message type during`, // TODO: Add command name
