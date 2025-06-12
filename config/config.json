@@ -91,6 +91,12 @@
             },
             "tripleStore": {
                 "enabled": true,
+                "timeout": {
+                    "query": 90000,
+                    "get": 10000,
+                    "batchGet": 60000,
+                    "insert": 300000
+                },
                 "implementation": {
                     "ot-blazegraph": {
                         "enabled": false,
@@ -338,6 +344,12 @@
             },
             "tripleStore": {
                 "enabled": true,
+                "timeout": {
+                    "query": 90000,
+                    "get": 10000,
+                    "batchGet": 60000,
+                    "insert": 300000
+                },
                 "implementation": {
                     "ot-blazegraph": {
                         "enabled": true,
@@ -549,6 +561,12 @@
             },
             "tripleStore": {
                 "enabled": true,
+                "timeout": {
+                    "query": 90000,
+                    "get": 10000,
+                    "batchGet": 60000,
+                    "insert": 300000
+                },
                 "implementation": {
                     "ot-blazegraph": {
                         "enabled": false,
@@ -751,6 +769,12 @@
             },
             "tripleStore": {
                 "enabled": true,
+                "timeout": {
+                    "query": 90000,
+                    "get": 10000,
+                    "batchGet": 60000,
+                    "insert": 300000
+                },
                 "implementation": {
                     "ot-blazegraph": {
                         "enabled": false,
@@ -959,6 +983,12 @@
             },
             "tripleStore": {
                 "enabled": true,
+                "timeout": {
+                    "query": 90000,
+                    "get": 10000,
+                    "batchGet": 60000,
+                    "insert": 300000
+                },
                 "implementation": {
                     "ot-blazegraph": {
                         "enabled": false,

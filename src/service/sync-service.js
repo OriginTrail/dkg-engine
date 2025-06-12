@@ -416,8 +416,9 @@ class SyncService {
             if (insertFailed) {
                 if (!isLocal) {
                     missingUals.push(ual);
+                } else {
+                    syncedUals.push(ual);
                 }
-                syncedUals.push(ual);
             }
             // If insert was successful, and KC is locally present or fetched from remote node, add it to synced UALs
             else if (isLocal || hasRemoteData) {
@@ -471,6 +472,7 @@ class SyncService {
     async callBatchGet(uals, blockchainId) {
         const batchGetOperationId = await this.operationIdService.generateOperationId(
             OPERATION_ID_STATUS.BATCH_GET.BATCH_GET_INIT,
+            blockchainId,
         );
 
         await this.commandExecutor.add({
