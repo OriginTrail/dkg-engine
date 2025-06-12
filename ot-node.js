@@ -5,7 +5,11 @@ import { createRequire } from 'module';
 import { execSync } from 'child_process';
 import DependencyInjection from './src/service/dependency-injection.js';
 import Logger from './src/logger/logger.js';
-import { MIN_NODE_VERSION, PARANET_ACCESS_POLICY } from './src/constants/constants.js';
+import {
+    MIN_NODE_VERSION,
+    PARANET_ACCESS_POLICY,
+    NODE_ENVIRONMENTS,
+} from './src/constants/constants.js';
 import FileService from './src/service/file-service.js';
 import OtnodeUpdateCommand from './src/commands/common/otnode-update-command.js';
 import OtAutoUpdater from './src/modules/auto-updater/implementation/ot-auto-updater.js';
@@ -62,7 +66,9 @@ class OTNode {
         await this.startNetworkModule();
         this.resumeCommandExecutor();
         await this.initializeProofing();
-        await this.initializeClaimRewards();
+        if (process.env.NODE_ENV !== NODE_ENVIRONMENTS.MAINNET) {
+            await this.initializeClaimRewards();
+        }
         await this.initializeSyncService();
 
         this.logger.info('Node is up and running!');
