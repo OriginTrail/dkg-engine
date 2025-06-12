@@ -104,17 +104,19 @@ class OtBlazegraph extends OtTripleStore {
 
                     if (entry.datatype) {
                         // e.g., "\"6900000\"^^http://www.w3.org/2001/XMLSchema#integer"
-                        value = `"\\"${entry.value}\\"^^${entry.datatype}"`;
+                        const literal = `"${entry.value}"^^${entry.datatype}`;
+                        value = JSON.stringify(literal);
                     } else if (entry['xml:lang']) {
                         // e.g., "\"text here\"@en"
-                        value = `"\\"${entry.value}\\"@${entry['xml:lang']}"`;
+                        const literal = `"${entry.value}"@${entry['xml:lang']}`;
+                        value = JSON.stringify(literal);
                     } else if (entry.type === 'uri') {
-                        const escaped = entry.value.replace(/"/g, '\\"');
-                        value = `"${escaped}"`;
+                        // URIs should be escaped and quoted directly
+                        value = JSON.stringify(entry.value);
                     } else {
-                        // Escape any double quotes inside the string value itself
-                        const escaped = entry.value.replace(/"/g, '\\"');
-                        value = `"\\"${escaped}\\""`;
+                        // For plain literals, wrap in quotes and stringify
+                        const literal = `"${entry.value}"`;
+                        value = JSON.stringify(literal);
                     }
 
                     const isLast = index === keys.length - 1;
