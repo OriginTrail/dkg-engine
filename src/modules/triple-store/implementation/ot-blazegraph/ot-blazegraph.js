@@ -75,9 +75,6 @@ class OtBlazegraph extends OtTripleStore {
     }
 
     async select(repository, query, timeout) {
-        // todo: add media type once bug is fixed
-        // no media type is passed because of comunica bug
-        // https://github.com/comunica/comunica/issues/1034
         const result = await this._executeQuery(repository, query, MEDIA_TYPES.JSON, timeout);
         return result ? JSON.parse(result) : [];
     }
