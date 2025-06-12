@@ -109,7 +109,8 @@ class OtBlazegraph extends OtTripleStore {
                         // e.g., "\"text here\"@en"
                         value = `"\\"${entry.value}\\"@${entry['xml:lang']}"`;
                     } else if (entry.type === 'uri') {
-                        value = `"${entry.value}"`;
+                        const escaped = entry.value.replace(/"/g, '\\"');
+                        value = `"${escaped}"`;
                     } else {
                         // Escape any double quotes inside the string value itself
                         const escaped = entry.value.replace(/"/g, '\\"');
