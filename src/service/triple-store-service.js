@@ -433,25 +433,37 @@ class TripleStoreService {
         } else {
             this.logger.debug(`Getting Assertion with the UAL: ${ual}.`);
 
-            if (migrationFlag === '1') {
-                nquads = await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphs(
-                    this.repositoryImplementations[repository],
-                    repository,
-                    ual,
-                    knowledgeAssetId,
-                    visibility,
-                    this.config.modules.tripleStore.timeout.get,
+            // first check if the knowledge collection exists in triple store using ASK
+            const firstKAInCollection = `${ual}/${tokenIds.startTokenId}/${TRIPLES_VISIBILITY.PUBLIC}`;
+            const lastKAInCollection = `${ual}/${tokenIds.endTokenId}/${TRIPLES_VISIBILITY.PUBLIC}`;
+            const firstKAExists = this.tripleStoreModuleManager.checkIfKnowledgeAssetExists(
+                this.repositoryImplementations[repository],
+                repository,
+                firstKAInCollection,
+            );
+            const lastKAExists = this.tripleStoreModuleManager.checkIfKnowledgeAssetExists(
+                this.repositoryImplementations[repository],
+                repository,
+                lastKAInCollection,
+            );
+
+            await Promise.all([firstKAExists, lastKAExists]);
+
+            if (!(firstKAExists && lastKAExists)) {
+                this.logger.warn(
+                    `Knowledge Collection with the UAL: ${ual} does not exist in the Triple Store's ${repository} repository.`,
                 );
-            } else {
-                nquads = await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphsOld(
-                    this.repositoryImplementations[repository],
-                    repository,
-                    ual,
-                    tokenIds,
-                    visibility,
-                    this.config.modules.tripleStore.timeout.get,
-                );
+                return { public: [], private: [] };
             }
+
+            nquads = await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphsOld(
+                this.repositoryImplementations[repository],
+                repository,
+                ual,
+                tokenIds,
+                visibility,
+                this.config.modules.tripleStore.timeout.get,
+            );
         }
         if (nquads?.public) {
             nquads.public = nquads.public.split('\n').filter((line) => line !== '');
@@ -531,6 +543,16 @@ class TripleStoreService {
         }
 
         return nquads;
+    }
+
+    async checkIfKnowledgeAssetExists(repository, kaUAL) {
+        const knowledgeAssetExists =
+            await this.tripleStoreModuleManager.checkIfKnowledgeAssetExists(
+                this.repositoryImplementations[repository],
+                repository,
+                kaUAL,
+            );
+        return knowledgeAssetExists;
     }
 
     async getAssertionMetadata(
