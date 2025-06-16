@@ -196,6 +196,13 @@ class ProofingService {
                     latestChallenge,
                 );
 
+                if (data.public.length === 0) {
+                    this.logger.warn(
+                        `[PROOFING] No assertions found for blockchain: ${blockchainId}, challengeId: ${latestChallenge.id}, ual: ${ual}`,
+                    );
+                    return;
+                }
+
                 const proof = await this.calculateAndSubmitProof(
                     data,
                     latestChallenge,
