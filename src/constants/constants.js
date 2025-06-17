@@ -1077,7 +1077,7 @@ export const V6_CONTENT_STORAGE_MAP = {
     OTP_DEVNET: '0xABd59A9aa71847F499d624c492d3903dA953d67a',
 };
 
-export const PROOFING_INTERVAL = 12 * 1000;
+export const PROOFING_INTERVAL = 5 * 60 * 1000;
 export const PROOFING_MAX_ATTEMPTS = 120;
 export const REORG_PROOFING_BUFFER = 60 * 1000;
 export const CHUNK_SIZE = 32;
