@@ -221,6 +221,15 @@ class TripleStoreModuleManager extends BaseModuleManager {
         }
     }
 
+    async checkIfKnowledgeAssetExists(implementationName, repository, kaUAL) {
+        if (this.getImplementation(implementationName)) {
+            return this.getImplementation(implementationName).module.checkIfKnowledgeAssetExists(
+                repository,
+                kaUAL,
+            );
+        }
+    }
+
     async getKnowledgeCollectionNamedGraphsOldInBatch(
         implementationName,
         repository,
