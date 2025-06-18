@@ -10,6 +10,7 @@ import {
     HAS_KNOWLEDGE_ASSET_SUFFIX,
     HAS_NAMED_GRAPH_SUFFIX,
     DKG_METADATA_PREDICATES,
+    MAX_TOKEN_ID_PER_GET_PAGE,
 } from '../constants/constants.js';
 
 class TripleStoreService {
@@ -467,8 +468,7 @@ class TripleStoreService {
                 nquads.private = [];
             }
             const maxTokenId = tokenIds.endTokenId;
-            const MAX_TOKEN_ID_PER_REQUEST = 10;
-            for (let i = 0; i <= tokenIds.endTokenId; i += MAX_TOKEN_ID_PER_REQUEST) {
+            for (let i = 0; i <= tokenIds.endTokenId; i += MAX_TOKEN_ID_PER_GET_PAGE) {
                 const paginationNquads =
                     await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphsOld(
                         this.repositoryImplementations[repository],
@@ -476,7 +476,7 @@ class TripleStoreService {
                         ual,
                         {
                             startTokenId: i + 1,
-                            endTokenId: Math.min(i + MAX_TOKEN_ID_PER_REQUEST, maxTokenId),
+                            endTokenId: Math.min(i + MAX_TOKEN_ID_PER_GET_PAGE, maxTokenId),
                             burned: tokenIds.burned,
                         },
                         visibility,

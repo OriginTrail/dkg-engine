@@ -1091,3 +1091,5 @@ export const BATCH_GET_UAL_MAX_LIMIT = 1000;
 export const SYNC_INTERVAL = 12 * 1000;
 export const SYNC_BATCH_GET_WAIT_TIME = 1000;
 export const SYNC_BATCH_GET_MAX_ATTEMPTS = 15 * 60;
+
+export const MAX_TOKEN_ID_PER_GET_PAGE = 50;
