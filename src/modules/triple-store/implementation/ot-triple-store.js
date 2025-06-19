@@ -546,6 +546,17 @@ class OtTripleStore {
         return result.data;
     }
 
+    async checkIfKnowledgeAssetExists(repository, kaUAL) {
+        const query = `
+            ASK {
+                GRAPH <${kaUAL}> {
+                    ?s ?p ?o
+                }
+            }`;
+
+        return this.ask(repository, query);
+    }
+
     async getKnowledgeCollectionNamedGraphs(
         repository,
         ual,

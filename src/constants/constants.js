@@ -1092,4 +1092,6 @@ export const SYNC_INTERVAL = 12 * 1000;
 export const SYNC_BATCH_GET_WAIT_TIME = 1000;
 export const SYNC_BATCH_GET_MAX_ATTEMPTS = 15 * 60;
 
+export const MAX_TOKEN_ID_PER_GET_PAGE = 50;
+
 export const BLAZEGRAPH_HEALTH_INTERVAL = 60 * 1000;
