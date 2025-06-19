@@ -289,8 +289,8 @@ class ProofingService {
                 'PROOF_NEW_CHALANGE_GENERATED',
                 this.generateOperationId(
                     blockchainId,
-                    newChallenge.epoch,
-                    newChallenge.activeProofPeriodStartBlock,
+                    newChallenge.epoch.toNumber(),
+                    newChallenge.activeProofPeriodStartBlock.toNumber(),
                 ),
                 blockchainId,
                 null,

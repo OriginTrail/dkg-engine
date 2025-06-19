@@ -9,6 +9,12 @@ class TripleStoreModuleManager extends BaseModuleManager {
         return this.getImplementation().module.repositoryInitilized(repository);
     }
 
+    getRepositoryUrl(implementationName, repository) {
+        if (this.getImplementation(implementationName)) {
+            return this.getImplementation(implementationName).module.getRepositoryUrl(repository);
+        }
+    }
+
     async deleteUniqueKnowledgeCollectionTriplesFromUnifiedGraph(
         implementationName,
         repository,
