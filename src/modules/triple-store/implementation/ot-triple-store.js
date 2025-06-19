@@ -676,10 +676,10 @@ class OtTripleStore {
 
     async getKnowledgeAssetNamedGraph(repository, ual, visibility, timeout) {
         let whereClause;
-
+        const nquads = {};
         switch (visibility) {
             case TRIPLES_VISIBILITY.PUBLIC:
-            case TRIPLES_VISIBILITY.PRIVATE:
+            case TRIPLES_VISIBILITY.PRIVATE: {
                 whereClause = `
                     WHERE {
                         GRAPH <${ual}/${visibility}> {
@@ -687,35 +687,63 @@ class OtTripleStore {
                         }
                     }
                 `;
+                const query = `
+                    PREFIX schema: <${SCHEMA_CONTEXT}>
+                    CONSTRUCT { ?s ?p ?o }
+                    ${whereClause}
+                `;
+                nquads[visibility] = await this.construct(repository, query, timeout);
+                nquads[visibility] = nquads[visibility].split('\n');
                 break;
-            case TRIPLES_VISIBILITY.ALL:
-                whereClause = `
+            }
+            case TRIPLES_VISIBILITY.ALL: {
+                const publicWhereClause = `
                     WHERE {
-                        {
-                            GRAPH <${ual}/${TRIPLES_VISIBILITY.PUBLIC}> {
-                              ?s ?p ?o .
-                            }
-                          }
-                          UNION
-                          {
-                            GRAPH <${ual}/${TRIPLES_VISIBILITY.PRIVATE}> {
-                              ?s ?p ?o .
-                            }
-                          }
+                        GRAPH <${ual}/${TRIPLES_VISIBILITY.PUBLIC}> {
+                            ?s ?p ?o .
+                        }
                     }
                 `;
+                const privateWhereClause = `
+                    WHERE {
+                        GRAPH <${ual}/${TRIPLES_VISIBILITY.PRIVATE}> {
+                            ?s ?p ?o .
+                        }
+                    }
+                `;
+                const publicQuery = `
+                    PREFIX schema: <${SCHEMA_CONTEXT}>
+                    CONSTRUCT { ?s ?p ?o }
+                    ${publicWhereClause}
+                `;
+                const privateQuery = `
+                    PREFIX schema: <${SCHEMA_CONTEXT}>
+                    CONSTRUCT { ?s ?p ?o }
+                    ${privateWhereClause}
+                `;
+                nquads[TRIPLES_VISIBILITY.PUBLIC] = await this.construct(
+                    repository,
+                    publicQuery,
+                    timeout,
+                );
+                nquads[TRIPLES_VISIBILITY.PRIVATE] = await this.construct(
+                    repository,
+                    privateQuery,
+                    timeout,
+                );
+                nquads[TRIPLES_VISIBILITY.PUBLIC] = nquads[TRIPLES_VISIBILITY.PUBLIC]
+                    .split('\n')
+                    .slice(0, -1);
+
+                nquads[TRIPLES_VISIBILITY.PRIVATE] = nquads[TRIPLES_VISIBILITY.PRIVATE]
+                    .split('\n')
+                    .slice(0, -1);
                 break;
+            }
             default:
                 throw new Error(`Unsupported visibility: ${visibility}`);
         }
-
-        const query = `
-            PREFIX schema: <${SCHEMA_CONTEXT}>
-            CONSTRUCT { ?s ?p ?o }
-            ${whereClause}
-        `;
-
-        return this.construct(repository, query, timeout);
+        return nquads;
     }
 
     async knowledgeAssetNamedGraphExists(repository, name) {

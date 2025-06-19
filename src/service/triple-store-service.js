@@ -419,7 +419,7 @@ class TripleStoreService {
         let ual = `did:dkg:${blockchain}/${contract}/${knowledgeCollectionId}`;
 
         let nquads = {};
-        if (typeof knowledgeAssetId === 'string') {
+        if (typeof knowledgeAssetId === 'number') {
             ual = `${ual}/${knowledgeAssetId}`;
             this.logger.debug(`Getting Assertion with the UAL: ${ual}.`);
             nquads = await this.tripleStoreModuleManager.getKnowledgeAssetNamedGraph(
@@ -427,7 +427,6 @@ class TripleStoreService {
                 repository,
                 // TODO: Add state with implemented update
                 `${ual}`,
-                knowledgeAssetId,
                 visibility,
                 this.config.modules.tripleStore.timeout.get,
             );
