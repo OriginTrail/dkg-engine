@@ -70,6 +70,7 @@ class OTNode {
             await this.initializeClaimRewards();
         }
         await this.initializeSyncService();
+        await this.initializeBlazegraphHealthService();
 
         this.logger.info('Node is up and running!');
     }
@@ -422,6 +423,12 @@ class OTNode {
     async initializeSyncService() {
         const syncService = this.container.resolve('syncService');
         await syncService.initialize();
+    }
+
+    async initializeBlazegraphHealthService() {
+        const blazegraphHealthService = this.container.resolve('blazegraphHealthService');
+        await blazegraphHealthService.initialize();
+        this.logger.info('Blazegraph Health Service initialized successfully');
     }
 
     stop(code = 0) {

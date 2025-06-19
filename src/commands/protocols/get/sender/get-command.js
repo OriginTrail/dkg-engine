@@ -532,6 +532,9 @@ class GetCommand extends Command {
         paranetNodesAccessPolicy,
         contentType,
     ) {
+        if (knowledgeAssetId) {
+            return true;
+        }
         if (responseData?.assertion?.public) {
             // We can only validate whole collection not particular KA
             if (

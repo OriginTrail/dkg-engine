@@ -53,6 +53,10 @@ class OtBlazegraph extends OtTripleStore {
         ].sparqlEndpointUpdate = `${url}/blazegraph/namespace/${name}/sparql`;
     }
 
+    getRepositoryUrl(repository) {
+        return this.repositories[repository].url;
+    }
+
     hasUnicodeCodePoints(input) {
         return this.unicodeRegex.test(input);
     }
