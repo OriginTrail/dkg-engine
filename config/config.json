@@ -92,9 +92,9 @@
             "tripleStore": {
                 "enabled": true,
                 "timeout": {
-                    "query": 90000,
+                    "query": 60000,
                     "get": 10000,
-                    "batchGet": 60000,
+                    "batchGet": 10000,
                     "insert": 300000
                 },
                 "implementation": {
@@ -345,9 +345,9 @@
             "tripleStore": {
                 "enabled": true,
                 "timeout": {
-                    "query": 90000,
+                    "query": 60000,
                     "get": 10000,
-                    "batchGet": 60000,
+                    "batchGet": 10000,
                     "insert": 300000
                 },
                 "implementation": {
@@ -562,9 +562,9 @@
             "tripleStore": {
                 "enabled": true,
                 "timeout": {
-                    "query": 90000,
+                    "query": 60000,
                     "get": 10000,
-                    "batchGet": 60000,
+                    "batchGet": 10000,
                     "insert": 300000
                 },
                 "implementation": {
@@ -770,9 +770,9 @@
             "tripleStore": {
                 "enabled": true,
                 "timeout": {
-                    "query": 90000,
+                    "query": 60000,
                     "get": 10000,
-                    "batchGet": 60000,
+                    "batchGet": 10000,
                     "insert": 300000
                 },
                 "implementation": {
@@ -984,9 +984,9 @@
             "tripleStore": {
                 "enabled": true,
                 "timeout": {
-                    "query": 90000,
+                    "query": 60000,
                     "get": 10000,
-                    "batchGet": 60000,
+                    "batchGet": 10000,
                     "insert": 300000
                 },
                 "implementation": {
