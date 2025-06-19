@@ -415,7 +415,7 @@ class CommandExecutor {
         command.priority = command.priority ?? DEFAULT_COMMAND_PRIORITY;
         command.isBlocking = command.isBlocking ?? false;
         command.status = COMMAND_STATUS.PENDING;
-        if (!command.deadlineAt) {
+        if (!command.deadlineAt && !PERMANENT_COMMANDS.includes(command.name)) {
             command.deadlineAt = command.readyAt + SIX_HOURS_IN_MS;
         }
 

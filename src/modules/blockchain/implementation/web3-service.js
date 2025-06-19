@@ -1145,7 +1145,7 @@ class Web3Service {
 
     async getActiveProofPeriodStatus() {
         return this.callContractFunction(
-            this.contracts.RandomSamplingStorage,
+            this.contracts.RandomSampling,
             'getActiveProofPeriodStatus',
             [],
         );
