@@ -44,8 +44,8 @@ class TripleStoreService {
         metadata,
         retries = 5,
         retryDelay = 50,
-        // paranetUAL = '',
-        // contentType = '',
+        paranetUAL = '',
+        contentType = '',
     ) {
         this.logger.info(
             `Inserting Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
@@ -222,21 +222,6 @@ class TripleStoreService {
             );
         }
 
-        // TODO: Add this triples
-        // if (paranetUAL) {
-        //     await Promise.all(promises);
-        //     await this.tripleStoreModuleManager.createParanetKnoledgeCollectionConnection(
-        //         this.repositoryImplementations[repository],
-        //         repository,
-        //         knowledgeCollectionUAL,
-        //         paranetUAL,
-        //         contentType,
-        //         this.config.modules.tripleStore.timeout.insert,
-        //     );
-        //     totalNumberOfTriplesInserted += allPossibleNamedGraphs.length; // one triple will be created for each Knowledge Asset inserted into paranet
-        //     this.logger.info(`Adding connection triples for paranet: ${paranetUAL}`);
-        // }
-
         // TODO: add new metadata triples and move to function insertMetadataTriples
         let metadataTriples = publicKnowledgeAssetsUALs
             .map(
@@ -289,6 +274,18 @@ class TripleStoreService {
                     insertQuery,
                     this.config.modules.tripleStore.timeout.insert,
                 );
+                if (paranetUAL) {
+                    await this.tripleStoreModuleManager.createParanetKnoledgeCollectionConnection(
+                        this.repositoryImplementations[repository],
+                        repository,
+                        knowledgeCollectionUAL,
+                        paranetUAL,
+                        contentType,
+                        this.config.modules.tripleStore.timeout.insert,
+                    );
+                    totalNumberOfTriplesInserted += allPossibleNamedGraphs.length; // one triple will be created for each Knowledge Asset inserted into paranet
+                    this.logger.info(`Adding connection triples for paranet: ${paranetUAL}`);
+                }
                 success = true;
 
                 this.logger.info(
