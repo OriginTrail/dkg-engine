@@ -74,6 +74,7 @@ class BlazegraphHealthService {
     }
 
     async restartBlazegraph() {
+        this.operationIdService.emitChangeEvent('BLAZEGRAPH_HEALTH_RESTART');
         const execAsync = promisify(exec);
         try {
             const { stdout, stderr } = await execAsync('systemctl restart blazegraph.service');
