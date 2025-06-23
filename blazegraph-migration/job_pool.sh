@@ -161,7 +161,7 @@ function job_pool_init()
     local pool_size=$1
     local echo_command=$2
 
-    # set the global attibutes
+    # set the global attributes
     job_pool_pool_size=${pool_size:=1}
     job_pool_echo_command=${echo_command:=0}
 

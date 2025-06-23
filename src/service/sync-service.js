@@ -121,7 +121,7 @@ class SyncService {
 
     async runSync(blockchainId) {
         // TODO: Add telemetry
-        // TODO: Add onchain registring how far you have synced DKG
+        // TODO: Add onchain registering how far you have synced DKG
         this.logger.debug(`[DKG SYNC] Running sync for blockchain ${blockchainId}`);
         const syncOperationId = uuidv4();
         this.operationIdService.emitChangeEvent(
