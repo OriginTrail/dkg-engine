@@ -91,6 +91,12 @@
             },
             "tripleStore": {
                 "enabled": true,
+                "timeout": {
+                    "query": 60000,
+                    "get": 10000,
+                    "batchGet": 10000,
+                    "insert": 300000
+                },
                 "implementation": {
                     "ot-blazegraph": {
                         "enabled": false,
@@ -193,6 +199,10 @@
         "appDataPath": "data",
         "logLevel": "info",
         "assetSync": {
+            "syncDKG": {
+                "enabled": true,
+                "syncBatchSize": 5
+            },
             "syncParanets": []
         },
         "auth": {
@@ -334,6 +344,12 @@
             },
             "tripleStore": {
                 "enabled": true,
+                "timeout": {
+                    "query": 60000,
+                    "get": 10000,
+                    "batchGet": 10000,
+                    "insert": 300000
+                },
                 "implementation": {
                     "ot-blazegraph": {
                         "enabled": true,
@@ -387,6 +403,10 @@
         "appDataPath": "data",
         "logLevel": "trace",
         "assetSync": {
+            "syncDKG": {
+                "enabled": false,
+                "syncBatchSize": 20
+            },
             "syncParanets": []
         },
         "auth": {
@@ -541,6 +561,12 @@
             },
             "tripleStore": {
                 "enabled": true,
+                "timeout": {
+                    "query": 60000,
+                    "get": 10000,
+                    "batchGet": 10000,
+                    "insert": 300000
+                },
                 "implementation": {
                     "ot-blazegraph": {
                         "enabled": false,
@@ -609,6 +635,10 @@
         "appDataPath": "data",
         "logLevel": "trace",
         "assetSync": {
+            "syncDKG": {
+                "enabled": false,
+                "syncBatchSize": 20
+            },
             "syncParanets": []
         },
         "auth": {
@@ -739,6 +769,12 @@
             },
             "tripleStore": {
                 "enabled": true,
+                "timeout": {
+                    "query": 60000,
+                    "get": 10000,
+                    "batchGet": 10000,
+                    "insert": 300000
+                },
                 "implementation": {
                     "ot-blazegraph": {
                         "enabled": false,
@@ -800,6 +836,10 @@
         "appDataPath": "data",
         "logLevel": "trace",
         "assetSync": {
+            "syncDKG": {
+                "enabled": false,
+                "syncBatchSize": 20
+            },
             "syncParanets": []
         },
         "auth": {
@@ -943,6 +983,12 @@
             },
             "tripleStore": {
                 "enabled": true,
+                "timeout": {
+                    "query": 60000,
+                    "get": 10000,
+                    "batchGet": 10000,
+                    "insert": 300000
+                },
                 "implementation": {
                     "ot-blazegraph": {
                         "enabled": false,
@@ -1020,6 +1066,10 @@
         "appDataPath": "data",
         "logLevel": "trace",
         "assetSync": {
+            "syncDKG": {
+                "enabled": false,
+                "syncBatchSize": 20
+            },
             "syncParanets": []
         },
         "auth": {

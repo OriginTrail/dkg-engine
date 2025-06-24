@@ -21,6 +21,8 @@ import UserRepository from './repositories/user-repository.js';
 import TriplesInsertCountRepository from './repositories/inserted-triples-repository.js';
 import FinalityStatusRepository from './repositories/finality-status-repository.js';
 import RandomSamplingChallengeRepository from './repositories/random-sampling-challenge-repository.js';
+import LatestSyncedKcRepository from './repositories/latest-synced-kc-repository.js';
+import BlockchainMissedKcRepository from './repositories/blockchain-missed-kc-repository.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -53,6 +55,8 @@ class SequelizeRepository {
             finality_status: new FinalityStatusRepository(this.models),
             random_sampling_challenge: new RandomSamplingChallengeRepository(this.models),
             inserted_triples: new TriplesInsertCountRepository(this.models),
+            latest_synced_kc: new LatestSyncedKcRepository(this.models),
+            blockchain_missed_kc: new BlockchainMissedKcRepository(this.models),
         };
     }
 

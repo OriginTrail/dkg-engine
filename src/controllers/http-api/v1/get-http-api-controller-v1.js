@@ -22,31 +22,31 @@ class GetController extends BaseController {
     }
 
     async handleRequest(req, res) {
-        const operationId = await this.operationIdService.generateOperationId(
-            OPERATION_ID_STATUS.GET.GET_START,
-        );
-
-        await this.operationIdService.updateOperationIdStatus(
-            operationId,
-            null,
-            OPERATION_ID_STATUS.GET.GET_INIT_START,
-        );
-
-        this.returnResponse(res, 202, {
-            operationId,
-        });
-
-        await this.repositoryModuleManager.createOperationRecord(
-            this.operationService.getOperationName(),
-            operationId,
-            OPERATION_STATUS.IN_PROGRESS,
-        );
-
+        let operationId;
         let blockchain;
         let contract;
         let knowledgeCollectionId;
         let knowledgeAssetId;
         try {
+            operationId = await this.operationIdService.generateOperationId(
+                OPERATION_ID_STATUS.GET.GET_START,
+            );
+
+            await this.operationIdService.updateOperationIdStatus(
+                operationId,
+                null,
+                OPERATION_ID_STATUS.GET.GET_INIT_START,
+            );
+
+            this.returnResponse(res, 202, {
+                operationId,
+            });
+
+            await this.repositoryModuleManager.createOperationRecord(
+                this.operationService.getOperationName(),
+                operationId,
+                OPERATION_STATUS.IN_PROGRESS,
+            );
             const { paranetUAL, includeMetadata, contentType } = req.body;
             const ual = req.body.id;
             ({ blockchain, contract, knowledgeCollectionId, knowledgeAssetId } =
@@ -106,6 +106,10 @@ class GetController extends BaseController {
                 blockchain,
                 'Unable to get data, Failed to process input data!',
                 ERROR_TYPE.GET.GET_ROUTE_ERROR,
+            );
+            this.operationIdService.emitChangeEvent(
+                OPERATION_ID_STATUS.GET.GET_FAILED,
+                operationId,
             );
         }
     }

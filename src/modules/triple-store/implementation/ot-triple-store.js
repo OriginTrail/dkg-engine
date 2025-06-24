@@ -1,4 +1,5 @@
 import { QueryEngine as Engine } from '@comunica/query-sparql';
+import axios from 'axios';
 import { setTimeout } from 'timers/promises';
 import {
     SCHEMA_CONTEXT,
@@ -113,17 +114,49 @@ class OtTripleStore {
         await Promise.all(ensureConnectionPromises);
     }
 
-    async insetAssertionInNamedGraph(repository, namedGraph, nquads) {
-        const query = `
-            PREFIX schema: <${SCHEMA_CONTEXT}>
-            INSERT DATA {
-                GRAPH <${namedGraph}> { 
-                    ${nquads.join('\n')}
-                } 
+    async insertAssertionBatch(
+        repository,
+        insertMap,
+        metadata,
+        createdMetadata,
+        currentNamedGraphTriples,
+        timeout,
+    ) {
+        const graphsForDataInsert = [];
+        for (const [ual, triples] of Object.entries(insertMap)) {
+            const graph = `
+                GRAPH <${ual}> {
+                    ${triples.join('\n')}
+                }
+            `;
+            graphsForDataInsert.push(graph);
+        }
+
+        const metadataGraphForInsert = `
+            GRAPH <${BASE_NAMED_GRAPHS.METADATA}> {
+                ${Object.values(metadata)
+                    .map((triples) => triples.join('\n'))
+                    .join('\n')}
+                ${createdMetadata.join('\n')}
             }
         `;
 
-        await this.queryVoid(repository, query);
+        const currentNamedGraphInsert = `
+            GRAPH <${BASE_NAMED_GRAPHS.CURRENT}> {
+                ${currentNamedGraphTriples.join('\n')}
+            }
+        `;
+
+        const query = `
+            PREFIX schema: <${SCHEMA_CONTEXT}>
+            INSERT DATA {
+                ${graphsForDataInsert.join('\n')}
+                ${metadataGraphForInsert}
+                ${currentNamedGraphInsert}
+            }
+        `;
+
+        await this.queryVoid(repository, query, timeout);
     }
 
     async deleteUniqueKnowledgeCollectionTriplesFromUnifiedGraph(repository, namedGraph, ual) {
@@ -283,6 +316,7 @@ class OtTripleStore {
         uals,
         assetsNQuads,
         visibility,
+        timeout,
         retries = 5,
         retryDelay = 10,
     ) {
@@ -308,7 +342,7 @@ class OtTripleStore {
 
         while (attempts < retries && !success) {
             try {
-                await this.queryVoid(repository, query);
+                await this.queryVoid(repository, query, timeout);
                 success = true;
             } catch (error) {
                 attempts += 1;
@@ -331,7 +365,13 @@ class OtTripleStore {
         }
     }
 
-    async createParanetKnoledgeCollectionConnection(repository, kcUAL, paranetUAL, contentType) {
+    async createParanetKnoledgeCollectionConnection(
+        repository,
+        kcUAL,
+        paranetUAL,
+        contentType,
+        timeout,
+    ) {
         const getNamedGraphsQuery = `
             PREFIX dkg: <https://ontology.origintrail.io/dkg/1.0#>
             SELECT ?g WHERE {
@@ -362,10 +402,10 @@ class OtTripleStore {
         }
         `;
 
-        await this.queryVoid(repository, query);
+        await this.queryVoid(repository, query, timeout);
     }
 
-    async insertMetadataTriples(repository, kcUAL, kaUALs, visibility) {
+    async insertMetadataTriples(repository, kcUAL, kaUALs, visibility, timeout) {
         const currentTriples = kaUALs
             .map(
                 (ual) =>
@@ -395,7 +435,7 @@ class OtTripleStore {
             }
         `;
 
-        await this.queryVoid(repository, query);
+        await this.queryVoid(repository, query, timeout);
     }
 
     async deleteKnowledgeCollectionNamedGraphs(repository, namedGraphs) {
@@ -406,7 +446,7 @@ class OtTripleStore {
         await this.queryVoid(repository, query);
     }
 
-    async getKnowledgeCollectionNamedGraphsOld(repository, ual, tokenIds, visibility) {
+    async getKnowledgeCollectionNamedGraphsOld(repository, ual, tokenIds, visibility, timeout) {
         const namedGraphs = Array.from(
             { length: tokenIds.endTokenId - tokenIds.startTokenId + 1 },
             (_, i) => tokenIds.startTokenId + i,
@@ -431,7 +471,7 @@ class OtTripleStore {
                         .join('\n')}
                 }
               }`;
-            assertion.public = await this.construct(repository, query);
+            assertion.public = await this.construct(repository, query, timeout);
         }
         if (visibility === TRIPLES_VISIBILITY.PRIVATE || visibility === TRIPLES_VISIBILITY.ALL) {
             const query = `
@@ -449,13 +489,81 @@ class OtTripleStore {
                         .join('\n')}
                 }
               }`;
-            assertion.private = await this.construct(repository, query);
+            assertion.private = await this.construct(repository, query, timeout);
         }
 
         return assertion;
     }
 
-    async getKnowledgeCollectionNamedGraphs(repository, ual, knowledgeAssetId, visibility) {
+    async getKnowledgeCollectionNamedGraphsOldInBatch(
+        repository,
+        ualTokenIds,
+        visibility,
+        timeout,
+    ) {
+        const kaUALs = Array.from(Object.entries(ualTokenIds)).flatMap(([ual, tokenIds]) => {
+            const arr = Array.from(
+                { length: tokenIds.endTokenId - tokenIds.startTokenId + 1 },
+                (_, i) => tokenIds.startTokenId + i,
+            );
+            if (
+                visibility === TRIPLES_VISIBILITY.PUBLIC ||
+                visibility === TRIPLES_VISIBILITY.PRIVATE
+            ) {
+                return arr
+                    .filter((id) => !tokenIds.burned.includes(id))
+                    .map((id) => `<${ual}/${id}/${visibility}>`);
+            }
+            // visibility === TRIPLES_VISIBILITY.ALL;
+            // It should add both public and private suffixes
+            return arr
+                .filter((id) => !tokenIds.burned.includes(id))
+                .flatMap((id) => [
+                    `<${ual}/${id}/${TRIPLES_VISIBILITY.PUBLIC}>`,
+                    `<${ual}/${id}/${TRIPLES_VISIBILITY.PRIVATE}>`,
+                ]);
+        });
+
+        const query = `
+            SELECT ?g ?s ?p ?o
+            WHERE {
+                VALUES ?g {
+                    ${kaUALs.join('\n')}
+                }
+                GRAPH ?g {
+                    ?s ?p ?o
+                }
+            }
+        `;
+
+        const result = await axios.post(this.repositories[repository].sparqlEndpoint, query, {
+            headers: {
+                'Content-Type': 'application/sparql-query',
+                Accept: 'text/tab-separated-values',
+                'X-BIGDATA-MAX-QUERY-MILLIS': timeout,
+            },
+        });
+        return result.data;
+    }
+
+    async checkIfKnowledgeAssetExists(repository, kaUAL) {
+        const query = `
+            ASK {
+                GRAPH <${kaUAL}> {
+                    ?s ?p ?o
+                }
+            }`;
+
+        return this.ask(repository, query);
+    }
+
+    async getKnowledgeCollectionNamedGraphs(
+        repository,
+        ual,
+        knowledgeAssetId,
+        visibility,
+        timeout,
+    ) {
         const assertion = {};
         let publicPrivateMetadataConnections = null;
 
@@ -493,6 +601,7 @@ class OtTripleStore {
                 publicPrivateMetadataConnections = await this.select(
                     repository,
                     getNamedGraphsQuery,
+                    timeout,
                 );
             }
             return publicPrivateMetadataConnections
@@ -503,11 +612,11 @@ class OtTripleStore {
         if (visibility === TRIPLES_VISIBILITY.PUBLIC || visibility === TRIPLES_VISIBILITY.ALL) {
             if (knowledgeAssetId) {
                 const singleGraph = await buildSingleGraph(TRIPLES_VISIBILITY.PUBLIC);
-                assertion.public = await this.construct(repository, singleGraph);
+                assertion.public = await this.construct(repository, singleGraph, timeout);
             } else {
                 const publicGraphs = await buildAllGraphs('/public');
                 assertion.public = publicGraphs.length
-                    ? await this.construct(repository, getConstructQuery(publicGraphs))
+                    ? await this.construct(repository, getConstructQuery(publicGraphs), timeout)
                     : '';
             }
         }
@@ -515,16 +624,34 @@ class OtTripleStore {
         if (visibility === TRIPLES_VISIBILITY.PRIVATE || visibility === TRIPLES_VISIBILITY.ALL) {
             if (knowledgeAssetId) {
                 const singleGraph = await buildSingleGraph(TRIPLES_VISIBILITY.PRIVATE);
-                assertion.private = await this.construct(repository, singleGraph);
+                assertion.private = await this.construct(repository, singleGraph, timeout);
             } else {
                 const privateGraphs = await buildAllGraphs('/private');
                 assertion.private = privateGraphs.length
-                    ? await this.construct(repository, getConstructQuery(privateGraphs))
+                    ? await this.construct(repository, getConstructQuery(privateGraphs), timeout)
                     : '';
             }
         }
 
         return assertion;
+    }
+
+    async getMetadataInBatch(repository, uals) {
+        const query = `
+            CONSTRUCT {
+                ?ual ?p ?o
+            }
+            WHERE {
+                VALUES ?ual {
+                    ${uals.map((ual) => `<${ual}>`).join('\n')}
+                }
+                GRAPH <${BASE_NAMED_GRAPHS.METADATA}> {
+                    ?ual ?p ?o
+                }
+            }
+        `;
+
+        return this.construct(repository, query);
     }
 
     async knowledgeCollectionNamedGraphsExist(repository, ual) {
@@ -547,12 +674,12 @@ class OtTripleStore {
         await this.queryVoid(repository, query);
     }
 
-    async getKnowledgeAssetNamedGraph(repository, ual, visibility) {
+    async getKnowledgeAssetNamedGraph(repository, ual, visibility, timeout) {
         let whereClause;
-
+        const nquads = {};
         switch (visibility) {
             case TRIPLES_VISIBILITY.PUBLIC:
-            case TRIPLES_VISIBILITY.PRIVATE:
+            case TRIPLES_VISIBILITY.PRIVATE: {
                 whereClause = `
                     WHERE {
                         GRAPH <${ual}/${visibility}> {
@@ -560,35 +687,63 @@ class OtTripleStore {
                         }
                     }
                 `;
+                const query = `
+                    PREFIX schema: <${SCHEMA_CONTEXT}>
+                    CONSTRUCT { ?s ?p ?o }
+                    ${whereClause}
+                `;
+                nquads[visibility] = await this.construct(repository, query, timeout);
+                nquads[visibility] = nquads[visibility].split('\n');
                 break;
-            case TRIPLES_VISIBILITY.ALL:
-                whereClause = `
+            }
+            case TRIPLES_VISIBILITY.ALL: {
+                const publicWhereClause = `
                     WHERE {
-                        {
-                            GRAPH <${ual}/${TRIPLES_VISIBILITY.PUBLIC}> {
-                              ?s ?p ?o .
-                            }
-                          }
-                          UNION
-                          {
-                            GRAPH <${ual}/${TRIPLES_VISIBILITY.PRIVATE}> {
-                              ?s ?p ?o .
-                            }
-                          }
+                        GRAPH <${ual}/${TRIPLES_VISIBILITY.PUBLIC}> {
+                            ?s ?p ?o .
+                        }
                     }
                 `;
+                const privateWhereClause = `
+                    WHERE {
+                        GRAPH <${ual}/${TRIPLES_VISIBILITY.PRIVATE}> {
+                            ?s ?p ?o .
+                        }
+                    }
+                `;
+                const publicQuery = `
+                    PREFIX schema: <${SCHEMA_CONTEXT}>
+                    CONSTRUCT { ?s ?p ?o }
+                    ${publicWhereClause}
+                `;
+                const privateQuery = `
+                    PREFIX schema: <${SCHEMA_CONTEXT}>
+                    CONSTRUCT { ?s ?p ?o }
+                    ${privateWhereClause}
+                `;
+                nquads[TRIPLES_VISIBILITY.PUBLIC] = await this.construct(
+                    repository,
+                    publicQuery,
+                    timeout,
+                );
+                nquads[TRIPLES_VISIBILITY.PRIVATE] = await this.construct(
+                    repository,
+                    privateQuery,
+                    timeout,
+                );
+                nquads[TRIPLES_VISIBILITY.PUBLIC] = nquads[TRIPLES_VISIBILITY.PUBLIC]
+                    .split('\n')
+                    .slice(0, -1);
+
+                nquads[TRIPLES_VISIBILITY.PRIVATE] = nquads[TRIPLES_VISIBILITY.PRIVATE]
+                    .split('\n')
+                    .slice(0, -1);
                 break;
+            }
             default:
                 throw new Error(`Unsupported visibility: ${visibility}`);
         }
-
-        const query = `
-            PREFIX schema: <${SCHEMA_CONTEXT}>
-            CONSTRUCT { ?s ?p ?o }
-            ${whereClause}
-        `;
-
-        return this.construct(repository, query);
+        return nquads;
     }
 
     async knowledgeAssetNamedGraphExists(repository, name) {
@@ -603,7 +758,7 @@ class OtTripleStore {
         return this.ask(repository, query);
     }
 
-    async insertKnowledgeCollectionMetadata(repository, metadataNQuads) {
+    async insertKnowledgeCollectionMetadata(repository, metadataNQuads, timeout) {
         const query = `
             PREFIX schema: <${SCHEMA_CONTEXT}>
             INSERT DATA {
@@ -613,7 +768,7 @@ class OtTripleStore {
             }
         `;
 
-        await this.queryVoid(repository, query);
+        await this.queryVoid(repository, query, timeout);
     }
 
     async deleteKnowledgeCollectionMetadata(repository, uals) {
@@ -644,7 +799,7 @@ class OtTripleStore {
         await this.queryVoid(repository, query);
     }
 
-    async getKnowledgeCollectionMetadata(repository, ual) {
+    async getKnowledgeCollectionMetadata(repository, ual, timeout) {
         const query = `
         CONSTRUCT {
             <${ual}> ?p ?o .
@@ -656,10 +811,10 @@ class OtTripleStore {
         }
     `;
 
-        return this.construct(repository, query);
+        return this.construct(repository, query, timeout);
     }
 
-    async getKnowledgeAssetMetadata(repository, ual) {
+    async getKnowledgeAssetMetadata(repository, ual, timeout) {
         const query = `
             CONSTRUCT { <${ual}> ?p ?o . }
             WHERE {
@@ -669,7 +824,7 @@ class OtTripleStore {
             }
         `;
 
-        return this.construct(repository, query);
+        return this.construct(repository, query, timeout);
     }
 
     async knowledgeCollectionMetadataExists(repository, ual) {

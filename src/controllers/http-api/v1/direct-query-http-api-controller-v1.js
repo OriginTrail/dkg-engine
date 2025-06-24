@@ -1,15 +1,21 @@
 import BaseController from '../base-http-api-controller.js';
 
-import { TRIPLE_STORE_REPOSITORIES, QUERY_TYPES } from '../../../constants/constants.js';
+import {
+    OPERATION_ID_STATUS,
+    TRIPLE_STORE_REPOSITORIES,
+    QUERY_TYPES,
+} from '../../../constants/constants.js';
 
 class DirectQueryController extends BaseController {
     constructor(ctx) {
         super(ctx);
+        this.config = ctx.config;
         this.fileService = ctx.fileService;
         this.dataService = ctx.dataService;
         this.tripleStoreService = ctx.tripleStoreService;
         this.paranetService = ctx.paranetService;
         this.ualService = ctx.ualService;
+        this.operationIdService = ctx.operationIdService;
     }
 
     async handleRequest(req, res) {
@@ -17,7 +23,12 @@ class DirectQueryController extends BaseController {
         let { query, repository } = req.body;
 
         let data;
+        const operationId = await this.operationIdService.generateId();
         try {
+            this.operationIdService.emitChangeEvent(
+                OPERATION_ID_STATUS.QUERY.QUERY_INIT_START,
+                operationId,
+            );
             if (paranetUAL) {
                 repository = this.paranetService.getParanetRepositoryName(paranetUAL);
             } else {
@@ -51,13 +62,28 @@ class DirectQueryController extends BaseController {
                     );
                 }
             }
-
+            this.operationIdService.emitChangeEvent(
+                OPERATION_ID_STATUS.QUERY.QUERY_INIT_END,
+                operationId,
+            );
+            this.operationIdService.emitChangeEvent(
+                OPERATION_ID_STATUS.QUERY.QUERY_START,
+                operationId,
+            );
             switch (queryType) {
                 case QUERY_TYPES.CONSTRUCT: {
                     if (Array.isArray(repository)) {
                         const [dataV6, dataV8] = await Promise.all([
-                            this.tripleStoreService.construct(query, repository[0]),
-                            this.tripleStoreService.construct(query, repository[1]),
+                            this.tripleStoreService.construct(
+                                query,
+                                repository[0],
+                                this.config.modules.tripleStore.timeout.query,
+                            ),
+                            this.tripleStoreService.construct(
+                                query,
+                                repository[1],
+                                this.config.modules.tripleStore.timeout.query,
+                            ),
                         ]);
 
                         data = this.dataService.removeDuplicateObjectsFromArray([
@@ -65,7 +91,11 @@ class DirectQueryController extends BaseController {
                             ...dataV8,
                         ]);
                     } else {
-                        data = await this.tripleStoreService.construct(query, repository);
+                        data = await this.tripleStoreService.construct(
+                            query,
+                            repository,
+                            this.config.modules.tripleStore.timeout.query,
+                        );
                     }
 
                     break;
@@ -73,8 +103,16 @@ class DirectQueryController extends BaseController {
                 case QUERY_TYPES.SELECT: {
                     if (Array.isArray(repository)) {
                         const [dataV6, dataV8] = await Promise.all([
-                            this.tripleStoreService.select(query, repository[0]),
-                            this.tripleStoreService.select(query, repository[1]),
+                            this.tripleStoreService.select(
+                                query,
+                                repository[0],
+                                this.config.modules.tripleStore.timeout.query,
+                            ),
+                            this.tripleStoreService.select(
+                                query,
+                                repository[1],
+                                this.config.modules.tripleStore.timeout.query,
+                            ),
                         ]);
 
                         data = this.dataService.removeDuplicateObjectsFromArray([
@@ -82,23 +120,36 @@ class DirectQueryController extends BaseController {
                             ...dataV8,
                         ]);
                     } else {
-                        data = await this.tripleStoreService.select(query, repository);
+                        data = await this.tripleStoreService.select(
+                            query,
+                            repository,
+                            this.config.modules.tripleStore.timeout.query,
+                        );
                     }
 
                     break;
                 }
                 default:
                     this.returnResponse(res, 400, `Unknown query type ${queryType}`);
+                    this.operationIdService.emitChangeEvent(
+                        OPERATION_ID_STATUS.QUERY.QUERY_FAILED,
+                        operationId,
+                    );
                     return;
             }
         } catch (e) {
             this.returnResponse(res, 500, e.message);
+            this.operationIdService.emitChangeEvent(
+                OPERATION_ID_STATUS.QUERY.QUERY_FAILED,
+                operationId,
+            );
             return;
         }
 
         this.returnResponse(res, 200, {
             data,
         });
+        this.operationIdService.emitChangeEvent(OPERATION_ID_STATUS.QUERY.QUERY_END, operationId);
     }
 
     validateRepositoryName(repository) {

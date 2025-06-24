@@ -89,6 +89,10 @@ class PublishService extends OperationService {
                     'Not replicated to enough nodes!',
                     this.errorType,
                 );
+                this.operationIdService.emitChangeEvent(
+                    OPERATION_ID_STATUS.PUBLISH.PUBLISH_FAILED,
+                    operationId,
+                );
                 this.logResponsesSummary(completedNumber, failedNumber);
             }
         }
