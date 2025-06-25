@@ -966,7 +966,7 @@
                         "package": "./blockchain/implementation/gnosis/gnosis-service.js",
                         "config": {
                             "hubContractAddress": "0x882D0BF07F956b1b94BBfe9E77F47c6fc7D4EC8f",
-                            "gasPriceOracleLink": "https://gnosis.blockscout.com/api/v1/gas-price-oracle"
+                            "gasPriceOracleLink": "https://gnosis.blockscout.com/api/v1/gas-price-oracle",
                             "operatorFee": 0
                         }
                     },
