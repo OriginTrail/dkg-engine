@@ -15,7 +15,7 @@ Feature: Publish errors test
   @ignore
   Scenario: Publish a knowledge asset directly on the node
     Given I setup 1 nodes
-    And I wait for 5 seconds
+    And I wait for 5 seconds 
 
     When I call Publish directly on the node 1 with validPublishRequestBody
     And I wait for latest Publish to finalize

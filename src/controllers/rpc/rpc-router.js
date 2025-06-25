@@ -11,6 +11,7 @@ class RpcRouter {
         this.updateRpcController = ctx.updateRpcController;
         this.askRpcController = ctx.askRpcController;
         this.finalityRpcController = ctx.finalityRpcController;
+        this.batchGetRpcController = ctx.batchGetRpcController;
     }
 
     initialize() {

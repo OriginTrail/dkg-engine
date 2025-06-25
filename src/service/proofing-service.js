@@ -1,10 +1,6 @@
-import { setTimeout } from 'timers/promises';
 import { kcTools } from 'assertion-tools';
 import {
     PROOFING_INTERVAL,
-    TRIPLES_VISIBILITY,
-    OPERATION_ID_STATUS,
-    PROOFING_MAX_ATTEMPTS,
     REORG_PROOFING_BUFFER,
     PRIVATE_HASH_SUBJECT_PREFIX,
     CHUNK_SIZE,
@@ -34,7 +30,7 @@ class ProofingService {
             promises.push(this.proofingMechanism(blockchainId));
         }
         await Promise.all(promises);
-        this.logger.info('[PROOFING]P roofingService initialization completed');
+        this.logger.info('[PROOFING] ProofingService initialization completed');
     }
 
     async proofingMechanism(blockchainId) {
@@ -200,6 +196,13 @@ class ProofingService {
                     latestChallenge,
                 );
 
+                if (data.public.length === 0) {
+                    this.logger.warn(
+                        `[PROOFING] No assertions found for blockchain: ${blockchainId}, challengeId: ${latestChallenge.id}, ual: ${ual}`,
+                    );
+                    return;
+                }
+
                 const proof = await this.calculateAndSubmitProof(
                     data,
                     latestChallenge,
@@ -242,6 +245,12 @@ class ProofingService {
             );
 
             const data = await this.fetchAndProcessAssertion(blockchainId, ual, latestChallenge);
+
+            if (data.public.length === 0) {
+                throw new Error(
+                    `[PROOFING] No assertions found for blockchain: ${blockchainId}, challengeId: ${latestChallenge.id}, ual: ${ual}`,
+                );
+            }
 
             const proof = await this.calculateAndSubmitProof(data, newChallenge, blockchainId);
             this.logger.info(
@@ -286,8 +295,8 @@ class ProofingService {
                 'PROOF_NEW_CHALANGE_GENERATED',
                 this.generateOperationId(
                     blockchainId,
-                    newChallenge.epoch,
-                    newChallenge.activeProofPeriodStartBlock,
+                    newChallenge.epoch.toNumber(),
+                    newChallenge.activeProofPeriodStartBlock.toNumber(),
                 ),
                 blockchainId,
                 null,
@@ -336,69 +345,25 @@ class ProofingService {
     }
 
     async fetchAndProcessAssertion(blockchainId, ual, latestChallenge) {
-        let attempt = 0;
-        let getResult;
-        const getOperationId = await this.operationIdService.generateOperationId(
-            OPERATION_ID_STATUS.GET.GET_START,
-        );
-        await this.commandExecutor.add({
-            name: 'getCommand',
-            sequence: [],
-            delay: 0,
-            data: {
-                operationId: getOperationId,
-                blockchain: blockchainId,
-                contract: latestChallenge.contractAddress.toLowerCase(),
-                knowledgeCollectionId: latestChallenge.knowledgeCollectionId, // latestChallenge.knowledgeCollectionId,
-                state: 0,
-                ual,
-                contentType: TRIPLES_VISIBILITY.PUBLIC,
-            },
-            transactional: false,
-        });
-
-        attempt = 0;
-        do {
-            // eslint-disable-next-line no-await-in-loop
-            await setTimeout(500);
-            // eslint-disable-next-line no-await-in-loop
-            getResult = await this.operationIdService.getOperationIdRecord(getOperationId);
-            attempt += 1;
-        } while (
-            attempt < PROOFING_MAX_ATTEMPTS &&
-            getResult?.status !== OPERATION_ID_STATUS.FAILED &&
-            getResult?.status !== OPERATION_ID_STATUS.COMPLETED
+        const { contract, knowledgeCollectionId } = this.ualService.resolveUAL(ual);
+        const tokenIds = await this.blockchainModuleManager.getKnowledgeAssetsRange(
+            blockchainId,
+            contract,
+            knowledgeCollectionId,
         );
 
-        if (getResult?.status !== OPERATION_ID_STATUS.COMPLETED) {
-            // We need to return here and retry later
-            throw new Error(
-                `[PROOFING] Unable to Proofing GET Knowledge Collection for proof Id: ${
-                    latestChallenge.knowledgeCollectionId
-                }, for contract: ${latestChallenge.contractAddress}, state index: ${
-                    latestChallenge.stateIndex
-                }, blockchain: ${blockchainId}, GET result: ${JSON.stringify(getResult)}`,
-            );
-        }
-
-        const data = await this.operationIdService.getCachedOperationIdData(getOperationId);
+        const assertion = await this.tripleStoreService.getAssertion(
+            blockchainId,
+            contract,
+            knowledgeCollectionId,
+            null,
+            tokenIds,
+            '0',
+        );
         this.logger.debug(
-            `[PROOFING] Proofing GET: ${
-                data.assertion.public.length + (data.assertion?.private?.length || 0)
-            } nquads found for asset with ual: ${ual}`,
+            `[PROOFING] Proofing GET: ${assertion.public.length} nquads found for asset with ual: ${ual}`,
         );
-        // if (data.assertion && data.assertion?.public?.length > 0) {
-        //     // TODO: Do this correctly there is no implementation of deleteKnowledgeCollection in tripleStoreService
-        //     await this.tripleStoreService.deleteKnowledgeCollection(
-        //         TRIPLE_STORE_REPOSITORY.DKG,
-        //         ual,
-        //     );
-        // }
-        // await this.tripleStoreService.insertKnowledgeCollection(
-        //     TRIPLE_STORE_REPOSITORY.DKG,
-        //     ual,
-        //     data.assertion,
-        // );
+
         this.operationIdService.emitChangeEvent(
             'PROOF_ASSERTION_FETCHED',
             this.generateOperationId(
@@ -410,7 +375,7 @@ class ProofingService {
             null,
             null,
         );
-        return data.assertion;
+        return assertion;
     }
 
     async calculateAndSubmitProof(data, newChallenge, blockchainId) {

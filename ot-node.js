@@ -5,7 +5,11 @@ import { createRequire } from 'module';
 import { execSync } from 'child_process';
 import DependencyInjection from './src/service/dependency-injection.js';
 import Logger from './src/logger/logger.js';
-import { MIN_NODE_VERSION, PARANET_ACCESS_POLICY } from './src/constants/constants.js';
+import {
+    MIN_NODE_VERSION,
+    PARANET_ACCESS_POLICY,
+    NODE_ENVIRONMENTS,
+} from './src/constants/constants.js';
 import FileService from './src/service/file-service.js';
 import OtnodeUpdateCommand from './src/commands/common/otnode-update-command.js';
 import OtAutoUpdater from './src/modules/auto-updater/implementation/ot-auto-updater.js';
@@ -61,7 +65,13 @@ class OTNode {
         await this.initializeRouters();
         await this.startNetworkModule();
         this.resumeCommandExecutor();
-        // await this.initializeProofing();
+        await this.initializeProofing();
+        if (process.env.NODE_ENV !== NODE_ENVIRONMENTS.MAINNET) {
+            await this.initializeClaimRewards();
+        }
+        await this.initializeSyncService();
+        await this.initializeBlazegraphHealthService();
+
         this.logger.info('Node is up and running!');
     }
 
@@ -262,6 +272,7 @@ class OTNode {
             this.logger.error(
                 `Unable to resume command executor queue. Error message: ${e.message}`,
             );
+
             this.stop(1);
         }
     }
@@ -399,10 +410,26 @@ class OTNode {
         tripleStoreService.initializeRepositories();
     }
 
-    // async initializeProofing() {
-    //     const proofingService = this.container.resolve('proofingService');
-    //     await proofingService.initialize();
-    // }
+    async initializeProofing() {
+        const proofingService = this.container.resolve('proofingService');
+        await proofingService.initialize();
+    }
+
+    async initializeClaimRewards() {
+        const claimRewardsService = this.container.resolve('claimRewardsService');
+        await claimRewardsService.initialize();
+    }
+
+    async initializeSyncService() {
+        const syncService = this.container.resolve('syncService');
+        await syncService.initialize();
+    }
+
+    async initializeBlazegraphHealthService() {
+        const blazegraphHealthService = this.container.resolve('blazegraphHealthService');
+        await blazegraphHealthService.initialize();
+        this.logger.info('Blazegraph Health Service initialized successfully');
+    }
 
     stop(code = 0) {
         this.logger.info('Stopping node...');

@@ -38,6 +38,7 @@ class GetCommand extends Command {
             errorMessage,
             errorType,
         );
+        this.operationIdService.emitChangeEvent(OPERATION_ID_STATUS.GET.GET_FAILED, operationId);
     }
 
     /**
@@ -445,7 +446,7 @@ class GetCommand extends Command {
             [contract, knowledgeCollectionId],
         );
         const paranetContainsKnowledgeCollection =
-            this.blockchainModuleManager.isKnowledgeCollectionRegistered(
+            await this.blockchainModuleManager.isKnowledgeCollectionRegistered(
                 blockchain,
                 paranetId,
                 knowledgeCollectionOnchainId,
@@ -531,6 +532,9 @@ class GetCommand extends Command {
         paranetNodesAccessPolicy,
         contentType,
     ) {
+        if (knowledgeAssetId) {
+            return true;
+        }
         if (responseData?.assertion?.public) {
             // We can only validate whole collection not particular KA
             if (
