@@ -246,6 +246,12 @@ class ProofingService {
 
             const data = await this.fetchAndProcessAssertion(blockchainId, ual, latestChallenge);
 
+            if (data.public.length === 0) {
+                throw new Error(
+                    `[PROOFING] No assertions found for blockchain: ${blockchainId}, challengeId: ${latestChallenge.id}, ual: ${ual}`,
+                );
+            }
+
             const proof = await this.calculateAndSubmitProof(data, newChallenge, blockchainId);
             this.logger.info(
                 `[PROOFING] Proof calculated and submitted successfully for blockchain: ${blockchainId}, challengeId: ${newChallenge.id}`,
