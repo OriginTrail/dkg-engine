@@ -13,6 +13,7 @@ class ProofingService {
         this.ualService = ctx.ualService;
         this.blockchainModuleManager = ctx.blockchainModuleManager;
         this.repositoryModuleManager = ctx.repositoryModuleManager;
+        this.networkModuleManager = ctx.networkModuleManager;
         this.tripleStoreService = ctx.tripleStoreService;
         this.validationService = ctx.validationService;
         this.commandExecutor = ctx.commandExecutor;
@@ -101,8 +102,21 @@ class ProofingService {
 
     async runProofing(blockchainId) {
         this.logger.debug(`[PROOFING] Running proofing mechanism for ${blockchainId}`);
+
+        const peerId = this.networkModuleManager.getPeerId().toB58String();
+        const isNodePartOfShard = await this.repositoryModuleManager.isNodePartOfShard(
+            blockchainId,
+            peerId,
+        );
+        if (!isNodePartOfShard) {
+            this.logger.debug(
+                `[PROOFING] Skipping proofing. Node is not part of shard for blockchain: ${blockchainId}, peerId: ${peerId}`,
+            );
+            return;
+        }
+
         // TODO:rename to identityId
-        const nodeId = await this.blockchainModuleManager.getIdentityId(blockchainId);
+        const nodeId = await this.blockchainModuleManager.getIdentityId(blockchainId, peerId);
         // Check what is current proof period {isValid, activeProofPeriodStartBlock}
         const activeProofPeriodStatus =
             await this.blockchainModuleManager.getActiveProofPeriodStatus(blockchainId);
