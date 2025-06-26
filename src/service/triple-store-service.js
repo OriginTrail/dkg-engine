@@ -585,7 +585,6 @@ class TripleStoreService {
         knowledgeCollectionId,
         knowledgeAssetId,
         repository = TRIPLE_STORE_REPOSITORY.DKG,
-        timeout = this.config.modules.tripleStore.timeout.get,
     ) {
         const ual = `did:dkg:${blockchain}/${contract}/${knowledgeCollectionId}${
             Number.isInteger(knowledgeAssetId) ? `/${knowledgeAssetId}` : ''
@@ -597,14 +596,14 @@ class TripleStoreService {
                 this.repositoryImplementations[repository],
                 repository,
                 ual,
-                timeout,
+                this.config.modules.tripleStore.timeout.get,
             );
         } else {
             nquads = await this.tripleStoreModuleManager.getKnowledgeCollectionMetadata(
                 this.repositoryImplementations[repository],
                 repository,
                 ual,
-                timeout,
+                this.config.modules.tripleStore.timeout.get,
             );
         }
         nquads = nquads.split('\n').filter((line) => line !== '');
