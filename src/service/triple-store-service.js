@@ -514,14 +514,6 @@ class TripleStoreService {
     async getAssertionsInBatch(repository, uals, ualTokenIds, visibility = 'public') {
         const results = await Promise.all(
             uals.map(async (ual) => {
-                //        blockchain,
-                // contract,
-                // knowledgeCollectionId,
-                // knowledgeAssetId,
-                // tokenIds,
-                // migrationFlag,
-                // visibility = TRIPLES_VISIBILITY.PUBLIC,
-                // repository = TRIPLE_STORE_REPOSITORY.DKG
                 const { blockchain, contract, knowledgeCollectionId } =
                     this.ualService.resolveUAL(ual);
                 const nquads = await this.getAssertion(
