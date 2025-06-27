@@ -410,10 +410,10 @@ class OTNode {
         tripleStoreService.initializeRepositories();
     }
 
-    // async initializeProofing() {
-    //     const proofingService = this.container.resolve('proofingService');
-    //     await proofingService.initialize();
-    // }
+    async initializeProofing() {
+        const proofingService = this.container.resolve('proofingService');
+        await proofingService.initialize();
+    }
 
     async initializeClaimRewards() {
         const claimRewardsService = this.container.resolve('claimRewardsService');
