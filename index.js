@@ -50,6 +50,18 @@ process.env.NODE_ENV =
     }
 })();
 
+process.on('unhandledRejection', (err) => {
+    // Handle specific libp2p peer lookup failures that escape try-catch blocks
+    if (err && err.code === 'ERR_LOOKUP_FAILED') {
+        console.warn(`Peer lookup failed (ERR_LOOKUP_FAILED): ${err.message}`);
+        return; // Don't crash for peer lookup failures
+    }
+
+    // For all other unhandled rejections, crash the node
+    console.error('Something went really wrong! OT-node shutting down...', err);
+    process.exit(1);
+});
+
 process.on('uncaughtException', (err) => {
     console.error('Something went really wrong! OT-node shutting down...', err);
     process.exit(1);

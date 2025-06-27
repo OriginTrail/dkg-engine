@@ -260,15 +260,19 @@ class SyncService {
             // Update metadata timestamps
             const updatedMetadata = { ...data.metadata };
             Object.entries(updatedMetadata).forEach(([ual, triples]) => {
-                updatedMetadata[ual] = triples.map((triple) => {
-                    if (triple.includes(DKG_METADATA_PREDICATES.PUBLISH_TIME)) {
-                        const splitTriple = triple.split(' ');
-                        return `${splitTriple[0]} ${
-                            splitTriple[1]
-                        } "${new Date().toISOString()}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`;
-                    }
-                    return triple;
-                });
+                if (Array.isArray(triples)) {
+                    updatedMetadata[ual] = triples.map((triple) => {
+                        if (triple.includes(DKG_METADATA_PREDICATES.PUBLISH_TIME)) {
+                            const splitTriple = triple.split(' ');
+                            return `${splitTriple[0]} ${
+                                splitTriple[1]
+                            } "${new Date().toISOString()}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`;
+                        }
+                        return triple;
+                    });
+                } else {
+                    updatedMetadata[ual] = [];
+                }
             });
             data.metadata = updatedMetadata;
 
@@ -384,15 +388,19 @@ class SyncService {
             // Update metadata timestamps
             const updatedMetadata = { ...data.metadata };
             Object.entries(updatedMetadata).forEach(([ual, triples]) => {
-                updatedMetadata[ual] = triples.map((triple) => {
-                    if (triple.includes(DKG_METADATA_PREDICATES.PUBLISH_TIME)) {
-                        const splitTriple = triple.split(' ');
-                        return `${splitTriple[0]} ${
-                            splitTriple[1]
-                        } "${new Date().toISOString()}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`;
-                    }
-                    return triple;
-                });
+                if (Array.isArray(triples)) {
+                    updatedMetadata[ual] = triples.map((triple) => {
+                        if (triple.includes(DKG_METADATA_PREDICATES.PUBLISH_TIME)) {
+                            const splitTriple = triple.split(' ');
+                            return `${splitTriple[0]} ${
+                                splitTriple[1]
+                            } "${new Date().toISOString()}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`;
+                        }
+                        return triple;
+                    });
+                } else {
+                    updatedMetadata[ual] = [];
+                }
             });
             data.metadata = updatedMetadata;
 
