@@ -116,7 +116,7 @@ class ProofingService {
         }
 
         // TODO:rename to identityId
-        const nodeId = await this.blockchainModuleManager.getIdentityId(blockchainId, peerId);
+        const nodeId = await this.blockchainModuleManager.getIdentityId(blockchainId);
         // Check what is current proof period {isValid, activeProofPeriodStartBlock}
         const activeProofPeriodStatus =
             await this.blockchainModuleManager.getActiveProofPeriodStatus(blockchainId);
