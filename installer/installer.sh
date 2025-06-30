@@ -611,7 +611,7 @@ EOF
     # Configure blockchain events service for Base Sepolia
     for blockchain in "${selected_blockchains[@]}"; do
             case "$blockchain" in
-                "OriginTrail Neuroweb")
+                "Neuroweb")
                     configure_blockchain "otp" $otp_blockchain_id
                     ;;
                 "Gnosis")
