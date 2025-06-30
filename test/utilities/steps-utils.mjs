@@ -20,8 +20,6 @@ class StepsUtils {
      * @param nodeName
      * @param rpcPort
      * @param networkPort
-     * @param sharesTokenName
-     * @param sharesTokenSymbol
      * @param bootstrap
      * @returns {{operationalDatabase: {databaseName: (string|string)}, graphDatabase: {name}, auth: {ipBasedAuthEnabled: boolean}, appDataPath: (string|string), rpcPort, modules: {httpClient: {implementation: {"express-http-client": {config: {port}}}}, repository: {implementation: {"sequelize-repository": {config: {database: (string|string)}}}}, tripleStore: {implementation: {"ot-blazegraph": {config: {repositories: {publicHistory: {password: string, name: string, url: string, username: string}, publicCurrent: {password: string, name: string, url: string, username: string}, privateHistory: {password: string, name: string, url: string, username: string}, privateCurrent: {password: string, name: string, url: string, username: string}}}}}}, validation: {implementation: {"merkle-validation": {package: string, enabled: boolean}}, enabled: boolean}, network: {implementation: {"libp2p-service": {config: {privateKey: (string|undefined), port}}}}}}}
      */
@@ -31,8 +29,6 @@ class StepsUtils {
         nodeName,
         rpcPort,
         networkPort,
-        sharesTokenName,
-        sharesTokenSymbol,
         bootstrap = false,
     ) {
         let config = {
@@ -68,15 +64,15 @@ class StepsUtils {
                         'ot-blazegraph': {
                             config: {
                                 repositories: {
-                                    privateCurrent: {
+                                    dkg: {
                                         url: 'http://localhost:9999',
-                                        name: 'private-current',
+                                        name: `dkg-${nodeIndex}`,
                                         username: 'admin',
                                         password: '',
                                     },
-                                    privateHistory: {
+                                    privateCurrent: {
                                         url: 'http://localhost:9999',
-                                        name: 'private-history',
+                                        name: 'private-current',
                                         username: 'admin',
                                         password: '',
                                     },
@@ -86,12 +82,7 @@ class StepsUtils {
                                         username: 'admin',
                                         password: '',
                                     },
-                                    publicHistory: {
-                                        url: 'http://localhost:9999',
-                                        name: 'public-history',
-                                        username: 'admin',
-                                        password: '',
-                                    },
+
                                 },
                             },
                         },
@@ -146,8 +137,7 @@ class StepsUtils {
                     }],
                     evmManagementWalletPublicKey: blockchain.managementWallet.address,
                     evmManagementWalletPrivateKey: blockchain.managementWallet.privateKey,
-                    sharesTokenName,
-                    sharesTokenSymbol,
+                    nodeName: `node${nodeIndex}`,
                 },
             };
         }

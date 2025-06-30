@@ -1,5 +1,6 @@
 import axios from 'axios';
 import OtTripleStore from '../ot-triple-store.js';
+import { MEDIA_TYPES } from '../../../../constants/constants.js';
 
 class OtBlazegraph extends OtTripleStore {
     async initialize(config, logger) {
@@ -52,6 +53,10 @@ class OtBlazegraph extends OtTripleStore {
         ].sparqlEndpointUpdate = `${url}/blazegraph/namespace/${name}/sparql`;
     }
 
+    getRepositoryUrl(repository) {
+        return this.repositories[repository].url;
+    }
+
     hasUnicodeCodePoints(input) {
         return this.unicodeRegex.test(input);
     }
@@ -69,17 +74,69 @@ class OtBlazegraph extends OtTripleStore {
         return Buffer.from(input, 'utf8').toString();
     }
 
-    async _executeQuery(repository, query, mediaType) {
-        const result = await this.queryEngine.query(
-            query,
-            this.repositories[repository].queryContext,
-        );
-        const { data } = await this.queryEngine.resultToString(result, mediaType);
+    async construct(repository, query, timeout) {
+        return this._executeQuery(repository, query, MEDIA_TYPES.N_QUADS, timeout);
+    }
 
-        let response = '';
+    async select(repository, query, timeout) {
+        const result = await this._executeQuery(repository, query, MEDIA_TYPES.JSON, timeout);
+        return result ? JSON.parse(result) : [];
+    }
 
-        for await (const chunk of data) {
-            response += chunk;
+    async _executeQuery(repository, query, mediaType, timeout) {
+        const result = await axios.post(this.repositories[repository].sparqlEndpoint, query, {
+            headers: {
+                'Content-Type': 'application/sparql-query',
+                'X-BIGDATA-MAX-QUERY-MILLIS': timeout,
+                Accept: mediaType,
+            },
+        });
+        let response;
+        if (mediaType === MEDIA_TYPES.JSON) {
+            const { bindings } = result.data.results;
+
+            let output = '[\n';
+
+            bindings.forEach((binding, bindingIndex) => {
+                let string = '  {\n';
+
+                const keys = Object.keys(binding);
+
+                keys.forEach((key, index) => {
+                    let value = '';
+                    const entry = binding[key];
+
+                    if (entry.datatype) {
+                        // e.g., "\"6900000\"^^http://www.w3.org/2001/XMLSchema#integer"
+                        const literal = `"${entry.value}"^^${entry.datatype}`;
+                        value = JSON.stringify(literal);
+                    } else if (entry['xml:lang']) {
+                        // e.g., "\"text here\"@en"
+                        const literal = `"${entry.value}"@${entry['xml:lang']}`;
+                        value = JSON.stringify(literal);
+                    } else if (entry.type === 'uri') {
+                        // URIs should be escaped and quoted directly
+                        value = JSON.stringify(entry.value);
+                    } else {
+                        // For plain literals, wrap in quotes and stringify
+                        const literal = `"${entry.value}"`;
+                        value = JSON.stringify(literal);
+                    }
+
+                    const isLast = index === keys.length - 1;
+                    string += `    "${key}": ${value}${isLast ? '' : ','}\n`;
+                });
+
+                const isLastBinding = bindingIndex === bindings.length - 1;
+                string += `  }${isLastBinding ? '\n' : ',\n'}`;
+
+                output += string;
+            });
+
+            output += ']';
+            response = output;
+        } else {
+            response = result.data;
         }
 
         // Handle Blazegraph special characters corruption
@@ -107,10 +164,11 @@ class OtBlazegraph extends OtTripleStore {
         }
     }
 
-    async queryVoid(repository, query) {
+    async queryVoid(repository, query, timeout) {
         return axios.post(this.repositories[repository].sparqlEndpoint, query, {
             headers: {
                 'Content-Type': 'application/sparql-update; charset=UTF-8',
+                'X-BIGDATA-MAX-QUERY-MILLIS': timeout,
             },
         });
     }

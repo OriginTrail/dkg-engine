@@ -41,7 +41,6 @@ class StartParanetSyncCommands extends Command {
                 knowledgeCollectionId,
                 knowledgeAssetId,
             );
-
             const paranetMetadata = await this.blockchainModuleManager.getParanetMetadata(
                 blockchain,
                 paranetId,

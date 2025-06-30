@@ -24,6 +24,8 @@ class ProtocolService {
         switch (name) {
             case 'store':
                 return 'publish';
+            case 'batch-get':
+                return 'batchGet';
             default:
                 return name;
         }

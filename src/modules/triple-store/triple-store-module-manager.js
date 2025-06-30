@@ -5,18 +5,14 @@ class TripleStoreModuleManager extends BaseModuleManager {
         return this.getImplementation().module.initializeParanetRepository(repository);
     }
 
-    async insetAssertionInNamedGraph(implementationName, repository, namedGraph, nquads) {
-        if (this.getImplementation(implementationName)) {
-            return this.getImplementation(implementationName).module.insetAssertionInNamedGraph(
-                repository,
-                namedGraph,
-                nquads,
-            );
-        }
-    }
-
     repositoryInitilized(repository) {
         return this.getImplementation().module.repositoryInitilized(repository);
+    }
+
+    getRepositoryUrl(implementationName, repository) {
+        if (this.getImplementation(implementationName)) {
+            return this.getImplementation(implementationName).module.getRepositoryUrl(repository);
+        }
     }
 
     async deleteUniqueKnowledgeCollectionTriplesFromUnifiedGraph(
@@ -120,6 +116,7 @@ class TripleStoreModuleManager extends BaseModuleManager {
         uals,
         assetsNQuads,
         visibility,
+        timeout,
     ) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(
@@ -129,6 +126,7 @@ class TripleStoreModuleManager extends BaseModuleManager {
                 uals,
                 assetsNQuads,
                 visibility,
+                timeout,
             );
         }
     }
@@ -139,6 +137,7 @@ class TripleStoreModuleManager extends BaseModuleManager {
         knowledgeCollectionUal,
         paranetUAL,
         contentType,
+        timeout,
     ) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(
@@ -148,17 +147,19 @@ class TripleStoreModuleManager extends BaseModuleManager {
                 knowledgeCollectionUal,
                 paranetUAL,
                 contentType,
+                timeout,
             );
         }
     }
 
-    async insertMetadataTriples(implementationName, repository, kcUal, uals, visibility) {
+    async insertMetadataTriples(implementationName, repository, kcUal, uals, visibility, timeout) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(implementationName).module.insertMetadataTriples(
                 repository,
                 kcUal,
                 uals,
                 visibility,
+                timeout,
             );
         }
     }
@@ -177,6 +178,7 @@ class TripleStoreModuleManager extends BaseModuleManager {
         ual,
         knowledgeAssetId,
         visibility,
+        timeout,
     ) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(
@@ -186,7 +188,21 @@ class TripleStoreModuleManager extends BaseModuleManager {
                 ual,
                 knowledgeAssetId,
                 visibility,
+                timeout,
             );
+        }
+    }
+
+    async getKnowledgeCollectionNamedGraphsInBatch(
+        implementationName,
+        repository,
+        uals,
+        visibility,
+    ) {
+        if (this.getImplementation(implementationName)) {
+            return this.getImplementation(
+                implementationName,
+            ).module.getKnowledgeCollectionNamedGraphsInBatch(repository, uals, visibility);
         }
     }
 
@@ -196,11 +212,55 @@ class TripleStoreModuleManager extends BaseModuleManager {
         ual,
         tokenIds,
         visibility,
+        timeout,
     ) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(
                 implementationName,
-            ).module.getKnowledgeCollectionNamedGraphsOld(repository, ual, tokenIds, visibility);
+            ).module.getKnowledgeCollectionNamedGraphsOld(
+                repository,
+                ual,
+                tokenIds,
+                visibility,
+                timeout,
+            );
+        }
+    }
+
+    async checkIfKnowledgeAssetExists(implementationName, repository, kaUAL) {
+        if (this.getImplementation(implementationName)) {
+            return this.getImplementation(implementationName).module.checkIfKnowledgeAssetExists(
+                repository,
+                kaUAL,
+            );
+        }
+    }
+
+    async getKnowledgeCollectionNamedGraphsOldInBatch(
+        implementationName,
+        repository,
+        tokenIds,
+        visibility,
+        timeout,
+    ) {
+        if (this.getImplementation(implementationName)) {
+            return this.getImplementation(
+                implementationName,
+            ).module.getKnowledgeCollectionNamedGraphsOldInBatch(
+                repository,
+                tokenIds,
+                visibility,
+                timeout,
+            );
+        }
+    }
+
+    async getMetadataInBatch(implementationName, repository, uals) {
+        if (this.getImplementation(implementationName)) {
+            return this.getImplementation(implementationName).module.getMetadataInBatch(
+                repository,
+                uals,
+            );
         }
     }
 
@@ -221,12 +281,13 @@ class TripleStoreModuleManager extends BaseModuleManager {
         }
     }
 
-    async getKnowledgeAssetNamedGraph(implementationName, repository, ual, visibility) {
+    async getKnowledgeAssetNamedGraph(implementationName, repository, ual, visibility, timeout) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(implementationName).module.getKnowledgeAssetNamedGraph(
                 repository,
                 ual,
                 visibility,
+                timeout,
             );
         }
     }
@@ -240,11 +301,16 @@ class TripleStoreModuleManager extends BaseModuleManager {
         }
     }
 
-    async insertKnowledgeCollectionMetadata(implementationName, repository, metadataNQuads) {
+    async insertKnowledgeCollectionMetadata(
+        implementationName,
+        repository,
+        metadataNQuads,
+        timeout,
+    ) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(
                 implementationName,
-            ).module.insertKnowledgeCollectionMetadata(repository, metadataNQuads);
+            ).module.insertKnowledgeCollectionMetadata(repository, metadataNQuads, timeout);
         }
     }
 
@@ -256,20 +322,31 @@ class TripleStoreModuleManager extends BaseModuleManager {
         }
     }
 
-    async getKnowledgeCollectionMetadata(implementationName, repository, ual) {
+    async deletePublishTimestampMetadata(implementationName, repository, ual) {
         if (this.getImplementation(implementationName)) {
-            return this.getImplementation(implementationName).module.getKnowledgeCollectionMetadata(
+            return this.getImplementation(implementationName).module.deletePublishTimestampMetadata(
                 repository,
                 ual,
             );
         }
     }
 
-    async getKnowledgeAssetMetadata(implementationName, repository, ual) {
+    async getKnowledgeCollectionMetadata(implementationName, repository, ual, timeout) {
+        if (this.getImplementation(implementationName)) {
+            return this.getImplementation(implementationName).module.getKnowledgeCollectionMetadata(
+                repository,
+                ual,
+                timeout,
+            );
+        }
+    }
+
+    async getKnowledgeAssetMetadata(implementationName, repository, ual, timeout) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(implementationName).module.getKnowledgeAssetMetadata(
                 repository,
                 ual,
+                timeout,
             );
         }
     }
@@ -291,15 +368,23 @@ class TripleStoreModuleManager extends BaseModuleManager {
         }
     }
 
-    async construct(implementationName, repository, query) {
+    async construct(implementationName, repository, query, timeout) {
         if (this.getImplementation(implementationName)) {
-            return this.getImplementation(implementationName).module.construct(repository, query);
+            return this.getImplementation(implementationName).module.construct(
+                repository,
+                query,
+                timeout,
+            );
         }
     }
 
-    async select(implementationName, repository, query) {
+    async select(implementationName, repository, query, timeout) {
         if (this.getImplementation(implementationName)) {
-            return this.getImplementation(implementationName).module.select(repository, query);
+            return this.getImplementation(implementationName).module.select(
+                repository,
+                query,
+                timeout,
+            );
         }
     }
 
@@ -337,6 +422,27 @@ class TripleStoreModuleManager extends BaseModuleManager {
     async ask(implementationName, repository, query) {
         if (this.getImplementation(implementationName)) {
             return this.getImplementation(implementationName).module.ask(repository, query);
+        }
+    }
+
+    async insertAssertionBatch(
+        implementationName,
+        repository,
+        insertMap,
+        metadata,
+        createdMetadata,
+        currentNamedGraphTriples,
+        timeout,
+    ) {
+        if (this.getImplementation(implementationName)) {
+            return this.getImplementation(implementationName).module.insertAssertionBatch(
+                repository,
+                insertMap,
+                metadata,
+                createdMetadata,
+                currentNamedGraphTriples,
+                timeout,
+            );
         }
     }
 

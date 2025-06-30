@@ -30,132 +30,140 @@ class PublishReplicationCommand extends Command {
         this.logger.debug(
             `Searching for shard for operationId: ${operationId}, dataset root: ${datasetRoot}`,
         );
-        await this.operationIdService.updateOperationIdStatus(
-            operationId,
-            blockchain,
-            OPERATION_ID_STATUS.FIND_NODES_START,
-        );
-
-        const minAckResponses = this.operationService.getMinAckResponses(
-            minimumNumberOfNodeReplications,
-        );
-
-        const networkProtocols = this.operationService.getNetworkProtocols();
-
-        const shardNodes = [];
-        let nodePartOfShard = false;
-        const currentPeerId = this.networkModuleManager.getPeerId().toB58String();
-
-        const foundNodes = await this.findShardNodes(blockchain);
-
-        for (const node of foundNodes) {
-            if (node.id === currentPeerId) {
-                nodePartOfShard = true;
-            } else {
-                shardNodes.push({ id: node.id, protocol: networkProtocols[0] });
-            }
-        }
-
-        this.logger.debug(
-            `Found ${
-                shardNodes.length + (nodePartOfShard ? 1 : 0)
-            } node(s) for operationId: ${operationId}`,
-        );
-
-        this.logger.trace(
-            `Found shard: ${JSON.stringify(
-                shardNodes.map((node) => node.id),
-                null,
-                2,
-            )}`,
-        );
-
-        if (shardNodes.length + (nodePartOfShard ? 1 : 0) < minAckResponses) {
-            await this.handleError(
-                operationId,
-                blockchain,
-                `Unable to find enough nodes for operationId: ${operationId}. Minimum number of nodes required: ${minAckResponses}`,
-                this.errorType,
-                true,
-            );
-            return Command.empty();
-        }
-
-        await this.operationIdService.updateOperationIdStatus(
-            operationId,
-            blockchain,
-            OPERATION_ID_STATUS.PUBLISH.PUBLISH_FIND_NODES_END,
-        );
-
         try {
             await this.operationIdService.updateOperationIdStatus(
                 operationId,
                 blockchain,
-                OPERATION_ID_STATUS.LOCAL_STORE.LOCAL_STORE_START,
-            );
-            const batchSizePar = this.operationService.getBatchSize(batchSize);
-
-            const { identityId, v, r, s, vs } = await this.createSignatures(
-                blockchain,
-                nodePartOfShard,
-                datasetRoot,
-                operationId,
+                OPERATION_ID_STATUS.FIND_NODES_START,
             );
 
-            const updatedData = {
-                ...command.data,
-                batchSize: batchSizePar,
-                minAckResponses,
-                numberOfFoundNodes: shardNodes.length + (nodePartOfShard ? 1 : 0),
-            };
-            // eslint-disable-next-line no-param-reassign
-            command.data = updatedData;
-            if (nodePartOfShard) {
-                await this.operationService.processResponse(
-                    { ...command, data: updatedData },
-                    OPERATION_REQUEST_STATUS.COMPLETED,
-                    {
-                        messageType: NETWORK_MESSAGE_TYPES.RESPONSES.ACK,
-                        messageData: { identityId, v, r, s, vs },
-                    },
+            const minAckResponses = this.operationService.getMinAckResponses(
+                minimumNumberOfNodeReplications,
+            );
+
+            const networkProtocols = this.operationService.getNetworkProtocols();
+
+            const shardNodes = [];
+            let nodePartOfShard = false;
+            const currentPeerId = this.networkModuleManager.getPeerId().toB58String();
+
+            const foundNodes = await this.findShardNodes(blockchain);
+
+            for (const node of foundNodes) {
+                if (node.id === currentPeerId) {
+                    nodePartOfShard = true;
+                } else {
+                    shardNodes.push({ id: node.id, protocol: networkProtocols[0] });
+                }
+            }
+
+            this.logger.debug(
+                `Found ${
+                    shardNodes.length + (nodePartOfShard ? 1 : 0)
+                } node(s) for operationId: ${operationId}`,
+            );
+
+            this.logger.trace(
+                `Found shard: ${JSON.stringify(
+                    shardNodes.map((node) => node.id),
                     null,
+                    2,
+                )}`,
+            );
+
+            if (shardNodes.length + (nodePartOfShard ? 1 : 0) < minAckResponses) {
+                await this.handleError(
+                    operationId,
+                    blockchain,
+                    `Unable to find enough nodes for operationId: ${operationId}. Minimum number of nodes required: ${minAckResponses}`,
+                    this.errorType,
+                    true,
                 );
-            } else {
-                await this.operationService.processResponse(
-                    { ...command, data: updatedData },
-                    OPERATION_REQUEST_STATUS.FAILED,
-                    {},
-                    'Node is not part of the shard.',
+
+                this.operationIdService.emitChangeEvent(
+                    OPERATION_ID_STATUS.FAILED,
+                    operationId,
+                    blockchain,
                 );
+                return Command.empty();
             }
 
             await this.operationIdService.updateOperationIdStatus(
                 operationId,
                 blockchain,
-                OPERATION_ID_STATUS.LOCAL_STORE.LOCAL_STORE_END,
+                OPERATION_ID_STATUS.FAILED,
+            );
+
+            try {
+                await this.operationIdService.updateOperationIdStatus(
+                    operationId,
+                    blockchain,
+                    OPERATION_ID_STATUS.PUBLISH.PUBLISH_REPLICATE_START,
+                );
+                const batchSizePar = this.operationService.getBatchSize(batchSize);
+
+                const { identityId, v, r, s, vs } = await this.createSignatures(
+                    blockchain,
+                    nodePartOfShard,
+                    datasetRoot,
+                    operationId,
+                );
+
+                const updatedData = {
+                    ...command.data,
+                    batchSize: batchSizePar,
+                    minAckResponses,
+                    numberOfFoundNodes: shardNodes.length + (nodePartOfShard ? 1 : 0),
+                };
+                // eslint-disable-next-line no-param-reassign
+                command.data = updatedData;
+                if (nodePartOfShard) {
+                    await this.operationService.processResponse(
+                        { ...command, data: updatedData },
+                        OPERATION_REQUEST_STATUS.COMPLETED,
+                        {
+                            messageType: NETWORK_MESSAGE_TYPES.RESPONSES.ACK,
+                            messageData: { identityId, v, r, s, vs },
+                        },
+                        null,
+                    );
+                }
+            } catch (e) {
+                await this.handleError(operationId, blockchain, e.message, this.errorType, true);
+                this.operationIdService.emitChangeEvent(
+                    OPERATION_ID_STATUS.FAILED,
+                    operationId,
+                    blockchain,
+                );
+                return Command.empty();
+            }
+            const { dataset } = await this.operationIdService.getCachedOperationIdData(operationId);
+            const message = {
+                dataset: dataset.public,
+                datasetRoot,
+                blockchain,
+            };
+
+            // Run all message sending operations in parallel
+            await Promise.all(
+                shardNodes.map((node) =>
+                    this.sendAndHandleMessage(node, operationId, message, command, blockchain),
+                ),
             );
         } catch (e) {
             await this.handleError(operationId, blockchain, e.message, this.errorType, true);
+            this.operationIdService.emitChangeEvent(
+                OPERATION_ID_STATUS.FAILED,
+                operationId,
+                blockchain,
+            );
             return Command.empty();
         }
-        const { dataset } = await this.operationIdService.getCachedOperationIdData(operationId);
-        const message = {
-            dataset: dataset.public,
-            datasetRoot,
-            blockchain,
-        };
-
-        // Run all message sending operations in parallel
-        await Promise.all(
-            shardNodes.map((node) =>
-                this.sendAndHandleMessage(node, operationId, message, command),
-            ),
-        );
 
         return Command.empty();
     }
 
-    async sendAndHandleMessage(node, operationId, message, command) {
+    async sendAndHandleMessage(node, operationId, message, command, blockchain) {
         const response = await this.messagingService.sendProtocolMessage(
             node,
             operationId,
@@ -187,6 +195,11 @@ class PublishReplicationCommand extends Command {
                 command,
                 OPERATION_REQUEST_STATUS.FAILED,
                 responseData,
+            );
+            this.operationIdService.emitChangeEvent(
+                OPERATION_ID_STATUS.FAILED,
+                operationId,
+                blockchain,
             );
         }
     }

@@ -38,6 +38,7 @@ class GetCommand extends Command {
             errorMessage,
             errorType,
         );
+        this.operationIdService.emitChangeEvent(OPERATION_ID_STATUS.GET.GET_FAILED, operationId);
     }
 
     /**
@@ -232,6 +233,8 @@ class GetCommand extends Command {
             contract,
             knowledgeCollectionId,
             knowledgeAssetId,
+            paranetNodesAccessPolicy,
+            contentType,
         );
         if (
             localGetPassed &&
@@ -265,18 +268,28 @@ class GetCommand extends Command {
             OPERATION_ID_STATUS.GET.GET_SHARD_START,
         );
 
-        let nodesInfo = await this.findNodes(operationId, blockchain, currentPeerId);
+        let nodesInfo = [];
         if (paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED) {
-            const permissionedNodes = await this.blockchainModuleManager.getPermissionedNodes(
+            const onChainNodes = await this.blockchainModuleManager.getPermissionedNodes(
                 blockchain,
                 paranetId,
             );
-            // Awful nested loop here but small arrays
-            nodesInfo = nodesInfo.filter((node) =>
-                permissionedNodes.some(
-                    (n) => this.cryptoService.convertHexToAscii(n.nodeId) === node.id,
+            const foundNodes = await Promise.all(
+                onChainNodes.map(async (node) =>
+                    this.shardingTableService.findPeerAddressAndProtocols(
+                        this.cryptoService.convertHexToAscii(node.nodeId),
+                    ),
                 ),
             );
+            const networkProtocols = this.operationService.getNetworkProtocols();
+
+            for (const node of foundNodes) {
+                if (node.id !== currentPeerId) {
+                    nodesInfo.push({ id: node.id, protocol: networkProtocols[0] });
+                }
+            }
+        } else {
+            nodesInfo = await this.findShardNodes(operationId, blockchain, currentPeerId);
         }
 
         if (nodesInfo.length < this.minAckResponses) {
@@ -341,6 +354,8 @@ class GetCommand extends Command {
                     contract,
                     knowledgeCollectionId,
                     knowledgeAssetId,
+                    paranetNodesAccessPolicy,
+                    contentType,
                 );
                 if (isResponseValid) {
                     this.operationService.markOperationAsCompleted(
@@ -431,7 +446,7 @@ class GetCommand extends Command {
             [contract, knowledgeCollectionId],
         );
         const paranetContainsKnowledgeCollection =
-            this.blockchainModuleManager.isKnowledgeCollectionRegistered(
+            await this.blockchainModuleManager.isKnowledgeCollectionRegistered(
                 blockchain,
                 paranetId,
                 knowledgeCollectionOnchainId,
@@ -463,7 +478,7 @@ class GetCommand extends Command {
         };
     }
 
-    async findNodes(operationId, blockchain, currentPeerId) {
+    async findShardNodes(operationId, blockchain, currentPeerId) {
         this.logger.debug(`Searching for shard for operationId: ${operationId}`);
 
         const networkProtocols = this.operationService.getNetworkProtocols();
@@ -514,7 +529,12 @@ class GetCommand extends Command {
         contract,
         knowledgeCollectionId,
         knowledgeAssetId,
+        paranetNodesAccessPolicy,
+        contentType,
     ) {
+        if (knowledgeAssetId) {
+            return true;
+        }
         if (responseData?.assertion?.public) {
             // We can only validate whole collection not particular KA
             if (
@@ -554,11 +574,32 @@ class GetCommand extends Command {
                         knowledgeCollectionId,
                     );
 
-                    if (responseData.assertion?.private?.length)
+                    if (paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED) {
+                        if (Array.isArray(responseData?.assertion?.public)) {
+                            const assertionShouldHavePrivateTriples =
+                                responseData?.assertion?.public?.some((triple) =>
+                                    triple.includes(`${PRIVATE_ASSERTION_PREDICATE}`),
+                                );
+                            if (assertionShouldHavePrivateTriples) {
+                                if (responseData?.assertion?.private?.length > 0) {
+                                    await this.validationService.validatePrivateMerkleRoot(
+                                        responseData.assertion.public,
+                                        responseData.assertion.private,
+                                    );
+                                    return true;
+                                }
+                            }
+                        }
+                        return false;
+                    }
+
+                    if (responseData.assertion?.private?.length) {
                         await this.validationService.validatePrivateMerkleRoot(
                             responseData.assertion.public,
                             responseData.assertion.private,
                         );
+                        return true;
+                    }
                 } catch (e) {
                     return false;
                 }
@@ -566,7 +607,11 @@ class GetCommand extends Command {
 
             return true;
         }
-        if (!responseData?.assertion?.public && responseData?.assertion?.private) {
+        if (
+            !responseData?.assertion?.public &&
+            responseData?.assertion?.private &&
+            contentType === 'private'
+        ) {
             // if there is only private part skip validation
             return true;
         }

@@ -91,6 +91,12 @@
             },
             "tripleStore": {
                 "enabled": true,
+                "timeout": {
+                    "query": 60000,
+                    "get": 10000,
+                    "batchGet": 10000,
+                    "insert": 300000
+                },
                 "implementation": {
                     "ot-blazegraph": {
                         "enabled": false,
@@ -107,7 +113,7 @@
                         "package": "./triple-store/implementation/ot-graphdb/ot-graphdb.js",
                         "config": {}
                     },
-		    "ot-neptune": {
+                    "ot-neptune": {
                         "enabled": false,
                         "package": "./triple-store/implementation/ot-neptune/ot-neptune.js",
                         "config": {}
@@ -193,6 +199,10 @@
         "appDataPath": "data",
         "logLevel": "info",
         "assetSync": {
+            "syncDKG": {
+                "enabled": true,
+                "syncBatchSize": 5
+            },
             "syncParanets": []
         },
         "auth": {
@@ -334,13 +344,19 @@
             },
             "tripleStore": {
                 "enabled": true,
+                "timeout": {
+                    "query": 60000,
+                    "get": 10000,
+                    "batchGet": 10000,
+                    "insert": 300000
+                },
                 "implementation": {
                     "ot-blazegraph": {
                         "enabled": true,
                         "package": "./triple-store/implementation/ot-blazegraph/ot-blazegraph.js",
                         "config": {}
                     },
-		    "ot-neptune": {
+                    "ot-neptune": {
                         "enabled": false,
                         "package": "./triple-store/implementation/ot-neptune/ot-neptune.js",
                         "config": {}
@@ -387,6 +403,10 @@
         "appDataPath": "data",
         "logLevel": "trace",
         "assetSync": {
+            "syncDKG": {
+                "enabled": false,
+                "syncBatchSize": 20
+            },
             "syncParanets": []
         },
         "auth": {
@@ -541,6 +561,12 @@
             },
             "tripleStore": {
                 "enabled": true,
+                "timeout": {
+                    "query": 60000,
+                    "get": 10000,
+                    "batchGet": 10000,
+                    "insert": 300000
+                },
                 "implementation": {
                     "ot-blazegraph": {
                         "enabled": false,
@@ -557,7 +583,7 @@
                         "package": "./triple-store/implementation/ot-graphdb/ot-graphdb.js",
                         "config": {}
                     },
-		    "ot-neptune": {
+                    "ot-neptune": {
                         "enabled": false,
                         "package": "./triple-store/implementation/ot-neptune/ot-neptune.js",
                         "config": {}
@@ -609,6 +635,10 @@
         "appDataPath": "data",
         "logLevel": "trace",
         "assetSync": {
+            "syncDKG": {
+                "enabled": false,
+                "syncBatchSize": 20
+            },
             "syncParanets": []
         },
         "auth": {
@@ -739,6 +769,12 @@
             },
             "tripleStore": {
                 "enabled": true,
+                "timeout": {
+                    "query": 60000,
+                    "get": 10000,
+                    "batchGet": 10000,
+                    "insert": 300000
+                },
                 "implementation": {
                     "ot-blazegraph": {
                         "enabled": false,
@@ -755,7 +791,7 @@
                         "package": "./triple-store/implementation/ot-graphdb/ot-graphdb.js",
                         "config": {}
                     },
-		    "ot-neptune": {
+                    "ot-neptune": {
                         "enabled": false,
                         "package": "./triple-store/implementation/ot-neptune/ot-neptune.js",
                         "config": {}
@@ -800,6 +836,10 @@
         "appDataPath": "data",
         "logLevel": "trace",
         "assetSync": {
+            "syncDKG": {
+                "enabled": false,
+                "syncBatchSize": 20
+            },
             "syncParanets": []
         },
         "auth": {
@@ -926,7 +966,7 @@
                         "package": "./blockchain/implementation/gnosis/gnosis-service.js",
                         "config": {
                             "hubContractAddress": "0x882D0BF07F956b1b94BBfe9E77F47c6fc7D4EC8f",
-                            "gasPriceOracleLink": "https://api.gnosisscan.io/api?module=proxy&action=eth_gasPrice",
+                            "gasPriceOracleLink": "https://gnosis.blockscout.com/api/v1/gas-price-oracle",
                             "operatorFee": 0
                         }
                     },
@@ -943,6 +983,12 @@
             },
             "tripleStore": {
                 "enabled": true,
+                "timeout": {
+                    "query": 60000,
+                    "get": 10000,
+                    "batchGet": 10000,
+                    "insert": 300000
+                },
                 "implementation": {
                     "ot-blazegraph": {
                         "enabled": false,
@@ -959,7 +1005,7 @@
                         "package": "./triple-store/implementation/ot-graphdb/ot-graphdb.js",
                         "config": {}
                     },
-		    "ot-neptune": {
+                    "ot-neptune": {
                         "enabled": false,
                         "package": "./triple-store/implementation/ot-neptune/ot-neptune.js",
                         "config": {}
@@ -1020,6 +1066,10 @@
         "appDataPath": "data",
         "logLevel": "trace",
         "assetSync": {
+            "syncDKG": {
+                "enabled": false,
+                "syncBatchSize": 20
+            },
             "syncParanets": []
         },
         "auth": {

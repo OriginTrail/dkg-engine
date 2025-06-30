@@ -26,6 +26,7 @@ class PublishController extends BaseController {
 
         const operationId = await this.operationIdService.generateOperationId(
             OPERATION_ID_STATUS.PUBLISH.PUBLISH_START,
+            blockchain,
         );
 
         await this.operationIdService.updateOperationIdStatus(
@@ -94,6 +95,10 @@ class PublishController extends BaseController {
                 blockchain,
                 'Unable to publish data, Failed to process input data!',
                 ERROR_TYPE.PUBLISH.PUBLISH_ROUTE_ERROR,
+            );
+            this.operationIdService.emitChangeEvent(
+                OPERATION_ID_STATUS.PUBLISH.PUBLISH_FAILED,
+                operationId,
             );
         }
     }

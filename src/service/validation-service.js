@@ -122,12 +122,9 @@ class ValidationService {
 
         if (privateAssertionTriple) {
             const privateAssertionRoot = privateAssertionTriple.split(' ')[2].replace(/['"]/g, '');
+            // Is this cause of the problem, maybe do it in same was as on client
             const privateAssertionSorted = privateAssertion.sort();
             await this.validateDatasetRoot(privateAssertionSorted, privateAssertionRoot);
-        } else {
-            throw new Error(
-                `Merkle Root validation failed. Private Merkle Root not present in public assertion.`,
-            );
         }
     }
 

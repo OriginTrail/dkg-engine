@@ -15,12 +15,12 @@ class OperationIdService {
         return uuidv4();
     }
 
-    async generateOperationId(status, previousOperationId = null) {
+    async generateOperationId(status, blockchain, previousOperationId = null) {
         const operationIdObject = await this.repositoryModuleManager.createOperationIdRecord({
             status,
         });
         const { operationId } = operationIdObject;
-        this.emitChangeEvent(status, operationId, null, previousOperationId);
+        this.emitChangeEvent(status, operationId, blockchain, previousOperationId);
         this.logger.debug(`Generated operation id for request ${operationId}`);
         return operationId;
     }

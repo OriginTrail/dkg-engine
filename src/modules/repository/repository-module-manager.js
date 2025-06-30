@@ -487,6 +487,13 @@ class RepositoryModuleManager extends BaseModuleManager {
         );
     }
 
+    async deleteRandomSamplingChallengeRecord(randomSamplingChallengeId, options) {
+        return this.getRepository('random_sampling_challenge').deleteRandomSamplingChallengeRecord(
+            randomSamplingChallengeId,
+            options,
+        );
+    }
+
     async setCompletedAndScoreRandomSamplingChallengeRecord(
         randomSamplingChallengeId,
         completed,
@@ -530,6 +537,69 @@ class RepositoryModuleManager extends BaseModuleManager {
 
     async incrementInsertedTriples(count) {
         return this.getRepository('inserted_triples').increment(count);
+    }
+
+    async getKCStorageContracts(blockchainId) {
+        return this.getRepository('latest_synced_kc').getKCStorageContracts(blockchainId);
+    }
+
+    async getSyncRecordForBlockchain(blockchainId) {
+        return this.getRepository('latest_synced_kc').getSyncRecordForBlockchain(blockchainId);
+    }
+
+    async addSyncContracts(blockchainId, contracts) {
+        return this.getRepository('latest_synced_kc').addSyncContracts(blockchainId, contracts);
+    }
+
+    async insertMissedKc(blockchainId, records, error, options = {}) {
+        return this.getRepository('blockchain_missed_kc').insertMissedKc(
+            blockchainId,
+            records,
+            error,
+            options,
+        );
+    }
+
+    async getMissedKcForRetry(blockchain, contractAddress, limit, options) {
+        return this.getRepository('blockchain_missed_kc').getMissedKcForRetry(
+            blockchain,
+            contractAddress,
+            limit,
+            options,
+        );
+    }
+
+    async updateLatestSyncedKc(blockchainId, contractAddress, latestSyncedKc, options = {}) {
+        return this.getRepository('latest_synced_kc').updateLatestSyncedKc(
+            blockchainId,
+            contractAddress,
+            latestSyncedKc,
+            options,
+        );
+    }
+
+    async incrementRetryCount(blockchain, records, options) {
+        return this.getRepository('blockchain_missed_kc').incrementRetryCount(
+            blockchain,
+            records,
+            options,
+        );
+    }
+
+    async setSyncedToTrue(blockchain, records, options) {
+        return this.getRepository('blockchain_missed_kc').setSyncedToTrue(
+            blockchain,
+            records,
+            options,
+        );
+    }
+
+    async getMissedKcForRetryCount(blockchain, contractAddress, options) {
+        return this.getRepository('blockchain_missed_kc').getMissedKcForRetryCount(
+            blockchain,
+            contractAddress,
+            options,
+        );
     }
 }
 
