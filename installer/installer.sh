@@ -409,12 +409,12 @@ install_node() {
 
     # Set blockchain options based on the selected environment
     if [ "$SELECTED_NODE_ENV" == "mainnet" ]; then
-        blockchain_options=("OriginTrail Parachain" "Gnosis" "Base")
+        blockchain_options=("Neuroweb" "Gnosis" "Base")
         otp_blockchain_id=2043
         gnosis_blockchain_id=100
         base_blockchain_id=8453
     else
-        blockchain_options=("OriginTrail Parachain" "Gnosis" "Base-Sepolia")
+        blockchain_options=("Neuroweb" "Gnosis" "Base-Sepolia")
         otp_blockchain_id=20430
         gnosis_blockchain_id=10200
         base_blockchain_id=84532
@@ -611,7 +611,7 @@ EOF
     # Configure blockchain events service for Base Sepolia
     for blockchain in "${selected_blockchains[@]}"; do
             case "$blockchain" in
-                "OriginTrail Parachain")
+                "OriginTrail Neuroweb")
                     configure_blockchain "otp" $otp_blockchain_id
                     ;;
                 "Gnosis")
