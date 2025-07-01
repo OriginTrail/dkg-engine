@@ -447,9 +447,9 @@ class TripleStoreService {
                 lastKAInCollection,
             );
 
-            await Promise.all([firstKAExists, lastKAExists]);
+            const [firstKAResult, lastKAResult] = await Promise.all([firstKAExists, lastKAExists]);
 
-            if (!(firstKAExists && lastKAExists)) {
+            if (!(firstKAResult && lastKAResult)) {
                 this.logger.warn(
                     `Knowledge Collection with the UAL: ${ual} does not exist in the Triple Store's ${repository} repository.`,
                 );
@@ -486,7 +486,7 @@ class TripleStoreService {
                         ...paginationNquads.public.split('\n').filter((line) => line !== ''),
                     );
                 }
-                if (nquads?.private) {
+                if (paginationNquads?.private) {
                     nquads.private.push(
                         ...paginationNquads.private.split('\n').filter((line) => line !== ''),
                     );
@@ -514,23 +514,17 @@ class TripleStoreService {
     async getAssertionsInBatch(repository, uals, ualTokenIds, visibility = 'public') {
         const results = await Promise.all(
             uals.map(async (ual) => {
-                const nquads =
-                    await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphsOld(
-                        this.repositoryImplementations[repository],
-                        repository,
-                        // TODO: Add state with implemented update
-                        `${ual}`,
-                        ualTokenIds[ual],
-                        visibility,
-                        this.config.modules.tripleStore.timeout.batchGet,
-                    );
-                if (nquads?.public) {
-                    nquads.public = nquads.public.split('\n').filter((line) => line !== '');
-                }
-                if (nquads?.private) {
-                    nquads.private = nquads.private.split('\n').filter((line) => line !== '');
-                }
-
+                const { blockchain, contract, knowledgeCollectionId } =
+                    this.ualService.resolveUAL(ual);
+                const nquads = await this.getAssertion(
+                    blockchain,
+                    contract,
+                    knowledgeCollectionId,
+                    null,
+                    ualTokenIds[ual],
+                    false,
+                    visibility,
+                );
                 return nquads;
             }),
         );
