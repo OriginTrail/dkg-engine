@@ -251,11 +251,11 @@ class OTNode {
     async initializeCommandExecutor() {
         try {
             const commandExecutor = this.container.resolve('commandExecutor');
-            commandExecutor.pauseQueue();
+            await commandExecutor.pauseCommandExecutor();
             await commandExecutor.addDefaultCommands();
-            commandExecutor
-                .replayOldCommands()
-                .then(() => this.logger.info('Finished replaying old commands'));
+            // commandExecutor
+            //     .replayOldCommands()
+            //     .then(() => this.logger.info('Finished replaying old commands'));
         } catch (e) {
             this.logger.error(
                 `Command executor initialization failed. Error message: ${e.message}`,
@@ -267,7 +267,7 @@ class OTNode {
     resumeCommandExecutor() {
         try {
             const commandExecutor = this.container.resolve('commandExecutor');
-            commandExecutor.resumeQueue();
+            commandExecutor.resumeCommandExecutor();
         } catch (e) {
             this.logger.error(
                 `Unable to resume command executor queue. Error message: ${e.message}`,

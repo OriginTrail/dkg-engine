@@ -82,6 +82,7 @@
         "async-mutex": "^0.3.2",
         "awilix": "^7.0.3",
         "axios": "^1.6.0",
+        "bullmq": "^5.56.1",
         "cors": "^2.8.5",
         "deep-extend": "^0.6.0",
         "dkg-evm-module": "git+https://github.com/OriginTrail/dkg-evm-module.git#main",
