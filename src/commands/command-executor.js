@@ -177,6 +177,11 @@ class CommandExecutor {
             await this.queue.add(command.name, command.data, jobOptions);
         }
     }
+
+    async commandExecutorShutdown() {
+        await this.worker.close();
+        await this.queue.close();
+    }
 }
 
 export default CommandExecutor;

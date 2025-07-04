@@ -27,6 +27,10 @@ class OTNode {
         this.initializeFileService();
         this.initializeAutoUpdaterModule();
         this.checkNodeVersion();
+
+        // Set up process event listeners
+        process.on('SIGINT', () => this.handleExit()); // Ctrl+C
+        process.on('SIGTERM', () => this.handleExit()); // kill command or Docker stop
     }
 
     async start() {
@@ -434,6 +438,13 @@ class OTNode {
     stop(code = 0) {
         this.logger.info('Stopping node...');
         process.exit(code);
+    }
+
+    async handleExit() {
+        this.logger.info('SIGINT or SIGTERM received. Shutting down...');
+        const commandExecutor = this.container.resolve('commandExecutor');
+        await commandExecutor.commandExecutorShutdown();
+        process.exit(0);
     }
 }
 
