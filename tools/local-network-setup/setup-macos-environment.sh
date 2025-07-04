@@ -84,6 +84,15 @@ echo ================================
 
 node $pathToOtNode/tools/local-network-setup/generate-config-files.js $numberOfNodes $network $tripleStore $hubContractAddress
 sleep 30
+
+echo ================================
+echo ====== Clearing Redis ==========
+echo ================================
+
+# Clear all Redis data
+redis-cli FLUSHALL
+echo Redis cleared.
+
 echo ================================
 echo ======== Starting nodes ========
 echo ================================
