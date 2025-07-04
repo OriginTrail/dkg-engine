@@ -65,6 +65,14 @@ class CommandExecutor {
                 `Job with ID ${job.id}, ${job.name} has failed with error: ${err.message}, ${err.stack}`,
             );
         });
+
+        this.queue.on('error', (err) => {
+            this.logger.error(`Queue error: ${err.message}, ${err.stack}`);
+        });
+
+        this.worker.on('error', (err) => {
+            this.logger.error(`Worker error: ${err.message}, ${err.stack}`);
+        });
     }
 
     /**
