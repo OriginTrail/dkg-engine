@@ -161,7 +161,7 @@ class CommandExecutor {
 
         const delay = addDelay ?? 0;
         const commandPriority = command.priority ?? DEFAULT_COMMAND_PRIORITY;
-        const jobOptions = {};
+        const jobOptions = { removeOnComplete: true, removeOnFail: true };
         if (delay > 0) {
             jobOptions.delay = delay;
         }
