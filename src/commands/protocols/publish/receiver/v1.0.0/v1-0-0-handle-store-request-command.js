@@ -4,6 +4,7 @@ import {
     NETWORK_MESSAGE_TYPES,
     OPERATION_ID_STATUS,
     ERROR_TYPE,
+    COMMAND_PRIORITY,
 } from '../../../../../constants/constants.js';
 
 class HandleStoreRequestCommand extends HandleProtocolMessageCommand {
@@ -102,6 +103,7 @@ class HandleStoreRequestCommand extends HandleProtocolMessageCommand {
         const command = {
             name: 'v1_0_0HandleStoreRequestCommand',
             delay: 0,
+            priority: COMMAND_PRIORITY.HIGHEST,
             transactional: false,
         };
         Object.assign(command, map);

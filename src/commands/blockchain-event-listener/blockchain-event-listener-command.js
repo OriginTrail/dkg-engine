@@ -7,6 +7,7 @@ import {
     OPERATION_ID_STATUS,
     MONITORED_CONTRACTS,
     MONITORED_EVENTS,
+    COMMAND_PRIORITY,
 } from '../../constants/constants.js';
 
 class BlockchainEventListenerCommand extends Command {
@@ -545,6 +546,7 @@ class BlockchainEventListenerCommand extends Command {
             name: 'blockchainEventListenerCommand',
             data: {},
             transactional: false,
+            priority: COMMAND_PRIORITY.HIGHEST,
         };
         Object.assign(command, map);
         return command;

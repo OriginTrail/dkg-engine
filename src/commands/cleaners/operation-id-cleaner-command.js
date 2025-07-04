@@ -4,6 +4,7 @@ import {
     OPERATION_ID_FILES_FOR_REMOVAL_MAX_NUMBER,
     OPERATION_ID_COMMAND_CLEANUP_TIME_MILLS,
     OPERATION_ID_STATUS,
+    COMMAND_PRIORITY,
 } from '../../constants/constants.js';
 
 /**
@@ -70,6 +71,7 @@ class OperationIdCleanerCommand extends Command {
             period: OPERATION_ID_COMMAND_CLEANUP_TIME_MILLS,
             data: {},
             transactional: false,
+            priority: COMMAND_PRIORITY.LOWEST,
         };
         Object.assign(command, map);
         return command;

@@ -5,6 +5,7 @@ import {
     OPERATION_ID_STATUS,
     TRIPLES_VISIBILITY,
     PARANET_ACCESS_POLICY,
+    COMMAND_PRIORITY,
 } from '../../../../../constants/constants.js';
 
 class HandleGetRequestCommand extends HandleProtocolMessageCommand {
@@ -198,6 +199,7 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
             name: 'v1_0_0HandleGetRequestCommand',
             delay: 0,
             transactional: false,
+            priority: COMMAND_PRIORITY.HIGH,
             errorType: ERROR_TYPE.GET.GET_REQUEST_REMOTE_ERROR,
         };
         Object.assign(command, map);
