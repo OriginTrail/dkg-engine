@@ -167,7 +167,6 @@ class CommandExecutor {
         }
         jobOptions.priority = commandPriority;
         // Add ttl
-        // When period is 0, command can is duplicated, if perios is present and delay is 0, command is deduplicated
         if (command.period && command.period > 0) {
             await this.queue.upsertJobScheduler(
                 command.name,
@@ -179,8 +178,5 @@ class CommandExecutor {
         }
     }
 }
-
-// TODO: Add deduplication for commands that need that using jobID
-// jobOptions.jobId = `${command.name}-${command.period}`;
 
 export default CommandExecutor;

@@ -102,7 +102,6 @@ class HandleStoreRequestCommand extends HandleProtocolMessageCommand {
     default(map) {
         const command = {
             name: 'v1_0_0HandleStoreRequestCommand',
-            delay: 0,
             priority: COMMAND_PRIORITY.HIGHEST,
             transactional: false,
         };

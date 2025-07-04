@@ -477,6 +477,7 @@ class BlockchainEventListenerCommand extends Command {
             data: {
                 event,
             },
+            priority: COMMAND_PRIORITY.HIGHEST,
             transactional: false,
         });
     }
