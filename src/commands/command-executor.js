@@ -30,8 +30,8 @@ class CommandExecutor {
             queueName,
             async (job) => {
                 const commandData = job.data;
+                // TODO:Add custom ttl here
                 if (this.verboseLoggingEnabled) {
-                    // Add command name to the log
                     this.logger.trace(`Command  started ${job.name}`);
                 }
                 let commandName = job.name;
@@ -40,7 +40,6 @@ class CommandExecutor {
                 }
 
                 const handler = this.commandResolver.resolve(commandName);
-
                 if (!handler) {
                     if (this.verboseLoggingEnabled) {
                         // Add command name to the log
@@ -128,7 +127,7 @@ class CommandExecutor {
             return;
         }
 
-        await this.removePeriodicCommand(['blockchainEventListenerCommand', 'paranetSyncCommand']);
+        await this.removePeriodicCommand(['paranetSyncCommand']);
 
         if (['eventListenerCommand', 'shardingTableCheckCommand'].includes(name)) {
             await this.add(handler.default(), 0);
@@ -192,7 +191,6 @@ class CommandExecutor {
             jobOptions.delay = delay;
         }
         jobOptions.priority = commandPriority;
-        // TODO: Add ttl
         if (command.period && command.period > 0) {
             await this.queue.upsertJobScheduler(
                 command.name,
