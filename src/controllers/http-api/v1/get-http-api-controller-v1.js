@@ -3,6 +3,7 @@ import {
     OPERATION_STATUS,
     ERROR_TYPE,
     TRIPLES_VISIBILITY,
+    COMMAND_PRIORITY,
 } from '../../../constants/constants.js';
 
 import BaseController from '../base-http-api-controller.js';
@@ -77,7 +78,6 @@ class GetController extends BaseController {
             await this.commandExecutor.add({
                 name: 'getCommand',
                 sequence: [],
-                delay: 0,
                 data: {
                     ual,
                     includeMetadata,
@@ -91,6 +91,7 @@ class GetController extends BaseController {
                     contentType: contentType ?? TRIPLES_VISIBILITY.ALL,
                 },
                 transactional: false,
+                priority: COMMAND_PRIORITY.HIGHEST,
             });
 
             await this.operationIdService.updateOperationIdStatus(

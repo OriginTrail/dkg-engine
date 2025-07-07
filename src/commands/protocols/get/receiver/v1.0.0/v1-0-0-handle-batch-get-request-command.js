@@ -9,6 +9,7 @@ import {
     TRIPLE_STORE_REPOSITORY,
     TRIPLES_VISIBILITY,
     BATCH_GET_UAL_MAX_LIMIT,
+    COMMAND_PRIORITY,
 } from '../../../../../constants/constants.js';
 
 class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
@@ -99,8 +100,8 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
     default(map) {
         const command = {
             name: 'v1_0_0HandleBatchGetRequestCommand',
-            delay: 0,
             transactional: false,
+            priority: COMMAND_PRIORITY.MEDIUM,
             errorType: this.errorType,
         };
         Object.assign(command, map);

@@ -1,5 +1,6 @@
 import semver from 'semver';
 import Command from '../command.js';
+import { COMMAND_PRIORITY } from '../../constants/constants.js';
 
 class OtnodeUpdateCommand extends Command {
     constructor(ctx) {
@@ -70,11 +71,9 @@ class OtnodeUpdateCommand extends Command {
         const command = {
             name: 'otnodeUpdateCommand',
             delay: 0,
-            data: {
-                message: '',
-            },
             period: 15 * 60 * 1000,
             transactional: false,
+            priority: COMMAND_PRIORITY.HIGH,
         };
         Object.assign(command, map);
         return command;

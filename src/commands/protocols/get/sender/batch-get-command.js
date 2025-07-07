@@ -14,6 +14,7 @@ import {
     BATCH_GET_BATCH_SIZE as BATCH_SIZE,
     TRIPLE_STORE_REPOSITORY,
     TRIPLES_VISIBILITY,
+    COMMAND_PRIORITY,
 } from '../../../../constants/constants.js';
 
 class BatchGetCommand extends Command {
@@ -587,6 +588,7 @@ class BatchGetCommand extends Command {
             name: 'batchGetCommand',
             delay: 0,
             transactional: false,
+            priority: COMMAND_PRIORITY.MEDIUM,
         };
         Object.assign(command, map);
         return command;

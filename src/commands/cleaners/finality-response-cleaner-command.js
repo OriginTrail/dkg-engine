@@ -4,6 +4,7 @@ import {
     OPERATIONS,
     FINALITY_RESPONSE_CLEANUP_TIME_DELAY,
     FINALITY_RESPONSE_CLEANUP_TIME_MILLS,
+    COMMAND_PRIORITY,
 } from '../../constants/constants.js';
 
 class FinalityResponseCleanerCommand extends CleanerCommand {
@@ -26,6 +27,7 @@ class FinalityResponseCleanerCommand extends CleanerCommand {
             data: {},
             period: FINALITY_RESPONSE_CLEANUP_TIME_MILLS,
             transactional: false,
+            priority: COMMAND_PRIORITY.LOWEST,
         };
         Object.assign(command, map);
         return command;

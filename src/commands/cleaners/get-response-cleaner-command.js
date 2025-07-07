@@ -4,6 +4,7 @@ import {
     OPERATIONS,
     GET_RESPONSE_CLEANUP_TIME_DELAY,
     GET_RESPONSE_CLEANUP_TIME_MILLS,
+    COMMAND_PRIORITY,
 } from '../../constants/constants.js';
 
 class GetResponseCleanerCommand extends CleanerCommand {
@@ -26,6 +27,7 @@ class GetResponseCleanerCommand extends CleanerCommand {
             data: {},
             period: GET_RESPONSE_CLEANUP_TIME_MILLS,
             transactional: false,
+            priority: COMMAND_PRIORITY.LOWEST,
         };
         Object.assign(command, map);
         return command;
