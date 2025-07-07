@@ -195,7 +195,7 @@ class CommandExecutor {
             await this.queue.upsertJobScheduler(
                 command.name,
                 { every: command.period },
-                { name: command.name, data: command.data },
+                { name: command.name, data: command.data, opts: jobOptions },
             );
         } else {
             await this.queue.add(command.name, command.data, jobOptions);
