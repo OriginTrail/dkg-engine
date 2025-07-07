@@ -1,6 +1,9 @@
 import { createRequire } from 'module';
 import Command from '../command.js';
-import { SEND_TELEMETRY_COMMAND_FREQUENCY_MINUTES } from '../../constants/constants.js';
+import {
+    SEND_TELEMETRY_COMMAND_FREQUENCY_MINUTES,
+    COMMAND_PRIORITY,
+} from '../../constants/constants.js';
 
 const require = createRequire(import.meta.url);
 const pjson = require('../../../package.json');
@@ -99,6 +102,7 @@ class SendTelemetryCommand extends Command {
             data: {},
             period: SEND_TELEMETRY_COMMAND_FREQUENCY_MINUTES * 60 * 1000,
             transactional: false,
+            priority: COMMAND_PRIORITY.MEDIUM,
         };
         Object.assign(command, map);
         return command;

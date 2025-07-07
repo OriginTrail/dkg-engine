@@ -3,6 +3,7 @@ import {
     PUBLISH_STORAGE_MEMORY_CLEANUP_COMMAND_CLEANUP_TIME_MILLS,
     PUBLISH_STORAGE_FILE_CLEANUP_COMMAND_CLEANUP_TIME_MILLS,
     PENDING_STORAGE_FILES_FOR_REMOVAL_MAX_NUMBER,
+    COMMAND_PRIORITY,
 } from '../../constants/constants.js';
 
 /**
@@ -54,6 +55,7 @@ class PendingStorageCleanerCommand extends Command {
             period: PUBLISH_STORAGE_MEMORY_CLEANUP_COMMAND_CLEANUP_TIME_MILLS,
             data: {},
             transactional: false,
+            priority: COMMAND_PRIORITY.LOWEST,
         };
         Object.assign(command, map);
         return command;

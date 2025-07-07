@@ -6,6 +6,7 @@ import {
     NETWORK_SIGNATURES_FOLDER,
     PUBLISHER_NODE_SIGNATURES_FOLDER,
     NETWORK_MESSAGE_TIMEOUT_MILLS,
+    COMMAND_PRIORITY,
 } from '../../../../constants/constants.js';
 import Command from '../../../command.js';
 
@@ -271,8 +272,8 @@ class PublishReplicationCommand extends Command {
     default(map) {
         const command = {
             name: 'publishReplicationCommand',
-            delay: 0,
             transactional: false,
+            priority: COMMAND_PRIORITY.HIGHEST,
         };
         Object.assign(command, map);
         return command;

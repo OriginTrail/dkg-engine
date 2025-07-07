@@ -12,6 +12,7 @@ import {
     PRIVATE_ASSERTION_PREDICATE,
     PRIVATE_HASH_SUBJECT_PREFIX,
     MIGRATION_FLAG_PATH,
+    COMMAND_PRIORITY,
 } from '../../../../constants/constants.js';
 
 class GetCommand extends Command {
@@ -627,8 +628,8 @@ class GetCommand extends Command {
     default(map) {
         const command = {
             name: 'getCommand',
-            delay: 0,
             transactional: false,
+            priority: COMMAND_PRIORITY.HIGH,
         };
         Object.assign(command, map);
         return command;

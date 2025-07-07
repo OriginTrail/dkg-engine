@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+# Source bash profile to ensure PATH includes Homebrew
+source ~/.bash_profile 2>/dev/null || true
 pathToOtNode=$(pwd)
 numberOfNodes=12
 network="hardhat1:31337"
@@ -84,6 +86,23 @@ echo ================================
 
 node $pathToOtNode/tools/local-network-setup/generate-config-files.js $numberOfNodes $network $tripleStore $hubContractAddress
 sleep 30
+
+echo ================================
+echo ====== Clearing Redis ==========
+echo ================================
+
+# Clear all Redis data if redis-cli is available
+if command -v redis-cli &> /dev/null; then
+    redis-cli FLUSHALL
+    echo Redis cleared.
+elif [ -f "/opt/homebrew/bin/redis-cli" ]; then
+    /opt/homebrew/bin/redis-cli FLUSHALL
+    echo Redis cleared.
+else
+    echo "redis-cli not found. Skipping Redis cleanup."
+    echo "To install Redis on macOS, run: brew install redis"
+fi
+
 echo ================================
 echo ======== Starting nodes ========
 echo ================================

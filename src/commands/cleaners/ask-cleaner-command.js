@@ -4,6 +4,7 @@ import {
     OPERATIONS,
     ASK_CLEANUP_TIME_DELAY,
     ASK_CLEANUP_TIME_MILLS,
+    COMMAND_PRIORITY,
 } from '../../constants/constants.js';
 
 class AskCleanerCommand extends CleanerCommand {
@@ -26,6 +27,7 @@ class AskCleanerCommand extends CleanerCommand {
             data: {},
             period: ASK_CLEANUP_TIME_MILLS,
             transactional: false,
+            priority: COMMAND_PRIORITY.LOWEST,
         };
         Object.assign(command, map);
         return command;
