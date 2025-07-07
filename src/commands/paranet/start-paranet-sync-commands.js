@@ -19,8 +19,6 @@ class StartParanetSyncCommands extends Command {
     }
 
     async execute() {
-        await this.commandExecutor.delete('paranetSyncCommand');
-
         const promises = [];
         this.config.assetSync?.syncParanets.forEach(async (paranetUAL) => {
             const operationId = this.operationIdService.generateId(
@@ -60,7 +58,7 @@ class StartParanetSyncCommands extends Command {
 
             promises.push(
                 this.commandExecutor.add({
-                    name: 'paranetSyncCommand',
+                    name: `paranetSyncCommand-${paranetId}`,
                     data: commandData,
                     period: PARANET_SYNC_FREQUENCY_MILLS,
                 }),

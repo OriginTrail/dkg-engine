@@ -124,15 +124,29 @@ class CommandExecutor {
             return;
         }
 
+        await this.removePeriodicCommand(['blockchainEventListenerCommand', 'paranetSyncCommand']);
+
         if (['eventListenerCommand', 'shardingTableCheckCommand'].includes(name)) {
-            await this.add(handler.default(), 0, true);
+            await this.add(handler.default(), 0);
         } else {
-            await this.add(handler.default(), DEFAULT_COMMAND_DELAY_IN_MILLS, true);
+            await this.add(handler.default(), DEFAULT_COMMAND_DELAY_IN_MILLS);
         }
 
         if (this.verboseLoggingEnabled) {
             handler.logger.trace(`Permanent command created.`);
         }
+    }
+
+    // TODO: Add function that removes periodic command
+    async removePeriodicCommand(commandNames) {
+        const periodicCommands = await this.queue.getJobSchedulers();
+        // Find if command with this prefix exist in repeatable commands
+        const periodicCommandsToRemove = periodicCommands.filter((command) =>
+            commandNames.some((name) => command.name.startsWith(name)),
+        );
+        await Promise.all(
+            periodicCommandsToRemove.map((command) => this.queue.removeJobScheduler(command.name)),
+        );
     }
 
     /**
@@ -174,7 +188,7 @@ class CommandExecutor {
             jobOptions.delay = delay;
         }
         jobOptions.priority = commandPriority;
-        // Add ttl
+        // TODO: Add ttl
         if (command.period && command.period > 0) {
             await this.queue.upsertJobScheduler(
                 command.name,
