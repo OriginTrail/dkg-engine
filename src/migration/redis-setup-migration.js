@@ -5,7 +5,7 @@ import { NODE_ENVIRONMENTS } from '../constants/constants.js';
 class RedisSetupMigration extends BaseMigration {
     async executeMigration() {
         if (
-            process.env.NODE_ENV === NODE_ENVIRONMENTS.DEVELOPMENT &&
+            process.env.NODE_ENV === NODE_ENVIRONMENTS.DEVELOPMENT ||
             process.env.NODE_ENV === NODE_ENVIRONMENTS.TEST
         ) {
             return;
