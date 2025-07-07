@@ -34,8 +34,12 @@ class CommandExecutor {
                     // Add command name to the log
                     this.logger.trace(`Command  started ${job.name}`);
                 }
+                let commandName = job.name;
+                if (job.name.startsWith('paranetSyncCommand')) {
+                    commandName = `paranetSyncCommand`;
+                }
 
-                const handler = this.commandResolver.resolve(job.name);
+                const handler = this.commandResolver.resolve(commandName);
 
                 if (!handler) {
                     if (this.verboseLoggingEnabled) {

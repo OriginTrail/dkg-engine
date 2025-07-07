@@ -34,7 +34,7 @@ class EventListenerCommand extends Command {
                 const commandData = { blockchainId };
 
                 return this.commandExecutor.add({
-                    name: `blockchainEventListenerCommand-${blockchainId}`,
+                    name: `blockchainEventListenerCommand`,
                     data: commandData,
                     retries: MAXIMUM_FETCH_EVENTS_FAILED_COUNT,
                     priority: COMMAND_PRIORITY.HIGHEST,
