@@ -11,36 +11,38 @@ class RedisSetupMigration extends BaseMigration {
             return;
         }
 
-        // Check if Redis is already installed and running
         if (this.isRedisInstalledAndRunning()) {
             this.logger.info('✅ Redis is already installed and running. Skipping installation.');
             return;
         }
 
         this.run('sudo apt update', 'Updating package list');
-
         this.run('sudo apt install -y redis-server', 'Installing Redis server');
 
-        // Modify redis.conf only if supervised is still 'no'
-        try {
-            const config = execSync('sudo grep "^supervised" /etc/redis/redis.conf')
-                .toString()
-                .trim();
-            if (config === 'supervised no') {
-                this.run(
-                    "sudo sed -i 's/^supervised no/supervised systemd/' /etc/redis/redis.conf",
-                    'Enabling systemd supervision in redis.conf',
-                );
-            } else {
-                this.logger.info('✅ Redis already configured for systemd supervision.');
-            }
-        } catch (err) {
-            this.logger.warn('⚠️ Could not verify redis.conf, continuing...');
-        }
+        // Ensure redis.conf uses systemd
+        this.modifyRedisConf(
+            /^supervised\s+no/,
+            'supervised systemd',
+            'Enabling systemd supervision in redis.conf',
+        );
+
+        // Enable AOF persistence
+        this.modifyRedisConf(/^appendonly\s+no/, 'appendonly yes', 'Enabling AOF persistence');
+        this.modifyRedisConf(
+            /^#?\s*appendfsync\s+\w+/,
+            'appendfsync everysec',
+            'Setting AOF fsync to every second',
+        );
+
+        // Enforce noeviction policy
+        this.modifyRedisConf(
+            /^#?\s*maxmemory-policy\s+\w+/,
+            'maxmemory-policy noeviction',
+            'Setting maxmemory-policy to noeviction',
+        );
 
         this.run('sudo systemctl restart redis.service', 'Restarting Redis service');
         this.run('sudo systemctl enable redis.service', 'Enabling Redis to start on boot');
-
         this.run('sudo systemctl status redis.service --no-pager', 'Checking Redis service status');
 
         try {
@@ -60,24 +62,13 @@ class RedisSetupMigration extends BaseMigration {
 
     isRedisInstalledAndRunning() {
         try {
-            // Check if redis-server is installed
             execSync('which redis-server', { stdio: 'ignore' });
-
-            // Check if redis service is running
             const serviceStatus = execSync('systemctl is-active redis.service', { stdio: 'pipe' })
                 .toString()
                 .trim();
-
-            if (serviceStatus === 'active') {
-                // Double-check with a ping test
-                const ping = execSync('redis-cli ping', { stdio: 'pipe' }).toString().trim();
-
-                return ping === 'PONG';
-            }
-
-            return false;
-        } catch (err) {
-            // Redis is not installed or not running
+            const ping = execSync('redis-cli ping', { stdio: 'pipe' }).toString().trim();
+            return serviceStatus === 'active' && ping === 'PONG';
+        } catch {
             return false;
         }
     }
@@ -90,8 +81,13 @@ class RedisSetupMigration extends BaseMigration {
         } catch (err) {
             this.logger.error(`❌ Failed: ${description}`);
             this.logger.error(err.message);
-            process.exit(1); // stop if a critical step fails
+            process.exit(1);
         }
+    }
+
+    modifyRedisConf(pattern, replacement, description) {
+        const sedCommand = `sudo sed -i 's|${pattern.source}|${replacement}|' /etc/redis/redis.conf`;
+        this.run(sedCommand, description);
     }
 }
 
