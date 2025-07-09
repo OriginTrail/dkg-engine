@@ -15,6 +15,7 @@ class CommandExecutor {
     constructor(ctx) {
         this.logger = ctx.logger;
         this.commandResolver = ctx.commandResolver;
+        this.operationIdService = ctx.operationIdService;
 
         this.verboseLoggingEnabled = ctx.config.commandExecutorVerboseLoggingEnabled;
         const env = process.env.NODE_ENV;
@@ -158,6 +159,22 @@ class CommandExecutor {
         this.queue.on('closed', () => {
             this.logger.trace('Queue has been closed.');
         });
+
+        setInterval(async () => {
+            const generalQueueCount = await this.queue.count();
+            const batchGetQueueCount = await this.queueBatchGet.count();
+            this.logger.trace(
+                `General queue count: ${generalQueueCount}, Batch get queue count: ${batchGetQueueCount}`,
+            );
+
+            this.operationIdService.emitChangeEvent(
+                'COMMAND_EXECUTOR_QUEUE_COUNT',
+                `command-executor-queue-count-${Date.now()}`,
+                null,
+                generalQueueCount,
+                batchGetQueueCount,
+            );
+        }, 5 * 60 * 1000);
     }
 
     /**
