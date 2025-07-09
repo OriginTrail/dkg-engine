@@ -52,19 +52,19 @@ class RedisSetupMigration extends BaseMigration {
         this.logger.info('🔧 Updating Redis configuration...');
 
         // Ensure redis.conf uses systemd
-        this.modifyRedisConf(/supervised\s+no/, 'supervised', 'Enabling systemd supervision');
+        this.modifyRedisConf('supervised', 'supervised systemd', 'Enabling systemd supervision');
 
         // Enable AOF persistence
-        this.modifyRedisConf(/appendonly\s+no/, 'appendonly yes', 'Enabling AOF persistence');
+        this.modifyRedisConf('appendonly', 'appendonly yes', 'Enabling AOF persistence');
         this.modifyRedisConf(
-            /appendfsync\s+\w+/,
+            'appendfsync',
             'appendfsync everysec',
             'Setting AOF fsync every second',
         );
 
         // Enforce noeviction policy
         this.modifyRedisConf(
-            /maxmemory-policy\s+\w+/,
+            'maxmemory-policy',
             'maxmemory-policy noeviction',
             'Setting noeviction policy',
         );
@@ -164,10 +164,7 @@ class RedisSetupMigration extends BaseMigration {
         const configPath = '/etc/redis/redis.conf';
 
         // Use a simpler approach: comment out lines that contain the pattern (not commented)
-        const commentCommand = `sudo sed -i '/^[[:space:]]*[^#].*${pattern.source.replace(
-            /\\s/g,
-            '.*',
-        )}/s/^/# /' ${configPath}`;
+        const commentCommand = `sudo sed -i '/^[[:space:]]*${pattern}/s/^/# /' ${configPath}`;
         this.run(commentCommand, `Commenting out existing ${description} settings`);
 
         // Step 2: Add the new setting at the end of the file
