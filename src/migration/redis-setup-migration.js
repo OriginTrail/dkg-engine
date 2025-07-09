@@ -52,11 +52,7 @@ class RedisSetupMigration extends BaseMigration {
         this.logger.info('🔧 Updating Redis configuration...');
 
         // Ensure redis.conf uses systemd
-        this.modifyRedisConf(
-            /supervised\s+no/,
-            'supervised systemd',
-            'Enabling systemd supervision',
-        );
+        this.modifyRedisConf(/supervised\s+no/, 'supervised', 'Enabling systemd supervision');
 
         // Enable AOF persistence
         this.modifyRedisConf(/appendonly\s+no/, 'appendonly yes', 'Enabling AOF persistence');
@@ -167,21 +163,27 @@ class RedisSetupMigration extends BaseMigration {
     modifyRedisConf(pattern, replacement, description) {
         const configPath = '/etc/redis/redis.conf';
 
-        try {
-            // First, try to find and replace existing lines (commented or uncommented)
-            const sedCommand = `sudo sed -i '/^\\s*#\\?\\s*${pattern.source}/c\\${replacement}' ${configPath}`;
-            this.run(sedCommand, description);
+        // Use a simpler approach: comment out lines that contain the pattern (not commented)
+        const commentCommand = `sudo sed -i '/^[[:space:]]*[^#].*${pattern.source.replace(
+            /\\s/g,
+            '.*',
+        )}/s/^/# /' ${configPath}`;
+        this.run(commentCommand, `Commenting out existing ${description} settings`);
 
-            // Verify the change was made
+        // Step 2: Add the new setting at the end of the file
+        this.run(
+            `echo '${replacement}' | sudo tee -a ${configPath}`,
+            `Adding ${replacement} to redis.conf`,
+        );
+
+        // Step 3: Verify the change was made
+        try {
             const grepCheck = `grep -q "^${replacement}$" ${configPath}`;
             execSync(grepCheck, { stdio: 'ignore' });
+            this.logger.info(`✅ Successfully updated: ${description}`);
         } catch {
-            // If no existing line found, append the new setting
-            this.logger.warn(`⚠️ ${description} not found — appending manually`);
-            this.run(
-                `echo '${replacement}' | sudo tee -a ${configPath}`,
-                `Appending ${replacement} to redis.conf`,
-            );
+            this.logger.error(`❌ Failed to verify: ${description}`);
+            throw new Error(`Failed to update ${description}`);
         }
     }
 }
