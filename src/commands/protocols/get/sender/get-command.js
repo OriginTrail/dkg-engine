@@ -59,6 +59,7 @@ class GetCommand extends Command {
             includeMetadata,
             paranetNodesAccessPolicy,
             knowledgeAssetId,
+            minimumNumberOfNodeReplications,
         } = command.data;
 
         await this.operationIdService.updateOperationIdStatus(
@@ -292,6 +293,10 @@ class GetCommand extends Command {
         } else {
             nodesInfo = await this.findShardNodes(operationId, blockchain, currentPeerId);
         }
+
+        this.minAckResponses = this.operationService.getMinAckResponses(
+            minimumNumberOfNodeReplications,
+        );
 
         if (nodesInfo.length < this.minAckResponses) {
             await this.handleError(
