@@ -7,6 +7,7 @@ import {
     TRIPLE_STORE_REPOSITORIES,
     NETWORK_MESSAGE_TYPES,
     NETWORK_MESSAGE_TIMEOUT_MILLS,
+    COMMAND_PRIORITY,
 } from '../../../constants/constants.js';
 
 class PublishFinalizationCommand extends Command {
@@ -246,6 +247,7 @@ class PublishFinalizationCommand extends Command {
         const command = {
             name: 'publishFinalizationCommand',
             transactional: false,
+            priority: COMMAND_PRIORITY.HIGHEST,
         };
         Object.assign(command, map);
         return command;

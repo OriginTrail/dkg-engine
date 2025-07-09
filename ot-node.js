@@ -27,6 +27,10 @@ class OTNode {
         this.initializeFileService();
         this.initializeAutoUpdaterModule();
         this.checkNodeVersion();
+
+        // Set up process event listeners
+        process.on('SIGINT', () => this.handleExit()); // Ctrl+C
+        process.on('SIGTERM', () => this.handleExit()); // kill command or Docker stop
     }
 
     async start() {
@@ -34,6 +38,12 @@ class OTNode {
         await this.removeUpdateFile();
 
         await MigrationExecutor.executeTripleStoreUserConfigurationMigration(
+            this.container,
+            this.logger,
+            this.config,
+        );
+
+        await MigrationExecutor.executeRedisSetupMigration(
             this.container,
             this.logger,
             this.config,
@@ -251,11 +261,11 @@ class OTNode {
     async initializeCommandExecutor() {
         try {
             const commandExecutor = this.container.resolve('commandExecutor');
-            commandExecutor.pauseQueue();
+            await commandExecutor.pauseCommandExecutor();
             await commandExecutor.addDefaultCommands();
-            commandExecutor
-                .replayOldCommands()
-                .then(() => this.logger.info('Finished replaying old commands'));
+            // commandExecutor
+            //     .replayOldCommands()
+            //     .then(() => this.logger.info('Finished replaying old commands'));
         } catch (e) {
             this.logger.error(
                 `Command executor initialization failed. Error message: ${e.message}`,
@@ -267,7 +277,7 @@ class OTNode {
     resumeCommandExecutor() {
         try {
             const commandExecutor = this.container.resolve('commandExecutor');
-            commandExecutor.resumeQueue();
+            commandExecutor.resumeCommandExecutor();
         } catch (e) {
             this.logger.error(
                 `Unable to resume command executor queue. Error message: ${e.message}`,
@@ -434,6 +444,13 @@ class OTNode {
     stop(code = 0) {
         this.logger.info('Stopping node...');
         process.exit(code);
+    }
+
+    async handleExit() {
+        this.logger.info('SIGINT or SIGTERM received. Shutting down...');
+        const commandExecutor = this.container.resolve('commandExecutor');
+        await commandExecutor.commandExecutorShutdown();
+        process.exit(0);
     }
 }
 

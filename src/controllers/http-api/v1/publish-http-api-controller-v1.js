@@ -4,6 +4,7 @@ import {
     OPERATION_ID_STATUS,
     OPERATION_STATUS,
     LOCAL_STORE_TYPES,
+    COMMAND_PRIORITY,
 } from '../../../constants/constants.js';
 
 class PublishController extends BaseController {
@@ -74,8 +75,6 @@ class PublishController extends BaseController {
             await this.commandExecutor.add({
                 name: commandSequence[0],
                 sequence: commandSequence.slice(1),
-                delay: 0,
-                period: 5000,
                 data: {
                     datasetRoot,
                     blockchain,
@@ -84,6 +83,7 @@ class PublishController extends BaseController {
                     minimumNumberOfNodeReplications,
                 },
                 transactional: false,
+                priority: COMMAND_PRIORITY.HIGHEST,
             });
         } catch (error) {
             this.logger.error(
