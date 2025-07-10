@@ -24,6 +24,7 @@ class SyncService {
         this.commandExecutor = ctx.commandExecutor;
         this.operationIdService = ctx.operationIdService;
         this.syncStatus = {};
+        this.registeredIntervals = [];
     }
 
     async initialize() {
@@ -77,15 +78,14 @@ class SyncService {
         this.logger.info('[DKG SYNC] SyncService initialization completed');
     }
 
+    // Weirdly named, why not start mechanism?
     async syncMechanism(blockchainId) {
         this.logger.debug(`[DKG SYNC] Setting up sync mechanism for blockchain ${blockchainId}`);
-        // Flag to track if mechanism is running
-        let isRunning = false;
 
-        // Set up interval
-        const interval = setInterval(async () => {
-            // Skip if already running
-            if (isRunning) {
+        // Set up intervals
+        let isOldRunning = false;
+        const intervalOld = setInterval(async () => {
+            if (isOldRunning) {
                 this.logger.debug(
                     `[DKG SYNC] Sync mechanism for ${blockchainId} still running, skipping this interval`,
                 );
@@ -93,10 +93,10 @@ class SyncService {
             }
 
             try {
-                isRunning = true;
+                isOldRunning = true;
                 this.logger.debug(`[DKG SYNC] Starting sync cycle for blockchain ${blockchainId}`);
 
-                await this.runSync(blockchainId);
+                await this.runSync(blockchainId, false);
                 this.logger.debug(`[DKG SYNC] Completed sync cycle for blockchain ${blockchainId}`);
             } catch (error) {
                 this.logger.error(
@@ -110,16 +110,52 @@ class SyncService {
                     error.stack,
                 );
             } finally {
-                isRunning = false;
+                isOldRunning = false;
             }
         }, SYNC_INTERVAL);
 
+        let isNewRunning = false;
+        const intervalNew = setInterval(async () => {
+            if (isNewRunning) {
+                this.logger.debug(
+                    `[DKG SYNC] Sync mechanism for ${blockchainId} still running, skipping this interval`,
+                );
+                return;
+            }
+
+            try {
+                isNewRunning = true;
+                this.logger.debug(`[DKG SYNC] Starting sync cycle for blockchain ${blockchainId}`);
+
+                await this.runSync(blockchainId, true);
+                this.logger.debug(`[DKG SYNC] Completed sync cycle for blockchain ${blockchainId}`);
+            } catch (error) {
+                this.logger.error(
+                    `[DKG SYNC] Error in sync mechanism for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
+                );
+                this.operationIdService.emitChangeEvent(
+                    OPERATION_ID_STATUS.SYNC.SYNC_FAILED,
+                    uuidv4(),
+                    blockchainId,
+                    error.message,
+                    error.stack,
+                );
+            } finally {
+                isNewRunning = false;
+            }
+        }, SYNC_INTERVAL);
+
+        // Execute intervals
+        this.registeredIntervals.push(intervalOld);
+        this.registeredIntervals.push(intervalNew);
+
         // Store interval reference for cleanup
-        this[`${blockchainId}Interval`] = interval;
+        // Question: Why is cleanup delegated to garbage collector?
+        // this[`${blockchainId}Interval`] = interval;
         this.logger.info(`[DKG SYNC] Sync mechanism initialized for blockchain ${blockchainId}`);
     }
 
-    async runSync(blockchainId) {
+    async runSync(blockchainId, executeNew) {
         // TODO: Add telemetry
         // TODO: Add onchain registring how far you have synced DKG
         this.logger.debug(`[DKG SYNC] Running sync for blockchain ${blockchainId}`);
@@ -195,10 +231,11 @@ class SyncService {
         const contractPromises = Object.entries(latestKnowledgeCollectionIds).map(
             async ([contractAddress, syncObject]) => {
                 // Run both sync tasks in parallel for this one contract
-                await Promise.all([
-                    this.syncNewKc(blockchainId, contractAddress, syncObject),
-                    this.syncMissedKc(blockchainId, contractAddress),
-                ]);
+                if (executeNew) {
+                    await this.syncNewKc(blockchainId, contractAddress, syncObject);
+                } else {
+                    await this.syncMissedKc(blockchainId, contractAddress);
+                }
             },
         );
 
@@ -520,7 +557,11 @@ class SyncService {
     }
 
     // Add cleanup method to stop intervals
-    cleanup() {}
+    cleanup() {
+        for (const interval of this.registeredIntervals) {
+            clearInterval(interval);
+        }
+    }
 }
 
 export default SyncService;
