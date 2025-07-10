@@ -8,7 +8,7 @@
     <img src="images/banner.gif" alt="OriginTrail Node Banner">
   </a>
 
-  <h3 align="center"><b>OT-Node</b></h3>
+  <h3 align="center"><b>OriginTrail DKG Node</b></h3>
 
   <p align="center">
     </br>
