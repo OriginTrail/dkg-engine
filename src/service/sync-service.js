@@ -82,10 +82,15 @@ class SyncService {
     async syncMechanism(blockchainId) {
         this.logger.debug(`[DKG SYNC] Setting up sync mechanism for blockchain ${blockchainId}`);
 
+        const syncRecords = (
+            await this.repositoryModuleManager.getSyncRecordForBlockchain(blockchainId)
+        ).map((syncRecord) => syncRecord.toJSON());
+
         // Set up intervals
-        let isOldRunning = false;
-        const intervalOld = setInterval(async () => {
-            if (isOldRunning) {
+        // TODO: change logging messages
+        let isMissedRunning = false;
+        const intervalMissed = setInterval(async () => {
+            if (isMissedRunning) {
                 this.logger.debug(
                     `[DKG SYNC] Sync mechanism for ${blockchainId} still running, skipping this interval`,
                 );
@@ -93,10 +98,10 @@ class SyncService {
             }
 
             try {
-                isOldRunning = true;
+                isMissedRunning = true;
                 this.logger.debug(`[DKG SYNC] Starting sync cycle for blockchain ${blockchainId}`);
 
-                await this.runSync(blockchainId, false);
+                await this.syncMissedKc(blockchainId, false);
                 this.logger.debug(`[DKG SYNC] Completed sync cycle for blockchain ${blockchainId}`);
             } catch (error) {
                 this.logger.error(
@@ -110,7 +115,7 @@ class SyncService {
                     error.stack,
                 );
             } finally {
-                isOldRunning = false;
+                isMissedRunning = false;
             }
         }, SYNC_INTERVAL);
 
@@ -127,7 +132,7 @@ class SyncService {
                 isNewRunning = true;
                 this.logger.debug(`[DKG SYNC] Starting sync cycle for blockchain ${blockchainId}`);
 
-                await this.runSync(blockchainId, true);
+                await this.syncNewKc(blockchainId, syncRecords);
                 this.logger.debug(`[DKG SYNC] Completed sync cycle for blockchain ${blockchainId}`);
             } catch (error) {
                 this.logger.error(
@@ -145,29 +150,16 @@ class SyncService {
             }
         }, SYNC_INTERVAL);
 
-        // Execute intervals
-        this.registeredIntervals.push(intervalOld);
+        // Register intervals for the cleanup
+        this.registeredIntervals.push(intervalMissed);
         this.registeredIntervals.push(intervalNew);
 
-        // Store interval reference for cleanup
-        // Question: Why is cleanup delegated to garbage collector?
         // this[`${blockchainId}Interval`] = interval;
         this.logger.info(`[DKG SYNC] Sync mechanism initialized for blockchain ${blockchainId}`);
     }
 
-    async runSync(blockchainId, executeNew) {
-        // TODO: Add telemetry
-        // TODO: Add onchain registring how far you have synced DKG
-        this.logger.debug(`[DKG SYNC] Running sync for blockchain ${blockchainId}`);
-        const syncOperationId = uuidv4();
-        this.operationIdService.emitChangeEvent(
-            OPERATION_ID_STATUS.SYNC.SYNC_START,
-            syncOperationId,
-            blockchainId,
-        );
-        const syncRecords = (
-            await this.repositoryModuleManager.getSyncRecordForBlockchain(blockchainId)
-        ).map((syncRecord) => syncRecord.toJSON());
+    async runSyncNewKc(blockchainId, syncRecords) {
+        const syncOperationId = uuidv4(); // maybe should not be generated like this?
         const latestKnowledgeCollectionIds = {};
 
         const knowledgeCollectionResults = await Promise.all(
@@ -230,22 +222,22 @@ class SyncService {
 
         const contractPromises = Object.entries(latestKnowledgeCollectionIds).map(
             async ([contractAddress, syncObject]) => {
-                // Run both sync tasks in parallel for this one contract
-                if (executeNew) {
-                    await this.syncNewKc(blockchainId, contractAddress, syncObject);
-                } else {
-                    await this.syncMissedKc(blockchainId, contractAddress);
-                }
+                await this.syncNewKc(blockchainId, contractAddress, syncObject);
             },
         );
 
-        // Run all contracts in parallel
         await Promise.all(contractPromises);
         this.operationIdService.emitChangeEvent(
             OPERATION_ID_STATUS.SYNC.SYNC_END,
             syncOperationId,
             blockchainId,
         );
+    }
+
+    async runSyncMissed(blockchainId, syncRecords) {
+        // sync records for telemetry?
+        // also logs?
+        await this.syncMissedKc(blockchainId, syncRecords.contractAddress);
     }
 
     async syncNewKc(blockchainId, contractAddress, syncObject) {
