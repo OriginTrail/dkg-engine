@@ -27,7 +27,6 @@ class GetController extends BaseController {
         await this.commandExecutor.add({
             name: commandName,
             sequence: [],
-            delay: 0,
             data: {
                 remotePeerId,
                 operationId,
