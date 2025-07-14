@@ -82,10 +82,6 @@ class SyncService {
     async syncMechanism(blockchainId) {
         this.logger.debug(`[DKG SYNC] Setting up sync mechanism for blockchain ${blockchainId}`);
 
-        const syncRecords = (
-            await this.repositoryModuleManager.getSyncRecordForBlockchain(blockchainId)
-        ).map((syncRecord) => syncRecord.toJSON());
-
         // Set up intervals
         // TODO: change logging messages
         let isMissedRunning = false;
@@ -127,6 +123,10 @@ class SyncService {
                 );
                 return;
             }
+
+            const syncRecords = (
+                await this.repositoryModuleManager.getSyncRecordForBlockchain(blockchainId)
+            ).map((syncRecord) => syncRecord.toJSON());
 
             try {
                 isNewRunning = true;
