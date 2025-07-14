@@ -253,78 +253,94 @@ class BatchGetCommand extends Command {
         );
 
         let index = 0;
+        let commandCompleted = false;
 
-        // Process shard nodes in batches
-        while (index < nodesInfo.length) {
-            // Slice out a batch of nodes
+        while (index < nodesInfo.length && ualNotPresentLocally.length > 0 && !commandCompleted) {
             const batch = nodesInfo.slice(index, index + BATCH_SIZE);
-
             const message = {
                 blockchain,
                 tokenIds,
                 includeMetadata,
                 uals: ualNotPresentLocally,
-                // paranetUAL,
                 repository,
             };
-            // Send messages in parallel to all nodes in the current batch
-            // eslint-disable-next-line no-await-in-loop
-            const results = await Promise.all(
-                batch.map((node) => this.sendMessage(node, operationId, message)),
+
+            // eslint-disable-next-line no-loop-func
+            const messagePromises = batch.map((node) =>
+                this.sendMessage(node, operationId, message)
+                    .then(async (result) => {
+                        if (commandCompleted || !result.success) {
+                            return;
+                        }
+
+                        const validationResult = await this.validateBatchResponse(
+                            result.responseData.assertions,
+                            blockchain,
+                            paranetNodesAccessPolicy,
+                            contentType,
+                            finalResult,
+                        );
+
+                        for (const [ual, isKCValid] of Object.entries(validationResult)) {
+                            if (isKCValid) {
+                                finalResult.remote[ual] = result.responseData.assertions[ual];
+                                finalResult.metadata[ual] = result.responseData.metadata[ual];
+                                const idx = ualNotPresentLocally.indexOf(ual);
+                                if (idx !== -1) {
+                                    ualNotPresentLocally.splice(idx, 1);
+                                }
+                            }
+                        }
+
+                        if (ualNotPresentLocally.length === 0 && !commandCompleted) {
+                            commandCompleted = true;
+                            await this.operationService.markOperationAsCompleted(
+                                operationId,
+                                blockchain,
+                                finalResult,
+                                [
+                                    OPERATION_ID_STATUS.GET.GET_LOCAL_END,
+                                    OPERATION_ID_STATUS.GET.GET_END,
+                                    OPERATION_ID_STATUS.COMPLETED,
+                                ],
+                            );
+                        }
+                    })
+                    .catch((err) => {
+                        this.logger.warn(`Node ${node.id} failed: ${err.message}`);
+                    }),
             );
 
-            const succsesfulResult = [];
-            const failedResults = [];
-
-            results.forEach((result) => {
-                if (result.success) {
-                    succsesfulResult.push(result);
-                } else {
-                    failedResults.push(result);
-                }
+            // eslint-disable-next-line no-await-in-loop, no-loop-func
+            await new Promise((resolve) => {
+                let settled = 0;
+                // eslint-disable-next-line no-loop-func
+                messagePromises.forEach((p) =>
+                    p.finally(() => {
+                        settled += 1;
+                        if (commandCompleted || settled === promises.length) {
+                            resolve();
+                        }
+                    }),
+                );
             });
 
-            for (const result of succsesfulResult) {
-                // eslint-disable-next-line no-await-in-loop
-                const validationResult = await this.validateBatchResponse(
-                    result.responseData.assertions,
-                    blockchain,
-                    paranetNodesAccessPolicy,
-                    contentType,
-                    finalResult,
-                );
-
-                for (const [ual, isValidAssertion] of Object.entries(validationResult)) {
-                    if (isValidAssertion) {
-                        finalResult.remote[ual] = result.responseData.assertions[ual];
-                        finalResult.metadata[ual] = result.responseData.metadata[ual];
-                        ualNotPresentLocally.splice(ualNotPresentLocally.indexOf(ual), 1);
-                    }
-                }
-
-                if (ualNotPresentLocally.length === 0) {
-                    // eslint-disable-next-line no-await-in-loop
-                    await this.operationService.markOperationAsCompleted(
-                        operationId,
-                        blockchain,
-                        finalResult,
-                        [
-                            OPERATION_ID_STATUS.GET.GET_LOCAL_END,
-                            OPERATION_ID_STATUS.GET.GET_END,
-                            OPERATION_ID_STATUS.COMPLETED,
-                        ],
-                    );
-                    return Command.empty();
-                }
-            }
-            // Otherwise, continue with the next batch
             index += BATCH_SIZE;
         }
-        await this.operationService.markOperationAsCompleted(operationId, blockchain, finalResult, [
-            OPERATION_ID_STATUS.GET.GET_LOCAL_END,
-            OPERATION_ID_STATUS.GET.GET_END,
-            OPERATION_ID_STATUS.COMPLETED,
-        ]);
+
+        // Just in case we finish outside early-exit
+        if (!commandCompleted) {
+            await this.operationService.markOperationAsCompleted(
+                operationId,
+                blockchain,
+                finalResult,
+                [
+                    OPERATION_ID_STATUS.GET.GET_LOCAL_END,
+                    OPERATION_ID_STATUS.GET.GET_END,
+                    OPERATION_ID_STATUS.COMPLETED,
+                ],
+            );
+        }
         return Command.empty();
     }
 
