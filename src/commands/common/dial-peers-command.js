@@ -3,6 +3,7 @@ import {
     DIAL_PEERS_COMMAND_FREQUENCY_MILLS,
     DIAL_PEERS_CONCURRENCY,
     MIN_DIAL_FREQUENCY_MILLIS,
+    COMMAND_PRIORITY,
 } from '../../constants/constants.js';
 
 class DialPeersCommand extends Command {
@@ -52,6 +53,7 @@ class DialPeersCommand extends Command {
             name: 'dialPeersCommand',
             data: {},
             period: DIAL_PEERS_COMMAND_FREQUENCY_MILLS,
+            priority: COMMAND_PRIORITY.MEDIUM,
             transactional: false,
         };
         Object.assign(command, map);

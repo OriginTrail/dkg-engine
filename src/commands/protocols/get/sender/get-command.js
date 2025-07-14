@@ -12,6 +12,7 @@ import {
     PRIVATE_ASSERTION_PREDICATE,
     PRIVATE_HASH_SUBJECT_PREFIX,
     MIGRATION_FLAG_PATH,
+    COMMAND_PRIORITY,
 } from '../../../../constants/constants.js';
 
 class GetCommand extends Command {
@@ -58,6 +59,7 @@ class GetCommand extends Command {
             includeMetadata,
             paranetNodesAccessPolicy,
             knowledgeAssetId,
+            minimumNumberOfNodeReplications,
         } = command.data;
 
         await this.operationIdService.updateOperationIdStatus(
@@ -291,6 +293,10 @@ class GetCommand extends Command {
         } else {
             nodesInfo = await this.findShardNodes(operationId, blockchain, currentPeerId);
         }
+
+        this.minAckResponses = this.operationService.getMinAckResponses(
+            minimumNumberOfNodeReplications,
+        );
 
         if (nodesInfo.length < this.minAckResponses) {
             await this.handleError(
@@ -627,8 +633,8 @@ class GetCommand extends Command {
     default(map) {
         const command = {
             name: 'getCommand',
-            delay: 0,
             transactional: false,
+            priority: COMMAND_PRIORITY.HIGH,
         };
         Object.assign(command, map);
         return command;

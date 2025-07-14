@@ -66,7 +66,6 @@ class HandleAskRequestCommand extends HandleProtocolMessageCommand {
     default(map) {
         const command = {
             name: 'v1_0_0HandleAskRequestCommand',
-            delay: 0,
             transactional: false,
             errorType: ERROR_TYPE.ASK.ASK_REQUEST_REMOTE_ERROR,
         };

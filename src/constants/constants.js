@@ -782,7 +782,9 @@ export const NETWORK_SIGNATURES_FOLDER = 'network';
  * How many commands will run in parallel
  * @type {number}
  */
-export const COMMAND_QUEUE_PARALLELISM = 150;
+export const GENERAL_COMMAND_QUEUE_PARALLELISM = 100;
+
+export const BATCH_GET_COMMAND_QUEUE_PARALLELISM = 20;
 
 export const GET_LATEST_SERVICE_AGREEMENT_BATCH_SIZE = 50;
 
@@ -1095,3 +1097,5 @@ export const SYNC_BATCH_GET_MAX_ATTEMPTS = 15 * 60;
 export const MAX_TOKEN_ID_PER_GET_PAGE = 50;
 
 export const BLAZEGRAPH_HEALTH_INTERVAL = 60 * 1000;
+
+export const MAX_COMMAND_LIFETIME = 15 * 60 * 1000;

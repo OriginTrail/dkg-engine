@@ -2,6 +2,7 @@ import {
     PROCESSED_BLOCKCHAIN_EVENTS_CLEANUP_TIME_MILLS,
     REPOSITORY_ROWS_FOR_REMOVAL_MAX_NUMBER,
     PROCESSED_BLOCKCHAIN_EVENTS_CLEANUP_TIME_DELAY,
+    COMMAND_PRIORITY,
 } from '../../constants/constants.js';
 import CleanerCommand from './cleaner-command.js';
 
@@ -24,6 +25,7 @@ class BlockchainEventCleanerCommand extends CleanerCommand {
             data: {},
             period: PROCESSED_BLOCKCHAIN_EVENTS_CLEANUP_TIME_MILLS,
             transactional: false,
+            priority: COMMAND_PRIORITY.LOWEST,
         };
         Object.assign(command, map);
         return command;

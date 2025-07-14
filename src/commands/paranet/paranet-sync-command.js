@@ -15,6 +15,7 @@ import {
     TRIPLES_VISIBILITY,
     DKG_METADATA_PREDICATES,
     TRIPLE_STORE_REPOSITORIES,
+    COMMAND_PRIORITY,
 } from '../../constants/constants.js';
 
 class ParanetSyncCommand extends Command {
@@ -362,6 +363,7 @@ class ParanetSyncCommand extends Command {
             data: {},
             transactional: false,
             period: PARANET_SYNC_FREQUENCY_MILLS,
+            priority: COMMAND_PRIORITY.LOW,
         };
         Object.assign(command, map);
         return command;
