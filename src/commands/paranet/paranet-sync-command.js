@@ -34,10 +34,8 @@ class ParanetSyncCommand extends Command {
 
     // TODO: Fix logs? Use word 'Knowledge Collection' or 'Collection' instead of 'Asset'.
     async execute(command) {
-        const { blockchain, operationId, paranetUAL, paranetId, paranetMetadata } = command.data;
-
-        const paranetNodesAccessPolicy =
-            PARANET_NODES_ACCESS_POLICIES[paranetMetadata.nodesAccessPolicy];
+        const { blockchain, operationId, paranetUAL, paranetId, nodesAccessPolicy } = command.data;
+        const paranetNodesAccessPolicy = PARANET_NODES_ACCESS_POLICIES[nodesAccessPolicy];
 
         this.logger.info(
             `Paranet sync: Starting paranet sync for paranet: ${paranetUAL} (${paranetId}), operation ID: ${operationId}, access policy ${paranetNodesAccessPolicy}`,
@@ -107,13 +105,7 @@ class ParanetSyncCommand extends Command {
 
         const syncResults = await Promise.all(
             syncBatch.map(({ ual }) =>
-                this.syncKc(
-                    paranetUAL,
-                    ual,
-                    paranetId,
-                    paranetMetadata.nodesAccessPolicy,
-                    operationId,
-                ),
+                this.syncKc(paranetUAL, ual, paranetId, nodesAccessPolicy, operationId),
             ),
         );
 
