@@ -40,7 +40,7 @@ class StartParanetSyncCommands extends Command {
                 knowledgeCollectionId,
                 knowledgeAssetId,
             );
-            const paranetMetadata = await this.blockchainModuleManager.getParanetMetadata(
+            const nodesAccessPolicy = await this.blockchainModuleManager.getNodesAccessPolicy(
                 blockchain,
                 paranetId,
             );
@@ -52,7 +52,7 @@ class StartParanetSyncCommands extends Command {
                 knowledgeAssetId,
                 paranetUAL,
                 paranetId,
-                paranetMetadata,
+                nodesAccessPolicy,
                 operationId,
             };
 
