@@ -311,18 +311,37 @@ class BatchGetCommand extends Command {
                 }
             });
 
+            const initialMissing = ualNotPresentLocally.length;
+            const DONE_THRESHOLD = 95; // percentage of UALs that must be retrieved before early-exit
+
             // eslint-disable-next-line no-await-in-loop, no-loop-func
             await new Promise((resolve) => {
-                let settled = 0;
+                let settledPromises = 0;
+
+                const hasReachedThreshold = () => {
+                    if (initialMissing === 0) {
+                        return true;
+                    }
+                    const retrieved = initialMissing - ualNotPresentLocally.length;
+                    const ratio = (retrieved / initialMissing) * 100;
+                    return ratio >= DONE_THRESHOLD;
+                };
+
+                const countSettledAndMaybeResolve = () => {
+                    settledPromises += 1;
+
+                    const allSettled = settledPromises === messagePromises.length;
+                    if (
+                        commandCompleted ||
+                        hasReachedThreshold() ||
+                        allSettled // Safety net to stop infinite hang
+                    ) {
+                        resolve();
+                    }
+                };
+
                 // eslint-disable-next-line no-loop-func
-                messagePromises.forEach((p) =>
-                    p.finally(() => {
-                        settled += 1;
-                        if (commandCompleted || settled === promises.length) {
-                            resolve();
-                        }
-                    }),
-                );
+                messagePromises.forEach((p) => p.finally(countSettledAndMaybeResolve));
             });
 
             index += BATCH_SIZE;
