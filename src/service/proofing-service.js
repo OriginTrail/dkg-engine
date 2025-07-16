@@ -22,7 +22,6 @@ class ProofingService {
         this.validationService = ctx.validationService;
         this.commandExecutor = ctx.commandExecutor;
         this.operationIdService = ctx.operationIdService;
-        this.operationIdService = ctx.operationIdService;
     }
 
     async initialize() {
@@ -368,7 +367,14 @@ class ProofingService {
         const getOperationId = await this.operationIdService.generateOperationId(
             OPERATION_ID_STATUS.GET.GET_START,
         );
-
+        this.operationIdService.emitChangeEvent(
+            'PROOFING_GET_STARTED',
+            getOperationId,
+            blockchainId,
+        );
+        this.logger.debug(
+            `[PROOFING] Proofing GET started for blockchain: ${blockchainId}, operationId: ${getOperationId}`,
+        );
         await this.commandExecutor.add({
             name: 'getCommand',
             sequence: [],
