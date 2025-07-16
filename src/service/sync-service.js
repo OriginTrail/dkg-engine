@@ -97,7 +97,16 @@ class SyncService {
                 isMissedRunning = true;
                 this.logger.debug(`[DKG SYNC] Starting sync cycle for blockchain ${blockchainId}`);
 
-                await this.syncMissedKc(blockchainId, false);
+                const syncRecords = (
+                    await this.repositoryModuleManager.getSyncRecordForBlockchain(blockchainId)
+                ).map((syncRecord) => syncRecord.toJSON());
+
+                // Run missed KC sync for each contract in parallel
+                await Promise.all(
+                    syncRecords.map((record) =>
+                        this.runSyncMissed(blockchainId, record.contractAddress),
+                    ),
+                );
                 this.logger.debug(`[DKG SYNC] Completed sync cycle for blockchain ${blockchainId}`);
             } catch (error) {
                 this.logger.error(
@@ -132,7 +141,7 @@ class SyncService {
                 isNewRunning = true;
                 this.logger.debug(`[DKG SYNC] Starting sync cycle for blockchain ${blockchainId}`);
 
-                await this.syncNewKc(blockchainId, syncRecords);
+                await this.runSyncNewKc(blockchainId, syncRecords);
                 this.logger.debug(`[DKG SYNC] Completed sync cycle for blockchain ${blockchainId}`);
             } catch (error) {
                 this.logger.error(
@@ -234,10 +243,9 @@ class SyncService {
         );
     }
 
-    async runSyncMissed(blockchainId, syncRecords) {
-        // sync records for telemetry?
-        // also logs?
-        await this.syncMissedKc(blockchainId, syncRecords.contractAddress);
+    async runSyncMissed(blockchainId, contractAddress) {
+        // Sync missed Knowledge Collections for a specific contract address
+        await this.syncMissedKc(blockchainId, contractAddress);
     }
 
     async syncNewKc(blockchainId, contractAddress, syncObject) {
