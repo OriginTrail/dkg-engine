@@ -308,11 +308,7 @@ class BatchGetCommand extends Command {
                         operationId,
                         blockchain,
                         finalResult,
-                        [
-                            OPERATION_ID_STATUS.GET.GET_LOCAL_END,
-                            OPERATION_ID_STATUS.GET.GET_END,
-                            OPERATION_ID_STATUS.COMPLETED,
-                        ],
+                        [OPERATION_ID_STATUS.GET.GET_END, OPERATION_ID_STATUS.COMPLETED],
                     );
                     return Command.empty();
                 }
@@ -321,7 +317,6 @@ class BatchGetCommand extends Command {
             index += BATCH_SIZE;
         }
         await this.operationService.markOperationAsCompleted(operationId, blockchain, finalResult, [
-            OPERATION_ID_STATUS.GET.GET_LOCAL_END,
             OPERATION_ID_STATUS.GET.GET_END,
             OPERATION_ID_STATUS.COMPLETED,
         ]);
