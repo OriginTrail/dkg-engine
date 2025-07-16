@@ -195,7 +195,9 @@ class CommandExecutor {
             this.logger.trace('Command executor has been resumed...');
         }
         await this.queue.resume();
+        await this.queueBatchGet.resume();
         this.worker.resume();
+        this.batchGetWorker.resume();
     }
 
     /**
