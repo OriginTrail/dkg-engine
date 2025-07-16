@@ -266,50 +266,50 @@ class BatchGetCommand extends Command {
             };
 
             // eslint-disable-next-line no-loop-func
-            const messagePromises = batch.map((node) =>
-                this.sendMessage(node, operationId, message)
-                    .then(async (result) => {
-                        if (commandCompleted || !result.success) {
-                            return;
-                        }
+            const messagePromises = batch.map(async (node) => {
+                try {
+                    const result = await this.sendMessage(node, operationId, message);
 
-                        const validationResult = await this.validateBatchResponse(
-                            result.responseData.assertions,
-                            blockchain,
-                            paranetNodesAccessPolicy,
-                            contentType,
-                            finalResult,
-                        );
+                    if (commandCompleted || !result.success) {
+                        return;
+                    }
 
-                        for (const [ual, isKCValid] of Object.entries(validationResult)) {
-                            if (isKCValid) {
-                                finalResult.remote[ual] = result.responseData.assertions[ual];
-                                finalResult.metadata[ual] = result.responseData.metadata[ual];
-                                const idx = ualNotPresentLocally.indexOf(ual);
-                                if (idx !== -1) {
-                                    ualNotPresentLocally.splice(idx, 1);
-                                }
+                    const validationResult = await this.validateBatchResponse(
+                        result.responseData.assertions,
+                        blockchain,
+                        paranetNodesAccessPolicy,
+                        contentType,
+                        finalResult,
+                    );
+
+                    for (const [ual, isKCValid] of Object.entries(validationResult)) {
+                        if (isKCValid) {
+                            finalResult.remote[ual] = result.responseData.assertions[ual];
+                            finalResult.metadata[ual] = result.responseData.metadata[ual];
+                            const idx = ualNotPresentLocally.indexOf(ual);
+                            if (idx !== -1) {
+                                ualNotPresentLocally.splice(idx, 1);
                             }
                         }
+                    }
 
-                        if (ualNotPresentLocally.length === 0 && !commandCompleted) {
-                            commandCompleted = true;
-                            await this.operationService.markOperationAsCompleted(
-                                operationId,
-                                blockchain,
-                                finalResult,
-                                [
-                                    OPERATION_ID_STATUS.GET.GET_LOCAL_END,
-                                    OPERATION_ID_STATUS.GET.GET_END,
-                                    OPERATION_ID_STATUS.COMPLETED,
-                                ],
-                            );
-                        }
-                    })
-                    .catch((err) => {
-                        this.logger.warn(`Node ${node.id} failed: ${err.message}`);
-                    }),
-            );
+                    if (ualNotPresentLocally.length === 0 && !commandCompleted) {
+                        commandCompleted = true;
+                        await this.operationService.markOperationAsCompleted(
+                            operationId,
+                            blockchain,
+                            finalResult,
+                            [
+                                OPERATION_ID_STATUS.GET.GET_LOCAL_END,
+                                OPERATION_ID_STATUS.GET.GET_END,
+                                OPERATION_ID_STATUS.COMPLETED,
+                            ],
+                        );
+                    }
+                } catch (err) {
+                    this.logger.warn(`Node ${node.id} failed: ${err.message}`);
+                }
+            });
 
             // eslint-disable-next-line no-await-in-loop, no-loop-func
             await new Promise((resolve) => {
