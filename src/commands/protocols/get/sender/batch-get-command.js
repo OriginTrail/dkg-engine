@@ -299,11 +299,7 @@ class BatchGetCommand extends Command {
                             operationId,
                             blockchain,
                             finalResult,
-                            [
-                                OPERATION_ID_STATUS.GET.GET_LOCAL_END,
-                                OPERATION_ID_STATUS.GET.GET_END,
-                                OPERATION_ID_STATUS.COMPLETED,
-                            ],
+                            [OPERATION_ID_STATUS.GET.GET_END, OPERATION_ID_STATUS.COMPLETED],
                         );
                     }
                 } catch (err) {
@@ -334,11 +330,7 @@ class BatchGetCommand extends Command {
                 operationId,
                 blockchain,
                 finalResult,
-                [
-                    OPERATION_ID_STATUS.GET.GET_LOCAL_END,
-                    OPERATION_ID_STATUS.GET.GET_END,
-                    OPERATION_ID_STATUS.COMPLETED,
-                ],
+                [OPERATION_ID_STATUS.GET.GET_END, OPERATION_ID_STATUS.COMPLETED],
             );
         }
         return Command.empty();
