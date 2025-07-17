@@ -196,6 +196,8 @@ class CommandExecutor {
         }
         await this.queue.resume();
         this.worker.resume();
+        await this.queueBatchGet.resume();
+        this.batchGetWorker.resume();
     }
 
     /**
