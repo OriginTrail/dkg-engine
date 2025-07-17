@@ -83,19 +83,20 @@ class SyncService {
         this.logger.debug(`[DKG SYNC] Setting up sync mechanism for blockchain ${blockchainId}`);
 
         // Set up intervals
-        // TODO: change logging messages
         let isMissedRunning = false;
         const intervalMissed = setInterval(async () => {
             if (isMissedRunning) {
                 this.logger.debug(
-                    `[DKG SYNC] Sync mechanism for ${blockchainId} still running, skipping this interval`,
+                    `[DKG SYNC] Sync missed KC mechanism for ${blockchainId} still running, skipping this interval`,
                 );
                 return;
             }
 
             try {
                 isMissedRunning = true;
-                this.logger.debug(`[DKG SYNC] Starting sync cycle for blockchain ${blockchainId}`);
+                this.logger.debug(
+                    `[DKG SYNC] Starting sync missed KC cycle for blockchain ${blockchainId}`,
+                );
 
                 const syncRecords = (
                     await this.repositoryModuleManager.getSyncRecordForBlockchain(blockchainId)
@@ -107,13 +108,15 @@ class SyncService {
                         this.runSyncMissed(blockchainId, record.contractAddress),
                     ),
                 );
-                this.logger.debug(`[DKG SYNC] Completed sync cycle for blockchain ${blockchainId}`);
+                this.logger.debug(
+                    `[DKG SYNC] Completed sync missed KC cycle for blockchain ${blockchainId}`,
+                );
             } catch (error) {
                 this.logger.error(
-                    `[DKG SYNC] Error in sync mechanism for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
+                    `[DKG SYNC] Error in sync missed KC mechanism for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
                 );
                 this.operationIdService.emitChangeEvent(
-                    OPERATION_ID_STATUS.SYNC.SYNC_FAILED,
+                    OPERATION_ID_STATUS.SYNC.MISSED_SYNC_FAILED,
                     uuidv4(),
                     blockchainId,
                     error.message,
@@ -128,7 +131,7 @@ class SyncService {
         const intervalNew = setInterval(async () => {
             if (isNewRunning) {
                 this.logger.debug(
-                    `[DKG SYNC] Sync mechanism for ${blockchainId} still running, skipping this interval`,
+                    `[DKG SYNC] Sync new KC mechanism for ${blockchainId} still running, skipping this interval`,
                 );
                 return;
             }
@@ -139,16 +142,20 @@ class SyncService {
 
             try {
                 isNewRunning = true;
-                this.logger.debug(`[DKG SYNC] Starting sync cycle for blockchain ${blockchainId}`);
+                this.logger.debug(
+                    `[DKG SYNC] Starting sync new KC cycle for blockchain ${blockchainId}`,
+                );
 
                 await this.runSyncNewKc(blockchainId, syncRecords);
-                this.logger.debug(`[DKG SYNC] Completed sync cycle for blockchain ${blockchainId}`);
+                this.logger.debug(
+                    `[DKG SYNC] Completed sync new KC cycle for blockchain ${blockchainId}`,
+                );
             } catch (error) {
                 this.logger.error(
-                    `[DKG SYNC] Error in sync mechanism for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
+                    `[DKG SYNC] Error in sync new KC mechanism for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
                 );
                 this.operationIdService.emitChangeEvent(
-                    OPERATION_ID_STATUS.SYNC.SYNC_FAILED,
+                    OPERATION_ID_STATUS.SYNC.NEW_SYNC_FAILED,
                     uuidv4(),
                     blockchainId,
                     error.message,
@@ -225,7 +232,7 @@ class SyncService {
                 totallatestKnowledgeCollectionId;
 
             this.logger.info(
-                `[DKG SYNC] DKG Sync for blockchain ${blockchainId} Status: ${syncPrecentage}%`,
+                `[DKG SYNC] DKG Sync new KC for blockchain ${blockchainId} Status: ${syncPrecentage}%`,
             );
         }
 
