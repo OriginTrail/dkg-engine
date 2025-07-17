@@ -292,6 +292,7 @@ class BatchGetCommand extends Command {
                         paranetNodesAccessPolicy,
                         contentType,
                         finalResult,
+                        [OPERATION_ID_STATUS.GET.GET_END, OPERATION_ID_STATUS.COMPLETED],
                     );
 
                     if (commandCompleted) {
@@ -355,6 +356,7 @@ class BatchGetCommand extends Command {
                 [OPERATION_ID_STATUS.GET.GET_END, OPERATION_ID_STATUS.COMPLETED],
             );
         }
+      
         return Command.empty();
     }
 
