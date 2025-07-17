@@ -79,28 +79,6 @@ class ProofingService {
         this.logger.info(
             `[PROOFING] Proofing mechanism initialized for blockchain ${blockchainId}`,
         );
-
-        // Run immediately on startup
-        try {
-            isRunning = true;
-            this.logger.debug(
-                `[PROOFING] Running initial proofing cycle for blockchain ${blockchainId}`,
-            );
-            await this.runProofing(blockchainId);
-        } catch (error) {
-            this.logger.error(
-                `[PROOFING] Error in initial proofing run for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
-            );
-            this.operationIdService.emitChangeEvent(
-                'PROOFING_ERROR',
-                this.generateOperationId(blockchainId, 0, 0),
-                blockchainId,
-                error.message,
-                error.stack,
-            );
-        } finally {
-            isRunning = false;
-        }
     }
 
     async runProofing(blockchainId) {
