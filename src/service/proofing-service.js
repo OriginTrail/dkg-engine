@@ -175,7 +175,7 @@ class ProofingService {
                         await this.repositoryModuleManager.setCompletedAndFinalizedRandomSamplingChallengeRecord(
                             latestChallenge,
                         );
-                        await this.prepareAndSendProof(blockchainId, latestChallenge, nodeId);
+                        await this.prepareAndSendProof(blockchainId, nodeId);
                     }
                 }
             } else {
