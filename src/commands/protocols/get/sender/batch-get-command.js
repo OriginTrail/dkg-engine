@@ -33,6 +33,7 @@ class BatchGetCommand extends Command {
         this.messagingService = ctx.messagingService;
         this.tripleStoreModuleManager = ctx.tripleStoreModuleManager;
         this.repositoryModuleManager = ctx.repositoryModuleManager;
+        this.DONE_THRESHOLD = ctx.config.assetSync.syncDKG.doneThreshold;
     }
 
     async handleError(operationId, blockchain, errorMessage, errorType) {
@@ -255,6 +256,17 @@ class BatchGetCommand extends Command {
         let index = 0;
         let commandCompleted = false;
 
+        const initialMissing = ualNotPresentLocally.length;
+
+        const hasReachedThreshold = () => {
+            if (initialMissing === 0) {
+                return true;
+            }
+            const retrieved = initialMissing - ualNotPresentLocally.length;
+            const ratio = (retrieved / initialMissing) * 100;
+            return ratio >= this.DONE_THRESHOLD;
+        };
+
         while (index < nodesInfo.length && ualNotPresentLocally.length > 0 && !commandCompleted) {
             const batch = nodesInfo.slice(index, index + BATCH_SIZE);
             const message = {
@@ -282,6 +294,10 @@ class BatchGetCommand extends Command {
                         finalResult,
                     );
 
+                    if (commandCompleted) {
+                        return;
+                    }
+
                     for (const [ual, isKCValid] of Object.entries(validationResult)) {
                         if (isKCValid) {
                             finalResult.remote[ual] = result.responseData.assertions[ual];
@@ -293,7 +309,7 @@ class BatchGetCommand extends Command {
                         }
                     }
 
-                    if (ualNotPresentLocally.length === 0 && !commandCompleted) {
+                    if (hasReachedThreshold() && !commandCompleted) {
                         commandCompleted = true;
                         await this.operationService.markOperationAsCompleted(
                             operationId,
@@ -309,16 +325,22 @@ class BatchGetCommand extends Command {
 
             // eslint-disable-next-line no-await-in-loop, no-loop-func
             await new Promise((resolve) => {
-                let settled = 0;
+                let settledPromises = 0;
+
+                const countSettledAndMaybeResolve = () => {
+                    settledPromises += 1;
+
+                    const allSettled = settledPromises === messagePromises.length;
+                    if (
+                        commandCompleted ||
+                        allSettled // Safety net to stop infinite hang
+                    ) {
+                        resolve();
+                    }
+                };
+
                 // eslint-disable-next-line no-loop-func
-                messagePromises.forEach((p) =>
-                    p.finally(() => {
-                        settled += 1;
-                        if (commandCompleted || settled === promises.length) {
-                            resolve();
-                        }
-                    }),
-                );
+                messagePromises.forEach((p) => p.finally(countSettledAndMaybeResolve));
             });
 
             index += BATCH_SIZE;
