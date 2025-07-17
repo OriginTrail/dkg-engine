@@ -318,7 +318,7 @@ class Libp2pService {
                 `Dialing remotePeerId: ${peerIdString} with public ip: ${publicIp}: protocol: ${protocol}, messageType: ${messageType} , operationId: ${operationId}`,
             );
 
-            errorMessage = `dial`;
+            errorMessage = `dial peer`;
             operationStart = Date.now();
             const dialPromise = this.node.dialProtocol(peerIdObject, protocol, {
                 signal: timeoutSignal,
@@ -345,7 +345,7 @@ class Libp2pService {
                 `Sending message to ${peerIdString}. protocol: ${protocol}, messageType: ${messageType}, operationId: ${operationId}`,
             );
 
-            errorMessage = `send message`;
+            errorMessage = `send message to peer`;
             operationStart = Date.now();
             await this._sendMessageToStream(stream, streamMessage);
             operationEnd = Date.now();
@@ -353,7 +353,7 @@ class Libp2pService {
                 throw abortError;
             }
 
-            errorMessage = `read response`;
+            errorMessage = `read response from peer`;
             operationStart = Date.now();
             response = await this._readMessageFromStream(
                 stream,
@@ -378,7 +378,7 @@ class Libp2pService {
                 return nackMessage;
             }
         } catch (error) {
-            nackMessage.data.errorMessage = `Unable to ${errorMessage} from peer ${peerIdString}. protocol: ${protocol}, messageType: ${messageType} , operationId: ${operationId}. Execution time: ${
+            nackMessage.data.errorMessage = `Unable to ${errorMessage} ${peerIdString}. protocol: ${protocol}, messageType: ${messageType} , operationId: ${operationId}. Execution time: ${
                 (operationEnd ?? Date.now()) - operationStart
             } ms. Error: ${error.message.slice(0, 145)}`;
             return nackMessage;
