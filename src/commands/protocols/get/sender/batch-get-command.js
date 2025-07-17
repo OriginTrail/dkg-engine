@@ -255,6 +255,19 @@ class BatchGetCommand extends Command {
         let index = 0;
         let commandCompleted = false;
 
+        const initialMissing = ualNotPresentLocally.length;
+        // TODO: Move to config
+        const DONE_THRESHOLD = 95; // percentage of UALs that must be retrieved before early-exit
+
+        const hasReachedThreshold = () => {
+            if (initialMissing === 0) {
+                return true;
+            }
+            const retrieved = initialMissing - ualNotPresentLocally.length;
+            const ratio = (retrieved / initialMissing) * 100;
+            return ratio >= DONE_THRESHOLD;
+        };
+
         while (index < nodesInfo.length && ualNotPresentLocally.length > 0 && !commandCompleted) {
             const batch = nodesInfo.slice(index, index + BATCH_SIZE);
             const message = {
@@ -282,6 +295,10 @@ class BatchGetCommand extends Command {
                         finalResult,
                     );
 
+                    if (commandCompleted) {
+                        return;
+                    }
+
                     for (const [ual, isKCValid] of Object.entries(validationResult)) {
                         if (isKCValid) {
                             finalResult.remote[ual] = result.responseData.assertions[ual];
@@ -293,7 +310,7 @@ class BatchGetCommand extends Command {
                         }
                     }
 
-                    if (ualNotPresentLocally.length === 0 && !commandCompleted) {
+                    if (hasReachedThreshold() && !commandCompleted) {
                         commandCompleted = true;
                         await this.operationService.markOperationAsCompleted(
                             operationId,
@@ -311,21 +328,9 @@ class BatchGetCommand extends Command {
                 }
             });
 
-            const initialMissing = ualNotPresentLocally.length;
-            const DONE_THRESHOLD = 95; // percentage of UALs that must be retrieved before early-exit
-
             // eslint-disable-next-line no-await-in-loop, no-loop-func
             await new Promise((resolve) => {
                 let settledPromises = 0;
-
-                const hasReachedThreshold = () => {
-                    if (initialMissing === 0) {
-                        return true;
-                    }
-                    const retrieved = initialMissing - ualNotPresentLocally.length;
-                    const ratio = (retrieved / initialMissing) * 100;
-                    return ratio >= DONE_THRESHOLD;
-                };
 
                 const countSettledAndMaybeResolve = () => {
                     settledPromises += 1;
@@ -333,7 +338,6 @@ class BatchGetCommand extends Command {
                     const allSettled = settledPromises === messagePromises.length;
                     if (
                         commandCompleted ||
-                        hasReachedThreshold() ||
                         allSettled // Safety net to stop infinite hang
                     ) {
                         resolve();
