@@ -33,6 +33,7 @@ class BatchGetCommand extends Command {
         this.messagingService = ctx.messagingService;
         this.tripleStoreModuleManager = ctx.tripleStoreModuleManager;
         this.repositoryModuleManager = ctx.repositoryModuleManager;
+        this.DONE_THRESHOLD = ctx.config.assetSync.syncDKG.doneThreshold;
     }
 
     async handleError(operationId, blockchain, errorMessage, errorType) {
@@ -253,73 +254,109 @@ class BatchGetCommand extends Command {
         );
 
         let index = 0;
+        let commandCompleted = false;
 
-        // Process shard nodes in batches
-        while (index < nodesInfo.length) {
-            // Slice out a batch of nodes
+        const initialMissing = ualNotPresentLocally.length;
+
+        const hasReachedThreshold = () => {
+            if (initialMissing === 0) {
+                return true;
+            }
+            const retrieved = initialMissing - ualNotPresentLocally.length;
+            const ratio = (retrieved / initialMissing) * 100;
+            return ratio >= this.DONE_THRESHOLD;
+        };
+
+        while (index < nodesInfo.length && ualNotPresentLocally.length > 0 && !commandCompleted) {
             const batch = nodesInfo.slice(index, index + BATCH_SIZE);
-
             const message = {
                 blockchain,
                 tokenIds,
                 includeMetadata,
                 uals: ualNotPresentLocally,
-                // paranetUAL,
                 repository,
             };
-            // Send messages in parallel to all nodes in the current batch
-            // eslint-disable-next-line no-await-in-loop
-            const results = await Promise.all(
-                batch.map((node) => this.sendMessage(node, operationId, message)),
-            );
 
-            const succsesfulResult = [];
-            const failedResults = [];
+            // eslint-disable-next-line no-loop-func
+            const messagePromises = batch.map(async (node) => {
+                try {
+                    const result = await this.sendMessage(node, operationId, message);
 
-            results.forEach((result) => {
-                if (result.success) {
-                    succsesfulResult.push(result);
-                } else {
-                    failedResults.push(result);
-                }
-            });
-
-            for (const result of succsesfulResult) {
-                // eslint-disable-next-line no-await-in-loop
-                const validationResult = await this.validateBatchResponse(
-                    result.responseData.assertions,
-                    blockchain,
-                    paranetNodesAccessPolicy,
-                    contentType,
-                    finalResult,
-                );
-
-                for (const [ual, isValidAssertion] of Object.entries(validationResult)) {
-                    if (isValidAssertion) {
-                        finalResult.remote[ual] = result.responseData.assertions[ual];
-                        finalResult.metadata[ual] = result.responseData.metadata[ual];
-                        ualNotPresentLocally.splice(ualNotPresentLocally.indexOf(ual), 1);
+                    if (commandCompleted || !result.success) {
+                        return;
                     }
-                }
 
-                if (ualNotPresentLocally.length === 0) {
-                    // eslint-disable-next-line no-await-in-loop
-                    await this.operationService.markOperationAsCompleted(
-                        operationId,
+                    const validationResult = await this.validateBatchResponse(
+                        result.responseData.assertions,
                         blockchain,
+                        paranetNodesAccessPolicy,
+                        contentType,
                         finalResult,
                         [OPERATION_ID_STATUS.GET.GET_END, OPERATION_ID_STATUS.COMPLETED],
                     );
-                    return Command.empty();
+
+                    if (commandCompleted) {
+                        return;
+                    }
+
+                    for (const [ual, isKCValid] of Object.entries(validationResult)) {
+                        if (isKCValid) {
+                            finalResult.remote[ual] = result.responseData.assertions[ual];
+                            finalResult.metadata[ual] = result.responseData.metadata[ual];
+                            const idx = ualNotPresentLocally.indexOf(ual);
+                            if (idx !== -1) {
+                                ualNotPresentLocally.splice(idx, 1);
+                            }
+                        }
+                    }
+
+                    if (hasReachedThreshold() && !commandCompleted) {
+                        commandCompleted = true;
+                        await this.operationService.markOperationAsCompleted(
+                            operationId,
+                            blockchain,
+                            finalResult,
+                            [OPERATION_ID_STATUS.GET.GET_END, OPERATION_ID_STATUS.COMPLETED],
+                        );
+                    }
+                } catch (err) {
+                    this.logger.warn(`Node ${node.id} failed: ${err.message}`);
                 }
-            }
-            // Otherwise, continue with the next batch
+            });
+
+            // eslint-disable-next-line no-await-in-loop, no-loop-func
+            await new Promise((resolve) => {
+                let settledPromises = 0;
+
+                const countSettledAndMaybeResolve = () => {
+                    settledPromises += 1;
+
+                    const allSettled = settledPromises === messagePromises.length;
+                    if (
+                        commandCompleted ||
+                        allSettled // Safety net to stop infinite hang
+                    ) {
+                        resolve();
+                    }
+                };
+
+                // eslint-disable-next-line no-loop-func
+                messagePromises.forEach((p) => p.finally(countSettledAndMaybeResolve));
+            });
+
             index += BATCH_SIZE;
         }
-        await this.operationService.markOperationAsCompleted(operationId, blockchain, finalResult, [
-            OPERATION_ID_STATUS.GET.GET_END,
-            OPERATION_ID_STATUS.COMPLETED,
-        ]);
+
+        // Just in case we finish outside early-exit
+        if (!commandCompleted) {
+            await this.operationService.markOperationAsCompleted(
+                operationId,
+                blockchain,
+                finalResult,
+                [OPERATION_ID_STATUS.GET.GET_END, OPERATION_ID_STATUS.COMPLETED],
+            );
+        }
+      
         return Command.empty();
     }
 
