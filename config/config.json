@@ -201,7 +201,8 @@
         "assetSync": {
             "syncDKG": {
                 "enabled": true,
-                "syncBatchSize": 5
+                "syncBatchSize": 5,
+                "doneThreshold": 95
             },
             "syncParanets": []
         },
@@ -405,7 +406,8 @@
         "assetSync": {
             "syncDKG": {
                 "enabled": false,
-                "syncBatchSize": 20
+                "syncBatchSize": 20,
+                "doneThreshold": 95
             },
             "syncParanets": []
         },
@@ -637,7 +639,8 @@
         "assetSync": {
             "syncDKG": {
                 "enabled": false,
-                "syncBatchSize": 20
+                "syncBatchSize": 20,
+                "doneThreshold": 95
             },
             "syncParanets": []
         },
@@ -838,7 +841,8 @@
         "assetSync": {
             "syncDKG": {
                 "enabled": false,
-                "syncBatchSize": 20
+                "syncBatchSize": 20,
+                "doneThreshold": 95
             },
             "syncParanets": []
         },

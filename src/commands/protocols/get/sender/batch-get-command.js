@@ -33,6 +33,7 @@ class BatchGetCommand extends Command {
         this.messagingService = ctx.messagingService;
         this.tripleStoreModuleManager = ctx.tripleStoreModuleManager;
         this.repositoryModuleManager = ctx.repositoryModuleManager;
+        this.DONE_THRESHOLD = ctx.config.assetSync.syncDKG.doneThreshold;
     }
 
     async handleError(operationId, blockchain, errorMessage, errorType) {
@@ -256,8 +257,6 @@ class BatchGetCommand extends Command {
         let commandCompleted = false;
 
         const initialMissing = ualNotPresentLocally.length;
-        // TODO: Move to config
-        const DONE_THRESHOLD = 95; // percentage of UALs that must be retrieved before early-exit
 
         const hasReachedThreshold = () => {
             if (initialMissing === 0) {
@@ -265,7 +264,7 @@ class BatchGetCommand extends Command {
             }
             const retrieved = initialMissing - ualNotPresentLocally.length;
             const ratio = (retrieved / initialMissing) * 100;
-            return ratio >= DONE_THRESHOLD;
+            return ratio >= this.DONE_THRESHOLD;
         };
 
         while (index < nodesInfo.length && ualNotPresentLocally.length > 0 && !commandCompleted) {
