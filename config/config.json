@@ -1072,7 +1072,8 @@
         "assetSync": {
             "syncDKG": {
                 "enabled": false,
-                "syncBatchSize": 20
+                "syncBatchSize": 20,
+                "doneThreshold": 95
             },
             "syncParanets": []
         },
