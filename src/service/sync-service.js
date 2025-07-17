@@ -136,15 +136,15 @@ class SyncService {
                 return;
             }
 
-            const syncRecords = (
-                await this.repositoryModuleManager.getSyncRecordForBlockchain(blockchainId)
-            ).map((syncRecord) => syncRecord.toJSON());
-
             try {
                 isNewRunning = true;
                 this.logger.debug(
                     `[DKG SYNC] Starting sync new KC cycle for blockchain ${blockchainId}`,
                 );
+
+                const syncRecords = (
+                    await this.repositoryModuleManager.getSyncRecordForBlockchain(blockchainId)
+                ).map((syncRecord) => syncRecord.toJSON());
 
                 await this.runSyncNewKc(blockchainId, syncRecords);
                 this.logger.debug(
@@ -232,7 +232,7 @@ class SyncService {
                 totallatestKnowledgeCollectionId;
 
             this.logger.info(
-                `[DKG SYNC] DKG Sync new KC for blockchain ${blockchainId} Status: ${syncPrecentage}%`,
+                `[DKG SYNC] DKG Sync for blockchain ${blockchainId} Status: ${syncPrecentage}%`,
             );
         }
 
