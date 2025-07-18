@@ -23,6 +23,12 @@ class CommandExecutor {
             env === 'development'
                 ? `command-executor-${ctx.config.modules.blockchain.implementation['hardhat1:31337'].config.nodeName}`
                 : 'command-executor';
+
+        const batchGetQueueName =
+            env === 'development'
+                ? `batchGetQueue-${ctx.config.modules.blockchain.implementation['hardhat1:31337'].config.nodeName}`
+                : 'batchGetQueue';
+
         this.queue = new Queue(queueName, {
             connection: {
                 host: 'localhost',
@@ -30,7 +36,7 @@ class CommandExecutor {
             },
         });
 
-        this.queueBatchGet = new Queue('batchGetQueue', {
+        this.queueBatchGet = new Queue(batchGetQueueName, {
             connection: {
                 host: 'localhost',
                 port: 6379,
@@ -38,7 +44,7 @@ class CommandExecutor {
         });
 
         this.batchGetWorker = new Worker(
-            'batchGetQueue',
+            batchGetQueueName,
             async (job) => {
                 const commandData = job.data;
 
@@ -195,7 +201,9 @@ class CommandExecutor {
             this.logger.trace('Command executor has been resumed...');
         }
         await this.queue.resume();
+        await this.queueBatchGet.resume();
         this.worker.resume();
+        this.batchGetWorker.resume();
     }
 
     /**

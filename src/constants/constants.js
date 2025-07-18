@@ -386,7 +386,7 @@ export const NETWORK_MESSAGE_TIMEOUT_MILLS = {
         REQUEST: 60 * 1000,
     },
     BATCH_GET: {
-        REQUEST: 60 * 1000,
+        REQUEST: 30 * 1000,
     },
 };
 
@@ -669,9 +669,15 @@ export const OPERATION_ID_STATUS = {
     },
     SYNC: {
         SYNC_START: 'SYNC_START',
+        SYNC_NEW_START: 'SYNC_NEW_START',
+        SYNC_MISSED_START: 'SYNC_MISSED_START',
         SYNC_END: 'SYNC_END',
+        SYNC_NEW_END: 'SYNC_NEW_END',
+        SYNC_MISSED_END: 'SYNC_MISSED_END',
         SYNC_PROGRESS_STATUS: 'SYNC_PROGRESS_STATUS',
         SYNC_FAILED: 'SYNC_FAILED',
+        SYNC_NEW_FAILED: 'SYNC_NEW_FAILED',
+        SYNC_MISSED_FAILED: 'SYNC_MISSED_FAILED',
     },
 };
 
