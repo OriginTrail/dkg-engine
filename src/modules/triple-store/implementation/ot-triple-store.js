@@ -782,7 +782,7 @@ class OtTripleStore {
             )
             .join(';\n')};`;
 
-        query += `DELETE WHERE { GRAPH <${BASE_NAMED_GRAPHS.METADATA}> <${kcUAL}> ?p ?o . }`;
+        query += `DELETE WHERE { GRAPH <${BASE_NAMED_GRAPHS.METADATA}> { <${kcUAL}> ?p ?o . } }`;
 
         await this.queryVoid(repository, query);
     }
