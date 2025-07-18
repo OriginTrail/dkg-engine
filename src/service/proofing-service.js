@@ -153,12 +153,12 @@ class ProofingService {
                                 'PROOF_CHALANGE_FINALIZED',
                                 this.generateOperationId(
                                     blockchainId,
-                                    latestChallenge.epoch,
-                                    latestChallenge.activeProofPeriodStartBlock,
+                                    latestChallenge.epoch.toNumber(),
+                                    latestChallenge.activeProofPeriodStartBlock.toNumber(),
                                 ),
                                 blockchainId,
-                                null,
-                                null,
+                                latestChallenge.epoch.toNumber(),
+                                latestChallenge.activeProofPeriodStartBlock.toNumber(),
                             );
                         } else {
                             this.logger.info(
@@ -190,12 +190,12 @@ class ProofingService {
                     'PROOF_ASSERTION_FETCHED',
                     this.generateOperationId(
                         blockchainId,
-                        latestChallenge.epoch,
-                        latestChallenge.activeProofPeriodStartBlock,
+                        latestChallenge.epoch.toNumber(),
+                        latestChallenge.activeProofPeriodStartBlock.toNumber(),
                     ),
                     blockchainId,
-                    null,
-                    null,
+                    latestChallenge.epoch.toNumber(),
+                    latestChallenge.activeProofPeriodStartBlock.toNumber(),
                 );
 
                 if (data.public.length === 0) {
@@ -246,12 +246,12 @@ class ProofingService {
                 'PROOF_ASSERTION_FETCHED',
                 this.generateOperationId(
                     blockchainId,
-                    newChallenge.epoch,
-                    newChallenge.activeProofPeriodStartBlock,
+                    newChallenge.epoch.toNumber(),
+                    newChallenge.activeProofPeriodStartBlock.toNumber(),
                 ),
                 blockchainId,
-                null,
-                null,
+                newChallenge.epoch.toNumber(),
+                newChallenge.activeProofPeriodStartBlock.toNumber(),
             );
 
             if (data.public.length === 0) {
@@ -306,8 +306,8 @@ class ProofingService {
                     newChallenge.activeProofPeriodStartBlock.toNumber(),
                 ),
                 blockchainId,
-                null,
-                null,
+                newChallenge.epoch.toNumber(),
+                newChallenge.activeProofPeriodStartBlock.toNumber(),
             );
         }
 
@@ -328,12 +328,12 @@ class ProofingService {
             'PROOF_NEW_CHALANGE_PERSISTED',
             this.generateOperationId(
                 blockchainId,
-                newChallenge.epoch,
-                newChallenge.activeProofPeriodStartBlock,
+                newChallenge.epoch.toNumber(),
+                newChallenge.activeProofPeriodStartBlock.toNumber(),
             ),
             blockchainId,
-            null,
-            null,
+            newChallenge.epoch.toNumber(),
+            newChallenge.activeProofPeriodStartBlock.toNumber(),
         );
         return newRecord;
     }
