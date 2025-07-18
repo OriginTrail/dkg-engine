@@ -175,7 +175,13 @@ class SyncService {
     }
 
     async runSyncNewKc(blockchainId, syncRecords) {
-        const syncOperationId = uuidv4(); // maybe should not be generated like this?
+        const syncOperationId = uuidv4();
+        this.operationIdService.emitChangeEvent(
+            OPERATION_ID_STATUS.SYNC.SYNC_NEW_START,
+            syncOperationId,
+            blockchainId,
+        );
+
         const latestKnowledgeCollectionIds = {};
 
         const knowledgeCollectionResults = await Promise.all(
@@ -243,18 +249,32 @@ class SyncService {
         );
 
         await Promise.all(contractPromises);
+
         this.operationIdService.emitChangeEvent(
-            OPERATION_ID_STATUS.SYNC.SYNC_END,
+            OPERATION_ID_STATUS.SYNC.SYNC_NEW_END,
             syncOperationId,
             blockchainId,
         );
     }
 
     async runSyncMissed(blockchainId, contractAddress) {
-        // Sync missed Knowledge Collections for a specific contract address
+        const syncOperationId = uuidv4();
+        this.operationIdService.emitChangeEvent(
+            OPERATION_ID_STATUS.SYNC.SYNC_MISSED_START,
+            syncOperationId,
+            blockchainId,
+        );
+
         await this.syncMissedKc(blockchainId, contractAddress);
+
+        this.operationIdService.emitChangeEvent(
+            OPERATION_ID_STATUS.SYNC.SYNC_MISSED_END,
+            syncOperationId,
+            blockchainId,
+        );
     }
 
+    // TODO: Add syncOperationId with additional events to syncNewKc
     async syncNewKc(blockchainId, contractAddress, syncObject) {
         const uals = [];
         const { latestSyncedKc } = syncObject;
@@ -377,6 +397,7 @@ class SyncService {
         }
     }
 
+    // TODO: Add syncOperationId with additional events to syncMissedKc
     async syncMissedKc(blockchainId, contract) {
         const missedKcForRetry = await this.repositoryModuleManager.getMissedKcForRetry(
             blockchainId,
