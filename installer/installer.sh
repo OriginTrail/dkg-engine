@@ -285,7 +285,7 @@ install_sql() {
     if [[ -d "/var/lib/mysql/operationaldb/" ]]; then
         read -p "Old operationaldb repository detected. Would you like to overwrite it ? (Default: No) [Y]es [N]o [E]xit " choice
         case "$choice" in
-            [yY]* ) perform_step $(MYSQL_PWD=$oldpassword $sql -u root -e "DROP DATABASE IF EXISTS operationaldb;") "Overwritting slq repository";;
+            [yY]* ) perform_step $(MYSQL_PWD=$oldpassword $sql -u root -e "DROP DATABASE IF EXISTS operationaldb;") "Overwriting slq repository";;
             [eE]* ) text_color $RED"Installer stopped by user"; exit;;
             * )     text_color $GREEN"Keeping previous sql repository"; NEW_DB=FALSE;;
         esac
