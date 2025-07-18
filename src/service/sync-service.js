@@ -116,7 +116,7 @@ class SyncService {
                     `[DKG SYNC] Error in sync missed KC mechanism for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
                 );
                 this.operationIdService.emitChangeEvent(
-                    OPERATION_ID_STATUS.SYNC.MISSED_SYNC_FAILED,
+                    OPERATION_ID_STATUS.SYNC.SYNC_MISSED_FAILED,
                     uuidv4(),
                     blockchainId,
                     error.message,
@@ -155,7 +155,7 @@ class SyncService {
                     `[DKG SYNC] Error in sync new KC mechanism for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
                 );
                 this.operationIdService.emitChangeEvent(
-                    OPERATION_ID_STATUS.SYNC.NEW_SYNC_FAILED,
+                    OPERATION_ID_STATUS.SYNC.SYNC_NEW_FAILED,
                     uuidv4(),
                     blockchainId,
                     error.message,
