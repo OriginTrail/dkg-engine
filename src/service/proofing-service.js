@@ -79,28 +79,6 @@ class ProofingService {
         this.logger.info(
             `[PROOFING] Proofing mechanism initialized for blockchain ${blockchainId}`,
         );
-
-        // Run immediately on startup
-        try {
-            isRunning = true;
-            this.logger.debug(
-                `[PROOFING] Running initial proofing cycle for blockchain ${blockchainId}`,
-            );
-            await this.runProofing(blockchainId);
-        } catch (error) {
-            this.logger.error(
-                `[PROOFING] Error in initial proofing run for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
-            );
-            this.operationIdService.emitChangeEvent(
-                'PROOFING_ERROR',
-                this.generateOperationId(blockchainId, 0, 0),
-                blockchainId,
-                error.message,
-                error.stack,
-            );
-        } finally {
-            isRunning = false;
-        }
     }
 
     async runProofing(blockchainId) {
@@ -118,8 +96,7 @@ class ProofingService {
             return;
         }
 
-        // TODO:rename to identityId
-        const nodeId = await this.blockchainModuleManager.getIdentityId(blockchainId);
+        const identityId = await this.blockchainModuleManager.getIdentityId(blockchainId);
         // Check what is current proof period {isValid, activeProofPeriodStartBlock}
         const activeProofPeriodStatus =
             await this.blockchainModuleManager.getActiveProofPeriodStatus(blockchainId);
@@ -147,12 +124,12 @@ class ProofingService {
                     // Check onchain if it has score
                     const score = await this.blockchainModuleManager.getNodeEpochProofPeriodScore(
                         blockchainId,
-                        nodeId,
+                        identityId,
                         latestChallenge.epoch,
                         latestChallenge.activeProofPeriodStartBlock,
                     );
                     this.logger.debug(
-                        `[PROOFING] Retrieved node score for blockchain: ${blockchainId}, nodeId: ${nodeId}, score: ${score.toString()}`,
+                        `[PROOFING] Retrieved node score for blockchain: ${blockchainId}, identityId: ${identityId}, score: ${score.toString()}`,
                     );
 
                     // If score is greater than 0 than proof was sent and was valid
@@ -176,12 +153,12 @@ class ProofingService {
                                 'PROOF_CHALANGE_FINALIZED',
                                 this.generateOperationId(
                                     blockchainId,
-                                    latestChallenge.epoch,
-                                    latestChallenge.activeProofPeriodStartBlock,
+                                    latestChallenge.epoch.toNumber(),
+                                    latestChallenge.activeProofPeriodStartBlock.toNumber(),
                                 ),
                                 blockchainId,
-                                null,
-                                null,
+                                latestChallenge.epoch.toNumber(),
+                                latestChallenge.activeProofPeriodStartBlock.toNumber(),
                             );
                         } else {
                             this.logger.info(
@@ -197,7 +174,7 @@ class ProofingService {
                         await this.repositoryModuleManager.setCompletedAndFinalizedRandomSamplingChallengeRecord(
                             latestChallenge,
                         );
-                        await this.prepareAndSendProof(blockchainId, latestChallenge, nodeId);
+                        await this.prepareAndSendProof(blockchainId, identityId);
                     }
                 }
             } else {
@@ -207,10 +184,18 @@ class ProofingService {
                     latestChallenge.knowledgeCollectionId,
                 );
 
-                const data = await this.fetchAndProcessAssertion(
+                const data = await this.fetchAndProcessAssertion(blockchainId, ual);
+
+                this.operationIdService.emitChangeEvent(
+                    'PROOF_ASSERTION_FETCHED',
+                    this.generateOperationId(
+                        blockchainId,
+                        latestChallenge.epoch.toNumber(),
+                        latestChallenge.activeProofPeriodStartBlock.toNumber(),
+                    ),
                     blockchainId,
-                    ual,
-                    latestChallenge,
+                    latestChallenge.epoch.toNumber(),
+                    latestChallenge.activeProofPeriodStartBlock.toNumber(),
                 );
 
                 if (data.public.length === 0) {
@@ -235,21 +220,15 @@ class ProofingService {
         } else {
             this.logger.info(`[PROOFING] Preparing new proof for blockchain: ${blockchainId}`);
             // Node needs to get new challenge or Node sent wrong proof
-            await this.prepareAndSendProof(blockchainId, latestChallenge, nodeId);
+            await this.prepareAndSendProof(blockchainId, identityId);
         }
     }
 
-    async prepareAndSendProof(blockchainId, latestChallenge, nodeId) {
-        this.logger.debug(
-            `[PROOFING] Starting proof preparation for blockchain: ${blockchainId}, challengeId: ${latestChallenge?.id}`,
-        );
+    async prepareAndSendProof(blockchainId, identityId) {
+        this.logger.debug(`[PROOFING] Starting proof preparation for blockchain: ${blockchainId}`);
 
         try {
-            const newChallenge = await this.getAndPersistNewChallenge(
-                blockchainId,
-                latestChallenge,
-                nodeId,
-            );
+            const newChallenge = await this.getAndPersistNewChallenge(blockchainId, identityId);
 
             const ual = this.ualService.deriveUAL(
                 blockchainId,
@@ -261,11 +240,23 @@ class ProofingService {
                 `[PROOFING] New challenge created: challengeId=${newChallenge.id}, epoch=${newChallenge.epoch}, contractAddress=${newChallenge.contractAddress}, knowledgeCollectionId=${newChallenge.knowledgeCollectionId}`,
             );
 
-            const data = await this.fetchAndProcessAssertion(blockchainId, ual, latestChallenge);
+            const data = await this.fetchAndProcessAssertion(blockchainId, ual);
+
+            this.operationIdService.emitChangeEvent(
+                'PROOF_ASSERTION_FETCHED',
+                this.generateOperationId(
+                    blockchainId,
+                    newChallenge.epoch.toNumber(),
+                    newChallenge.activeProofPeriodStartBlock.toNumber(),
+                ),
+                blockchainId,
+                newChallenge.epoch.toNumber(),
+                newChallenge.activeProofPeriodStartBlock.toNumber(),
+            );
 
             if (data.public.length === 0) {
                 throw new Error(
-                    `[PROOFING] No assertions found for blockchain: ${blockchainId}, challengeId: ${latestChallenge.id}, ual: ${ual}`,
+                    `[PROOFING] No assertions found for blockchain: ${blockchainId}, ual: ${ual}`,
                 );
             }
 
@@ -277,14 +268,13 @@ class ProofingService {
             return proof;
         } catch (error) {
             this.logger.error(
-                `[PROOFING] Failed to prepare and send proof for blockchain: ${blockchainId}, challengeId: ${latestChallenge?.id}. Error: ${error.message}, stack: ${error.stack}`,
+                `[PROOFING] Failed to prepare and send proof for blockchain: ${blockchainId}. Error: ${error.message}, stack: ${error.stack}`,
             );
             throw error;
         }
     }
 
-    // TODO: It doesn't persist anything
-    async getAndPersistNewChallenge(blockchainId, latestChallenge, nodeId) {
+    async getAndPersistNewChallenge(blockchainId, identityId) {
         // Node has challenge for previous period need to get new one
         // Get new challenge
         const createChallengeResult = await this.blockchainModuleManager.createChallenge(
@@ -303,7 +293,7 @@ class ProofingService {
 
         const newChallenge = await this.blockchainModuleManager.getNodeChallenge(
             blockchainId,
-            nodeId,
+            identityId,
         );
 
         if (createChallengeResult.success) {
@@ -316,24 +306,11 @@ class ProofingService {
                     newChallenge.activeProofPeriodStartBlock.toNumber(),
                 ),
                 blockchainId,
-                null,
-                null,
+                newChallenge.epoch.toNumber(),
+                newChallenge.activeProofPeriodStartBlock.toNumber(),
             );
         }
 
-        // Persist new challenge
-        // Use loose equality (==) because newChallenge properties are BigInt and latestChallenge properties are Number
-        if (
-            // eslint-disable-next-line eqeqeq
-            latestChallenge?.epoch == newChallenge.epoch &&
-            // eslint-disable-next-line eqeqeq
-            latestChallenge?.activeProofPeriodStartBlock == newChallenge.activeProofPeriodStartBlock
-        ) {
-            // Delete old challenge before inserting new one
-            await this.repositoryModuleManager.deleteRandomSamplingChallengeRecord(
-                latestChallenge.id,
-            );
-        }
         const newChallengeRecord = {
             blockchainId,
             epoch: newChallenge.epoch.toNumber(),
@@ -351,17 +328,17 @@ class ProofingService {
             'PROOF_NEW_CHALANGE_PERSISTED',
             this.generateOperationId(
                 blockchainId,
-                newChallenge.epoch,
-                newChallenge.activeProofPeriodStartBlock,
+                newChallenge.epoch.toNumber(),
+                newChallenge.activeProofPeriodStartBlock.toNumber(),
             ),
             blockchainId,
-            null,
-            null,
+            newChallenge.epoch.toNumber(),
+            newChallenge.activeProofPeriodStartBlock.toNumber(),
         );
         return newRecord;
     }
 
-    async fetchAndProcessAssertion(blockchainId, ual, latestChallenge) {
+    async fetchAndProcessAssertion(blockchainId, ual) {
         let attempt = 0;
         let getResult;
         const getOperationId = await this.operationIdService.generateOperationId(
@@ -375,6 +352,8 @@ class ProofingService {
         this.logger.debug(
             `[PROOFING] Proofing GET started for blockchain: ${blockchainId}, operationId: ${getOperationId}`,
         );
+
+        const { contract, knowledgeCollectionId } = this.ualService.resolveUAL(ual);
         await this.commandExecutor.add({
             name: 'getCommand',
             sequence: [],
@@ -382,8 +361,8 @@ class ProofingService {
             data: {
                 operationId: getOperationId,
                 blockchain: blockchainId,
-                contract: latestChallenge.contractAddress.toLowerCase(),
-                knowledgeCollectionId: latestChallenge.knowledgeCollectionId, // latestChallenge.knowledgeCollectionId,
+                contract,
+                knowledgeCollectionId,
                 state: 0,
                 ual,
                 contentType: TRIPLES_VISIBILITY.PUBLIC,
@@ -406,11 +385,9 @@ class ProofingService {
         if (getResult?.status !== OPERATION_ID_STATUS.COMPLETED) {
             // We need to stop here and retry later
             throw new Error(
-                `[PROOFING] Unable to Proofing GET Knowledge Collection for proof Id: ${
-                    latestChallenge.knowledgeCollectionId
-                }, for contract: ${latestChallenge.contractAddress}, state index: ${
-                    latestChallenge.stateIndex
-                }, blockchain: ${blockchainId}, GET result: ${JSON.stringify(getResult)}`,
+                `[PROOFING] Unable to Proofing GET Knowledge Collection for proof Id: ${knowledgeCollectionId}, for contract: ${contract}, blockchain: ${blockchainId}, GET result: ${JSON.stringify(
+                    getResult,
+                )}`,
             );
         }
 
@@ -422,21 +399,10 @@ class ProofingService {
             `[PROOFING] Proofing GET: ${assertion.public.length} nquads found for asset with ual: ${ual}`,
         );
 
-        this.operationIdService.emitChangeEvent(
-            'PROOF_ASSERTION_FETCHED',
-            this.generateOperationId(
-                blockchainId,
-                latestChallenge.epoch,
-                latestChallenge.activeProofPeriodStartBlock,
-            ),
-            blockchainId,
-            null,
-            null,
-        );
         return assertion;
     }
 
-    async calculateAndSubmitProof(data, newChallenge, blockchainId) {
+    async calculateAndSubmitProof(data, challenge, blockchainId) {
         const publicAssertion = data.public;
 
         const filteredPublic = [];
@@ -465,19 +431,19 @@ class ProofingService {
         const proof = kcTools.calculateMerkleProof(
             publicKnowledgeAssetsTriplesGrouped,
             CHUNK_SIZE,
-            newChallenge.chunkNumber,
+            challenge.chunkNumber,
         );
         // Submit proof
         // How to validate result? (we do it in next iteration)
         const chunks = kcTools.splitIntoChunks(publicKnowledgeAssetsTriplesGrouped);
-        const chunk = chunks[newChallenge.chunkNumber];
+        const chunk = chunks[challenge.chunkNumber];
         await this.blockchainModuleManager.submitProof(blockchainId, chunk, proof.proof);
         this.operationIdService.emitChangeEvent(
             'PROOF_SUBMITTED',
             this.generateOperationId(
                 blockchainId,
-                newChallenge.epoch,
-                newChallenge.activeProofPeriodStartBlock,
+                challenge.epoch,
+                challenge.activeProofPeriodStartBlock,
             ),
             blockchainId,
             null,
@@ -486,14 +452,14 @@ class ProofingService {
         const score = await this.blockchainModuleManager.getNodeEpochProofPeriodScore(
             blockchainId,
             await this.blockchainModuleManager.getIdentityId(blockchainId),
-            newChallenge.epoch,
-            newChallenge.activeProofPeriodStartBlock,
+            challenge.epoch,
+            challenge.activeProofPeriodStartBlock,
         );
 
         if (score.gt(0)) {
             // Move score persistence to finalization
             await this.repositoryModuleManager.setCompletedAndScoreRandomSamplingChallengeRecord(
-                newChallenge.id,
+                challenge.id,
                 true,
                 BigInt(score.toString()), // eslint-disable-line no-undef
             );
@@ -501,8 +467,8 @@ class ProofingService {
                 'PROOF_SUBMITTED_SUCCESSFULLY',
                 this.generateOperationId(
                     blockchainId,
-                    newChallenge.epoch,
-                    newChallenge.activeProofPeriodStartBlock,
+                    challenge.epoch,
+                    challenge.activeProofPeriodStartBlock,
                 ),
                 blockchainId,
                 null,
