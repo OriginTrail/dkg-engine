@@ -386,7 +386,7 @@ export const NETWORK_MESSAGE_TIMEOUT_MILLS = {
         REQUEST: 60 * 1000,
     },
     BATCH_GET: {
-        REQUEST: 60 * 1000,
+        REQUEST: 30 * 1000,
     },
 };
 
