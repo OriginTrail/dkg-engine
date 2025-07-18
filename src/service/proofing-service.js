@@ -96,8 +96,7 @@ class ProofingService {
             return;
         }
 
-        // TODO:rename to identityId
-        const nodeId = await this.blockchainModuleManager.getIdentityId(blockchainId);
+        const identityId = await this.blockchainModuleManager.getIdentityId(blockchainId);
         // Check what is current proof period {isValid, activeProofPeriodStartBlock}
         const activeProofPeriodStatus =
             await this.blockchainModuleManager.getActiveProofPeriodStatus(blockchainId);
@@ -125,12 +124,12 @@ class ProofingService {
                     // Check onchain if it has score
                     const score = await this.blockchainModuleManager.getNodeEpochProofPeriodScore(
                         blockchainId,
-                        nodeId,
+                        identityId,
                         latestChallenge.epoch,
                         latestChallenge.activeProofPeriodStartBlock,
                     );
                     this.logger.debug(
-                        `[PROOFING] Retrieved node score for blockchain: ${blockchainId}, nodeId: ${nodeId}, score: ${score.toString()}`,
+                        `[PROOFING] Retrieved node score for blockchain: ${blockchainId}, identityId: ${identityId}, score: ${score.toString()}`,
                     );
 
                     // If score is greater than 0 than proof was sent and was valid
@@ -175,7 +174,7 @@ class ProofingService {
                         await this.repositoryModuleManager.setCompletedAndFinalizedRandomSamplingChallengeRecord(
                             latestChallenge,
                         );
-                        await this.prepareAndSendProof(blockchainId, nodeId);
+                        await this.prepareAndSendProof(blockchainId, identityId);
                     }
                 }
             } else {
@@ -221,15 +220,15 @@ class ProofingService {
         } else {
             this.logger.info(`[PROOFING] Preparing new proof for blockchain: ${blockchainId}`);
             // Node needs to get new challenge or Node sent wrong proof
-            await this.prepareAndSendProof(blockchainId, nodeId);
+            await this.prepareAndSendProof(blockchainId, identityId);
         }
     }
 
-    async prepareAndSendProof(blockchainId, nodeId) {
+    async prepareAndSendProof(blockchainId, identityId) {
         this.logger.debug(`[PROOFING] Starting proof preparation for blockchain: ${blockchainId}`);
 
         try {
-            const newChallenge = await this.getAndPersistNewChallenge(blockchainId, nodeId);
+            const newChallenge = await this.getAndPersistNewChallenge(blockchainId, identityId);
 
             const ual = this.ualService.deriveUAL(
                 blockchainId,
@@ -275,8 +274,7 @@ class ProofingService {
         }
     }
 
-    // TODO: It doesn't persist anything
-    async getAndPersistNewChallenge(blockchainId, nodeId) {
+    async getAndPersistNewChallenge(blockchainId, identityId) {
         // Node has challenge for previous period need to get new one
         // Get new challenge
         const createChallengeResult = await this.blockchainModuleManager.createChallenge(
@@ -295,7 +293,7 @@ class ProofingService {
 
         const newChallenge = await this.blockchainModuleManager.getNodeChallenge(
             blockchainId,
-            nodeId,
+            identityId,
         );
 
         if (createChallengeResult.success) {
