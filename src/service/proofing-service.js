@@ -172,7 +172,9 @@ class ProofingService {
                         latestChallenge.sentSuccessfully = false;
                         latestChallenge.finalized = false;
                         await this.repositoryModuleManager.setCompletedAndFinalizedRandomSamplingChallengeRecord(
-                            latestChallenge,
+                            latestChallenge.id,
+                            latestChallenge.sentSuccessfully,
+                            latestChallenge.finalized,
                         );
                         await this.prepareAndSendProof(blockchainId, identityId);
                     }
