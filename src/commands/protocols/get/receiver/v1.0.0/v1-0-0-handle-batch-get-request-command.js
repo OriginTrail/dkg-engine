@@ -30,6 +30,7 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
         const { operationId, blockchain, includeMetadata } = commandData;
         let { uals, tokenIds } = commandData;
 
+        console.time(`HandleBatchGetRequestCommand [PREPARE]: ${operationId} ${uals.length}`);
         await this.operationIdService.updateOperationIdStatus(
             operationId,
             blockchain,
@@ -57,6 +58,10 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
             }
         }
 
+        console.timeEnd(`HandleBatchGetRequestCommand [PREPARE]: ${operationId} ${uals.length}`);
+
+        console.time(`HandleBatchGetRequestCommand [PROCESSING]: ${operationId} ${uals.length}`);
+
         const assertionPromise = this.tripleStoreService.getAssertionsInBatch(
             TRIPLE_STORE_REPOSITORY.DKG,
             uals,
@@ -81,6 +86,10 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
             ...(includeMetadata && metadata && { metadata }),
         };
 
+        console.timeEnd(`HandleBatchGetRequestCommand [PROCESSING]: ${operationId} ${uals.length}`);
+
+        console.time(`HandleBatchGetRequestCommand [RESPONSE]: ${operationId} ${uals.length}`);
+
         if (assertions?.length) {
             await this.operationIdService.updateOperationIdStatus(
                 operationId,
@@ -88,6 +97,8 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
                 this.operationEndEvent,
             );
         }
+
+        console.timeEnd(`HandleBatchGetRequestCommand [RESPONSE]: ${operationId} ${uals.length}`);
 
         return { messageType: NETWORK_MESSAGE_TYPES.RESPONSES.ACK, messageData: responseData };
     }
