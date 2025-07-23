@@ -161,7 +161,7 @@ class BatchGetCommand extends Command {
 
         console.timeEnd(`BatchGetCommand [TOKEN_IDS]: ${operationId} ${uals.length}`);
 
-        console.time(`BatchGetCommand [UALS]: ${operationId} ${uals.length}`);
+        console.time(`BatchGetCommand [LOCAL_BATCH_GET]: ${operationId} ${uals.length}`);
 
         const promises = [];
         const assertionPromise = this.tripleStoreService.getAssertionsInBatch(
@@ -192,7 +192,7 @@ class BatchGetCommand extends Command {
             (ual) => !localGetResultValid[ual],
         );
 
-        console.timeEnd(`BatchGetCommand [UALS]: ${operationId} ${uals.length}`);
+        console.timeEnd(`BatchGetCommand [LOCAL_BATCH_GET]: ${operationId} ${uals.length}`);
 
         console.time(`BatchGetCommand [LOCAL]: ${operationId} ${uals.length}`);
 
@@ -277,7 +277,7 @@ class BatchGetCommand extends Command {
             OPERATION_ID_STATUS.BATCH_GET.BATCH_GET_FIND_SHARD_END,
         );
 
-        console.time(`BatchGetCommand [MAIN]: ${operationId} ${uals.length}`);
+        console.time(`BatchGetCommand [NETWORK]: ${operationId} ${uals.length}`);
 
         let index = 0;
         let commandCompleted = false;
@@ -306,12 +306,21 @@ class BatchGetCommand extends Command {
             // eslint-disable-next-line no-loop-func
             const messagePromises = batch.map(async (node) => {
                 try {
+                    console.time(
+                        `BatchGetCommand [NETWORK_SEND_MESSAGE]: ${operationId} ${uals.length} ${node.id}`,
+                    );
                     const result = await this.sendMessage(node, operationId, message);
+                    console.timeEnd(
+                        `BatchGetCommand [NETWORK_SEND_MESSAGE]: ${operationId} ${uals.length} ${node.id}`,
+                    );
 
                     if (commandCompleted || !result.success) {
                         return;
                     }
 
+                    console.time(
+                        `BatchGetCommand [NETWORK_VALIDATE_RESPONSE]: ${operationId} ${uals.length} ${node.id}`,
+                    );
                     const validationResult = await this.validateBatchResponse(
                         result.responseData.assertions,
                         blockchain,
@@ -319,6 +328,9 @@ class BatchGetCommand extends Command {
                         contentType,
                         finalResult,
                         [OPERATION_ID_STATUS.GET.GET_END, OPERATION_ID_STATUS.COMPLETED],
+                    );
+                    console.timeEnd(
+                        `BatchGetCommand [NETWORK_VALIDATE_RESPONSE]: ${operationId} ${uals.length} ${node.id}`,
                     );
 
                     if (commandCompleted) {
@@ -338,11 +350,17 @@ class BatchGetCommand extends Command {
 
                     if (hasReachedThreshold() && !commandCompleted) {
                         commandCompleted = true;
+                        console.time(
+                            `BatchGetCommand [NETWORK_MARK_AS_COMPLETED]: ${operationId} ${uals.length} ${node.id}`,
+                        );
                         await this.operationService.markOperationAsCompleted(
                             operationId,
                             blockchain,
                             finalResult,
                             [OPERATION_ID_STATUS.GET.GET_END, OPERATION_ID_STATUS.COMPLETED],
+                        );
+                        console.timeEnd(
+                            `BatchGetCommand [NETWORK_MARK_AS_COMPLETED]: ${operationId} ${uals.length} ${node.id}`,
                         );
                     }
                 } catch (err) {
@@ -383,7 +401,7 @@ class BatchGetCommand extends Command {
             );
         }
 
-        console.timeEnd(`BatchGetCommand [MAIN]: ${operationId} ${uals.length}`);
+        console.timeEnd(`BatchGetCommand [NETWORK]: ${operationId} ${uals.length}`);
 
         return Command.empty();
     }
