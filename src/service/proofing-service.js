@@ -246,12 +246,12 @@ class ProofingService {
                 'PROOF_ASSERTION_FETCHED',
                 this.generateOperationId(
                     blockchainId,
-                    newChallenge.epoch.toNumber(),
-                    newChallenge.activeProofPeriodStartBlock.toNumber(),
+                    newChallenge.epoch,
+                    newChallenge.activeProofPeriodStartBlock,
                 ),
                 blockchainId,
-                newChallenge.epoch.toNumber(),
-                newChallenge.activeProofPeriodStartBlock.toNumber(),
+                newChallenge.epoch,
+                newChallenge.activeProofPeriodStartBlock,
             );
 
             if (data.public.length === 0) {
