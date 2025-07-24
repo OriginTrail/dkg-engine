@@ -83,6 +83,11 @@ class OtBlazegraph extends OtTripleStore {
         return result ? JSON.parse(result) : [];
     }
 
+    async ask(repository, query, timeout = 10000) {
+        const result = await this._executeQuery(repository, query, MEDIA_TYPES.JSON, timeout);
+        return result ? JSON.parse(result).boolean : false;
+    }
+
     async _executeQuery(repository, query, mediaType, timeout) {
         const result = await axios.post(this.repositories[repository].sparqlEndpoint, query, {
             headers: {

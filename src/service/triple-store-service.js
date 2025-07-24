@@ -461,11 +461,13 @@ class TripleStoreService {
                 this.repositoryImplementations[repository],
                 repository,
                 firstKAInCollection,
+                this.config.modules.tripleStore.timeout.ask,
             );
             const lastKAExists = this.tripleStoreModuleManager.checkIfKnowledgeAssetExists(
                 this.repositoryImplementations[repository],
                 repository,
                 lastKAInCollection,
+                this.config.modules.tripleStore.timeout.ask,
             );
 
             const [firstKAResult, lastKAResult] = await Promise.all([firstKAExists, lastKAExists]);

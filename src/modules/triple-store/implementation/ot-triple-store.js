@@ -546,7 +546,7 @@ class OtTripleStore {
         return result.data;
     }
 
-    async checkIfKnowledgeAssetExists(repository, kaUAL) {
+    async checkIfKnowledgeAssetExists(repository, kaUAL, timeout = 10000) {
         const query = `
             ASK {
                 GRAPH <${kaUAL}> {
@@ -554,7 +554,7 @@ class OtTripleStore {
                 }
             }`;
 
-        return this.ask(repository, query);
+        return this.ask(repository, query, timeout);
     }
 
     async getKnowledgeCollectionNamedGraphs(
