@@ -98,48 +98,55 @@ class OtBlazegraph extends OtTripleStore {
         });
         let response;
         if (mediaType === MEDIA_TYPES.JSON) {
-            const { bindings } = result.data.results;
+            // Check if this is an ASK query by looking for the boolean property
+            if (result.data.boolean !== undefined) {
+                // This is an ASK query response
+                response = JSON.stringify(result.data);
+            } else {
+                // This is a SELECT query response
+                const { bindings } = result.data.results;
 
-            let output = '[\n';
+                let output = '[\n';
 
-            bindings.forEach((binding, bindingIndex) => {
-                let string = '  {\n';
+                bindings.forEach((binding, bindingIndex) => {
+                    let string = '  {\n';
 
-                const keys = Object.keys(binding);
+                    const keys = Object.keys(binding);
 
-                keys.forEach((key, index) => {
-                    let value = '';
-                    const entry = binding[key];
+                    keys.forEach((key, index) => {
+                        let value = '';
+                        const entry = binding[key];
 
-                    if (entry.datatype) {
-                        // e.g., "\"6900000\"^^http://www.w3.org/2001/XMLSchema#integer"
-                        const literal = `"${entry.value}"^^${entry.datatype}`;
-                        value = JSON.stringify(literal);
-                    } else if (entry['xml:lang']) {
-                        // e.g., "\"text here\"@en"
-                        const literal = `"${entry.value}"@${entry['xml:lang']}`;
-                        value = JSON.stringify(literal);
-                    } else if (entry.type === 'uri') {
-                        // URIs should be escaped and quoted directly
-                        value = JSON.stringify(entry.value);
-                    } else {
-                        // For plain literals, wrap in quotes and stringify
-                        const literal = `"${entry.value}"`;
-                        value = JSON.stringify(literal);
-                    }
+                        if (entry.datatype) {
+                            // e.g., "\"6900000\"^^http://www.w3.org/2001/XMLSchema#integer"
+                            const literal = `"${entry.value}"^^${entry.datatype}`;
+                            value = JSON.stringify(literal);
+                        } else if (entry['xml:lang']) {
+                            // e.g., "\"text here\"@en"
+                            const literal = `"${entry.value}"@${entry['xml:lang']}`;
+                            value = JSON.stringify(literal);
+                        } else if (entry.type === 'uri') {
+                            // URIs should be escaped and quoted directly
+                            value = JSON.stringify(entry.value);
+                        } else {
+                            // For plain literals, wrap in quotes and stringify
+                            const literal = `"${entry.value}"`;
+                            value = JSON.stringify(literal);
+                        }
 
-                    const isLast = index === keys.length - 1;
-                    string += `    "${key}": ${value}${isLast ? '' : ','}\n`;
+                        const isLast = index === keys.length - 1;
+                        string += `    "${key}": ${value}${isLast ? '' : ','}\n`;
+                    });
+
+                    const isLastBinding = bindingIndex === bindings.length - 1;
+                    string += `  }${isLastBinding ? '\n' : ',\n'}`;
+
+                    output += string;
                 });
 
-                const isLastBinding = bindingIndex === bindings.length - 1;
-                string += `  }${isLastBinding ? '\n' : ',\n'}`;
-
-                output += string;
-            });
-
-            output += ']';
-            response = output;
+                output += ']';
+                response = output;
+            }
         } else {
             response = result.data;
         }
