@@ -169,12 +169,17 @@ class BatchGetCommand extends Command {
             uals,
             tokenIds,
             TRIPLES_VISIBILITY.PUBLIC,
+            operationId,
         );
         promises.push(assertionPromise);
 
         const [batchAssertions] = await Promise.all(promises);
 
         const finalResult = { local: [], remote: {}, metadata: {} };
+
+        console.timeEnd(`BatchGetCommand [LOCAL_BATCH_GET]: ${operationId} ${uals.length}`);
+
+        console.time(`BatchGetCommand [LOCAL_BATCH_GET_VALIDATE]: ${operationId} ${uals.length}`);
 
         const localGetResultValid = await this.validateBatchResponse(
             batchAssertions,
@@ -192,7 +197,9 @@ class BatchGetCommand extends Command {
             (ual) => !localGetResultValid[ual],
         );
 
-        console.timeEnd(`BatchGetCommand [LOCAL_BATCH_GET]: ${operationId} ${uals.length}`);
+        console.timeEnd(
+            `BatchGetCommand [LOCAL_BATCH_GET_VALIDATE]: ${operationId} ${uals.length}`,
+        );
 
         console.time(`BatchGetCommand [LOCAL]: ${operationId} ${uals.length}`);
 
