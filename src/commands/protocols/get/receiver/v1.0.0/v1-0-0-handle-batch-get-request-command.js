@@ -67,6 +67,7 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
             uals,
             tokenIds,
             TRIPLES_VISIBILITY.PUBLIC,
+            operationId,
         );
 
         promises.push(assertionPromise);
