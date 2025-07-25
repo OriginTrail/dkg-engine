@@ -442,6 +442,18 @@ class OTNode {
 
     async handleExit() {
         this.logger.info('SIGINT or SIGTERM received. Shutting down...');
+        
+        // Cleanup telemetry first to ensure all events are sent
+        try {
+            const telemetryModuleManager = this.container.resolve('telemetryModuleManager');
+            if (telemetryModuleManager && telemetryModuleManager.getImplementation()) {
+                this.logger.info('Cleaning up telemetry...');
+                await telemetryModuleManager.getImplementation().module.cleanup();
+            }
+        } catch (error) {
+            this.logger.error(`Error during telemetry cleanup: ${error.message}`);
+        }
+        
         const commandExecutor = this.container.resolve('commandExecutor');
         await commandExecutor.commandExecutorShutdown();
         process.exit(0);
