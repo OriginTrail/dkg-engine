@@ -92,7 +92,7 @@ class OTNode {
     }
 
     initializeLogger() {
-        this.logger = new Logger(this.config.logLevel);
+        this.logger = new Logger(this.config.logging.defaultLevel);
     }
 
     initializeFileService() {
