@@ -41,7 +41,7 @@ class RandomSamplingChallengeRepository {
             where: {
                 blockchainId,
             },
-            order: [['createdAt', 'DESC']], // Should this be camel case ?
+            order: [['createdAt', 'DESC']],
         });
     }
 
