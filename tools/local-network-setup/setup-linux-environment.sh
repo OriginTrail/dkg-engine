@@ -48,7 +48,7 @@ then
   echo ================================
   echo ====== Starting hardhat1 ======
   echo ================================
-  sh -c "cd $pathToOtNode && node tools/local-network-setup/run-local-blockchain.js 8545 " &
+  x-terminal-emulator -e "bash -c 'cd $pathToOtNode && node tools/local-network-setup/run-local-blockchain.js 8545; exec bash'" &
   echo Waiting for hardhat to start and contracts deployment
 
   while ! nc -z localhost 8545; do
@@ -60,7 +60,7 @@ then
   echo ================================
   echo ====== Starting hardhat 2 ======
   echo ================================
-  sh -c "cd $pathToOtNode && node tools/local-network-setup/run-local-blockchain.js 9545 " &
+  x-terminal-emulator -e "bash -c 'cd $pathToOtNode && node tools/local-network-setup/run-local-blockchain.js 9545; exec bash'" &
   echo Waiting for hardhat to start and contracts deployment
 
   while ! nc -z localhost 9545; do
@@ -75,14 +75,14 @@ echo ====== Generating configs ======
 echo ================================
 
 node $pathToOtNode/tools/local-network-setup/generate-config-files.js $numberOfNodes $network $tripleStore $hubContractAddress
-sleep 5
+sleep 16
 echo ================================
 echo ======== Starting nodes ========
 echo ================================
 
 startNode() {
   echo Starting node $1
-  sh -c "cd $pathToOtNode && node index.js ./tools/local-network-setup/.node$1_origintrail_noderc.json" &
+  x-terminal-emulator -e "bash -c 'cd $pathToOtNode && node --inspect index.js ./tools/local-network-setup/.node$1_origintrail_noderc.json; exec bash'" &
 }
 
 i=0
@@ -92,6 +92,6 @@ do
   ((i = i + 1))
 done
 
-wait
+# wait
 # Close started background processes when done (https://stackoverflow.com/a/2173421)
-trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
+# trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
