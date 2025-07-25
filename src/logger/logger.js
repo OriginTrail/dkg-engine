@@ -11,6 +11,7 @@ class Logger {
      */
     constructor(logLevel = 'trace') {
         this.logLevel = logLevel;
+        this._timers = new Map();
         this.initialize(logLevel, true);
     }
 
@@ -66,6 +67,38 @@ class Logger {
      */
     restart() {
         this.initialize(this.logLevel, true);
+    }
+
+    // ===========================
+    // =====   TIMERS    ========
+    // ===========================
+
+    /**
+     * Start a timer countdown. Equivalent to console.time(label).
+     * @param {string} label - The label to use for the timer.
+     */
+    startTimer(label) {
+        // TODO: Maybe add dedicated level just for timers?
+        // if (this.pinoLogger.levelVal > this.pinoLogger.levels.values.trace)
+        //     return;
+
+        this._timers.set(label, process.hrtime.bigint());
+    }
+
+    /**
+     * End a timer countdown. Should be used only in trace level, equivalent to console.timeEnd(label).
+     * @note Requires startTimer to be called first.
+     * @param {string} label - The label to use for the timer.
+     */
+    endTimer(label) {
+        const start = this._timers.get(label);
+        if (!start) return;
+
+        this._timers.delete(label);
+        const diffNs = process.hrtime.bigint() - start;
+        const diffMs = (diffNs / 1e6).toFixed(2);
+
+        this.pinoLogger.trace(`${label} - ${diffMs}ms`);
     }
 
     // ===========================
