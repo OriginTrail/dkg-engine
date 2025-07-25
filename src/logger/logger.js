@@ -9,10 +9,11 @@ class Logger {
      * Create a new logger.
      * @param {string} logLevel - The log level to use for the logger.
      */
-    constructor(logLevel = 'trace') {
+    constructor(logLevel = 'trace', pinoInstance = null) {
         this.logLevel = logLevel;
         this._timers = new Map();
-        this.initialize(logLevel, true);
+        if (!pinoInstance) this.initialize(logLevel);
+        else this.pinoLogger = pinoInstance;
     }
 
     /**
@@ -58,8 +59,7 @@ class Logger {
      * @return {Logger} The child logger.
      */
     child(bindings) {
-        // TODO: Might be better not to cast as Logger, but as pino.Logger
-        return this.pinoLogger.child(bindings, {});
+        return new Logger(this.logLevel, this.pinoLogger.child(bindings, {}));
     }
 
     /**

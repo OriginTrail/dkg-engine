@@ -847,7 +847,8 @@
         "commandExecutorVerboseLoggingEnabled": false,
         "appDataPath": "data",
         "logging": {
-            "defaultLevel": "trace"
+            "defaultLevel": "trace",
+            "enableExperimentalScopes": false
         },
         "assetSync": {
             "syncDKG": {
@@ -1080,7 +1081,8 @@
         "commandExecutorVerboseLoggingEnabled": false,
         "appDataPath": "data",
         "logging": {
-            "defaultLevel": "trace"
+            "defaultLevel": "trace",
+            "enableExperimentalScopes": false
         },
         "assetSync": {
             "syncDKG": {

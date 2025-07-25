@@ -108,7 +108,7 @@ class BatchGetCommand extends Command {
             return Command.empty();
         }
 
-        this.logger.startTimer(`BatchGetCommand [NETWORK]: ${operationId} ${uals.length}`);
+        this.logger.startTimer(`BatchGetCommand [NETWORK_INIT]: ${operationId} ${uals.length}`);
 
         const currentPeerId = this.networkModuleManager.getPeerId().toB58String();
         // let paranetId;
@@ -139,7 +139,7 @@ class BatchGetCommand extends Command {
             OPERATION_ID_STATUS.BATCH_GET.BATCH_GET_LOCAL_START,
         );
 
-        this.logger.endTimer(`BatchGetCommand [NETWORK]: ${operationId} ${uals.length}`);
+        this.logger.endTimer(`BatchGetCommand [NETWORK_INIT]: ${operationId} ${uals.length}`);
 
         this.logger.startTimer(`BatchGetCommand [TOKEN_IDS]: ${operationId} ${uals.length}`);
 
