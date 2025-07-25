@@ -20,6 +20,12 @@ import {
 class BatchGetCommand extends Command {
     constructor(ctx) {
         super(ctx);
+
+        this.logger = ctx.config.logging.enableExperimentalScopes
+            ? ctx.logger.child({
+                  scope: 'BatchGetCommand',
+              })
+            : ctx.logger;
         this.operationIdService = ctx.operationIdService;
         this.ualService = ctx.ualService;
         this.operationService = ctx.batchGetService;
@@ -68,7 +74,7 @@ class BatchGetCommand extends Command {
             paranetNodesAccessPolicy,
         } = command.data;
 
-        console.time(`BatchGetCommand [PREPARE]: ${operationId} ${uals.length}`);
+        this.logger.startTimer(`BatchGetCommand [PREPARE]: ${operationId} ${uals.length}`);
 
         await this.operationIdService.updateOperationIdStatus(
             operationId,
@@ -90,7 +96,7 @@ class BatchGetCommand extends Command {
 
         const { isValid, errorMessage } = await this.validateUALs(operationId, blockchain, uals);
 
-        console.timeEnd(`BatchGetCommand [PREPARE]: ${operationId} ${uals.length}`);
+        this.logger.endTimer(`BatchGetCommand [PREPARE]: ${operationId} ${uals.length}`);
 
         if (!isValid) {
             await this.handleError(
@@ -102,7 +108,7 @@ class BatchGetCommand extends Command {
             return Command.empty();
         }
 
-        console.time(`BatchGetCommand [NETWORK]: ${operationId} ${uals.length}`);
+        this.logger.startTimer(`BatchGetCommand [NETWORK]: ${operationId} ${uals.length}`);
 
         const currentPeerId = this.networkModuleManager.getPeerId().toB58String();
         // let paranetId;
@@ -133,9 +139,9 @@ class BatchGetCommand extends Command {
             OPERATION_ID_STATUS.BATCH_GET.BATCH_GET_LOCAL_START,
         );
 
-        console.timeEnd(`BatchGetCommand [NETWORK]: ${operationId} ${uals.length}`);
+        this.logger.endTimer(`BatchGetCommand [NETWORK]: ${operationId} ${uals.length}`);
 
-        console.time(`BatchGetCommand [TOKEN_IDS]: ${operationId} ${uals.length}`);
+        this.logger.startTimer(`BatchGetCommand [TOKEN_IDS]: ${operationId} ${uals.length}`);
 
         const tokenIds = {};
 
@@ -159,9 +165,9 @@ class BatchGetCommand extends Command {
 
         await Promise.all(tokenIdPromises);
 
-        console.timeEnd(`BatchGetCommand [TOKEN_IDS]: ${operationId} ${uals.length}`);
+        this.logger.endTimer(`BatchGetCommand [TOKEN_IDS]: ${operationId} ${uals.length}`);
 
-        console.time(`BatchGetCommand [LOCAL_BATCH_GET]: ${operationId} ${uals.length}`);
+        this.logger.startTimer(`BatchGetCommand [LOCAL_BATCH_GET]: ${operationId} ${uals.length}`);
 
         const promises = [];
         const assertionPromise = this.tripleStoreService.getAssertionsInBatch(
@@ -177,9 +183,11 @@ class BatchGetCommand extends Command {
 
         const finalResult = { local: [], remote: {}, metadata: {} };
 
-        console.timeEnd(`BatchGetCommand [LOCAL_BATCH_GET]: ${operationId} ${uals.length}`);
+        this.logger.endTimer(`BatchGetCommand [LOCAL_BATCH_GET]: ${operationId} ${uals.length}`);
 
-        console.time(`BatchGetCommand [LOCAL_BATCH_GET_VALIDATE]: ${operationId} ${uals.length}`);
+        this.logger.startTimer(
+            `BatchGetCommand [LOCAL_BATCH_GET_VALIDATE]: ${operationId} ${uals.length}`,
+        );
 
         const localGetResultValid = await this.validateBatchResponse(
             batchAssertions,
@@ -197,11 +205,11 @@ class BatchGetCommand extends Command {
             (ual) => !localGetResultValid[ual],
         );
 
-        console.timeEnd(
+        this.logger.endTimer(
             `BatchGetCommand [LOCAL_BATCH_GET_VALIDATE]: ${operationId} ${uals.length}`,
         );
 
-        console.time(`BatchGetCommand [LOCAL]: ${operationId} ${uals.length}`);
+        this.logger.startTimer(`BatchGetCommand [LOCAL]: ${operationId} ${uals.length}`);
 
         ualPresentLocally.forEach((ual) => {
             finalResult.local.push(ual);
@@ -223,7 +231,7 @@ class BatchGetCommand extends Command {
             return Command.empty();
         }
 
-        console.timeEnd(`BatchGetCommand [LOCAL]: ${operationId} ${uals.length}`);
+        this.logger.endTimer(`BatchGetCommand [LOCAL]: ${operationId} ${uals.length}`);
 
         await this.operationIdService.updateOperationIdStatus(
             operationId,
@@ -237,7 +245,7 @@ class BatchGetCommand extends Command {
             OPERATION_ID_STATUS.BATCH_GET.BATCH_GET_FIND_SHARD_START,
         );
 
-        console.time(`BatchGetCommand [FIND_SHARD]: ${operationId} ${uals.length}`);
+        this.logger.startTimer(`BatchGetCommand [FIND_SHARD]: ${operationId} ${uals.length}`);
 
         let nodesInfo = [];
         // if (paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED) {
@@ -276,7 +284,7 @@ class BatchGetCommand extends Command {
             return Command.empty();
         }
 
-        console.timeEnd(`BatchGetCommand [FIND_SHARD]: ${operationId} ${uals.length}`);
+        this.logger.endTimer(`BatchGetCommand [FIND_SHARD]: ${operationId} ${uals.length}`);
 
         await this.operationIdService.updateOperationIdStatus(
             operationId,
@@ -284,7 +292,7 @@ class BatchGetCommand extends Command {
             OPERATION_ID_STATUS.BATCH_GET.BATCH_GET_FIND_SHARD_END,
         );
 
-        console.time(`BatchGetCommand [NETWORK]: ${operationId} ${uals.length}`);
+        this.logger.startTimer(`BatchGetCommand [NETWORK]: ${operationId} ${uals.length}`);
 
         let index = 0;
         let commandCompleted = false;
@@ -313,11 +321,11 @@ class BatchGetCommand extends Command {
             // eslint-disable-next-line no-loop-func
             const messagePromises = batch.map(async (node) => {
                 try {
-                    console.time(
+                    this.logger.startTimer(
                         `BatchGetCommand [NETWORK_SEND_MESSAGE]: ${operationId} ${uals.length} ${node.id}`,
                     );
                     const result = await this.sendMessage(node, operationId, message);
-                    console.timeEnd(
+                    this.logger.endTimer(
                         `BatchGetCommand [NETWORK_SEND_MESSAGE]: ${operationId} ${uals.length} ${node.id}`,
                     );
 
@@ -325,7 +333,7 @@ class BatchGetCommand extends Command {
                         return;
                     }
 
-                    console.time(
+                    this.logger.startTimer(
                         `BatchGetCommand [NETWORK_VALIDATE_RESPONSE]: ${operationId} ${uals.length} ${node.id}`,
                     );
                     const validationResult = await this.validateBatchResponse(
@@ -336,7 +344,7 @@ class BatchGetCommand extends Command {
                         finalResult,
                         [OPERATION_ID_STATUS.GET.GET_END, OPERATION_ID_STATUS.COMPLETED],
                     );
-                    console.timeEnd(
+                    this.logger.endTimer(
                         `BatchGetCommand [NETWORK_VALIDATE_RESPONSE]: ${operationId} ${uals.length} ${node.id}`,
                     );
 
@@ -357,7 +365,7 @@ class BatchGetCommand extends Command {
 
                     if (hasReachedThreshold() && !commandCompleted) {
                         commandCompleted = true;
-                        console.time(
+                        this.logger.startTimer(
                             `BatchGetCommand [NETWORK_MARK_AS_COMPLETED]: ${operationId} ${uals.length} ${node.id}`,
                         );
                         await this.operationService.markOperationAsCompleted(
@@ -366,7 +374,7 @@ class BatchGetCommand extends Command {
                             finalResult,
                             [OPERATION_ID_STATUS.GET.GET_END, OPERATION_ID_STATUS.COMPLETED],
                         );
-                        console.timeEnd(
+                        this.logger.endTimer(
                             `BatchGetCommand [NETWORK_MARK_AS_COMPLETED]: ${operationId} ${uals.length} ${node.id}`,
                         );
                     }
@@ -408,7 +416,7 @@ class BatchGetCommand extends Command {
             );
         }
 
-        console.timeEnd(`BatchGetCommand [NETWORK]: ${operationId} ${uals.length}`);
+        this.logger.endTimer(`BatchGetCommand [NETWORK]: ${operationId} ${uals.length}`);
 
         return Command.empty();
     }

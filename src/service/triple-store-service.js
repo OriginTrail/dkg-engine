@@ -556,10 +556,10 @@ class TripleStoreService {
         // Conditional performance logging
         const logTime = operationId !== undefined;
         const startTimer = (label) => {
-            if (logTime) console.time(label);
+            if (logTime) this.logger.startTimer(label);
         };
         const endTimer = (label) => {
-            if (logTime) console.timeEnd(label);
+            if (logTime) this.logger.endTimer(label);
         };
 
         const totalLabel = `[TripleStoreService.getAssertionsInBatch TOTAL] ${operationId} ${uals.length}`;
