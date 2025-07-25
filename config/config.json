@@ -197,7 +197,10 @@
         "maximumAssertionSizeInKb": 500000,
         "commandExecutorVerboseLoggingEnabled": false,
         "appDataPath": "data",
-        "logLevel": "info",
+        "logging": {
+            "defaultLevel": "info",
+            "enableExperimentalScopes": true
+        },
         "assetSync": {
             "syncDKG": {
                 "enabled": true,
@@ -402,7 +405,10 @@
         "maximumAssertionSizeInKb": 500000,
         "commandExecutorVerboseLoggingEnabled": false,
         "appDataPath": "data",
-        "logLevel": "trace",
+        "logging": {
+            "defaultLevel": "trace",
+            "enableExperimentalScopes": true
+        },
         "assetSync": {
             "syncDKG": {
                 "enabled": false,
@@ -635,7 +641,10 @@
         "maximumAssertionSizeInKb": 500000,
         "commandExecutorVerboseLoggingEnabled": false,
         "appDataPath": "data",
-        "logLevel": "trace",
+        "logging": {
+            "defaultLevel": "trace",
+            "enableExperimentalScopes": true
+        },
         "assetSync": {
             "syncDKG": {
                 "enabled": false,
@@ -837,7 +846,9 @@
         "maximumAssertionSizeInKb": 500000,
         "commandExecutorVerboseLoggingEnabled": false,
         "appDataPath": "data",
-        "logLevel": "trace",
+        "logging": {
+            "defaultLevel": "trace"
+        },
         "assetSync": {
             "syncDKG": {
                 "enabled": false,
@@ -1068,7 +1079,9 @@
         "maximumAssertionSizeInKb": 500000,
         "commandExecutorVerboseLoggingEnabled": false,
         "appDataPath": "data",
-        "logLevel": "trace",
+        "logging": {
+            "defaultLevel": "trace"
+        },
         "assetSync": {
             "syncDKG": {
                 "enabled": false,
