@@ -553,8 +553,12 @@ class OtTripleStore {
                     ?s ?p ?o
                 }
             }`;
-
-        return this.ask(repository, query, timeout);
+        try {
+            return this.ask(repository, query, timeout);
+        } catch (error) {
+            this.logger.error(`Error checking if knowledge asset exists: ${error}`);
+            return false;
+        }
     }
 
     async getKnowledgeCollectionNamedGraphs(
