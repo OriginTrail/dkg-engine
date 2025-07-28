@@ -81,6 +81,12 @@ process.on('unhandledRejection', (err) => {
         return; // Don't crash for timeout errors
     }
 
+    // Handle Sequelize "Got timeout reading communication packets" errors gracefully
+    if (err && err.message && err.message.includes('Got timeout reading communication packets')) {
+        console.warn(`Sequelize communication timeout error: ${err.message}`);
+        return; // Don't crash for database communication timeout errors
+    }
+
     // For all other unhandled rejections, crash the node
     console.error('Something went really wrong! OT-node shutting down...', err);
     process.exit(1);
@@ -109,6 +115,12 @@ process.on('uncaughtException', (err) => {
     if (err && (err.code === 'ETIMEDOUT' || err.errno === -110)) {
         console.warn(`Connection timeout error (ETIMEDOUT): ${err.message}`);
         return; // Don't crash for timeout errors
+    }
+
+    // Handle Sequelize "Got timeout reading communication packets" errors gracefully
+    if (err && err.message && err.message.includes('Got timeout reading communication packets')) {
+        console.warn(`Sequelize communication timeout error: ${err.message}`);
+        return; // Don't crash for database communication timeout errors
     }
 
     console.error('Something went really wrong! OT-node shutting down...', err);
@@ -141,6 +153,12 @@ process.on('error', (err) => {
     if (err && (err.code === 'ETIMEDOUT' || err.errno === -110)) {
         console.warn(`Process error - Connection timeout (ETIMEDOUT): ${err.message}`);
         return; // Don't crash for timeout errors
+    }
+
+    // Handle Sequelize "Got timeout reading communication packets" errors gracefully
+    if (err && err.message && err.message.includes('Got timeout reading communication packets')) {
+        console.warn(`Process error - Sequelize communication timeout: ${err.message}`);
+        return; // Don't crash for database communication timeout errors
     }
 
     console.error('Process error occurred! OT-node shutting down...', err);
