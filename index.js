@@ -75,6 +75,12 @@ process.on('unhandledRejection', (err) => {
         return; // Don't crash for broken pipe errors
     }
 
+    // Handle ETIMEDOUT errors gracefully - these are common database connection timeouts
+    if (err && (err.code === 'ETIMEDOUT' || err.errno === -110)) {
+        console.warn(`Connection timeout error (ETIMEDOUT): ${err.message}`);
+        return; // Don't crash for timeout errors
+    }
+
     // For all other unhandled rejections, crash the node
     console.error('Something went really wrong! OT-node shutting down...', err);
     process.exit(1);
@@ -97,6 +103,12 @@ process.on('uncaughtException', (err) => {
     if (err && (err.code === 'ECONNRESET' || err.errno === -104)) {
         console.warn(`Network connection reset (ECONNRESET): ${err.message}`);
         return; // Don't crash for connection reset errors
+    }
+
+    // Handle ETIMEDOUT errors gracefully - these are common database connection timeouts
+    if (err && (err.code === 'ETIMEDOUT' || err.errno === -110)) {
+        console.warn(`Connection timeout error (ETIMEDOUT): ${err.message}`);
+        return; // Don't crash for timeout errors
     }
 
     console.error('Something went really wrong! OT-node shutting down...', err);
@@ -123,6 +135,12 @@ process.on('error', (err) => {
     if (err && (err.code === 'ECONNRESET' || err.errno === -104)) {
         console.warn(`Process error - Connection reset (ECONNRESET): ${err.message}`);
         return; // Don't crash for connection reset errors
+    }
+
+    // Handle ETIMEDOUT errors gracefully - these are common database connection timeouts
+    if (err && (err.code === 'ETIMEDOUT' || err.errno === -110)) {
+        console.warn(`Process error - Connection timeout (ETIMEDOUT): ${err.message}`);
+        return; // Don't crash for timeout errors
     }
 
     console.error('Process error occurred! OT-node shutting down...', err);
