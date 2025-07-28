@@ -712,6 +712,9 @@ export const EXPECTED_TRANSACTION_ERRORS = {
     NODE_NOT_AWARDED: 'NodeNotAwarded',
     WRONG_MERKLE_PROOF: 'WrongMerkleProof',
     NO_MINTED_ASSETS: 'NoMintedAssets',
+    NONCE_TOO_LOW: 'nonce too low',
+    REPLACEMENT_UNDERPRICED: 'replacement transaction underpriced',
+    ALREADY_KNOWN: 'already known',
 };
 
 /**

@@ -95,7 +95,8 @@
                     "query": 60000,
                     "get": 10000,
                     "batchGet": 10000,
-                    "insert": 300000
+                    "insert": 300000,
+                    "ask": 10000
                 },
                 "implementation": {
                     "ot-blazegraph": {
@@ -352,7 +353,8 @@
                     "query": 60000,
                     "get": 10000,
                     "batchGet": 10000,
-                    "insert": 300000
+                    "insert": 300000,
+                    "ask": 10000
                 },
                 "implementation": {
                     "ot-blazegraph": {
@@ -573,7 +575,8 @@
                     "query": 60000,
                     "get": 10000,
                     "batchGet": 10000,
-                    "insert": 300000
+                    "insert": 300000,
+                    "ask": 10000
                 },
                 "implementation": {
                     "ot-blazegraph": {
@@ -785,7 +788,8 @@
                     "query": 60000,
                     "get": 10000,
                     "batchGet": 10000,
-                    "insert": 300000
+                    "insert": 300000,
+                    "ask": 10000
                 },
                 "implementation": {
                     "ot-blazegraph": {
@@ -1003,7 +1007,8 @@
                     "query": 60000,
                     "get": 10000,
                     "batchGet": 10000,
-                    "insert": 300000
+                    "insert": 300000,
+                    "ask": 10000
                 },
                 "implementation": {
                     "ot-blazegraph": {

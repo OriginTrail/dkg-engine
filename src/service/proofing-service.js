@@ -153,12 +153,12 @@ class ProofingService {
                                 'PROOF_CHALANGE_FINALIZED',
                                 this.generateOperationId(
                                     blockchainId,
-                                    latestChallenge.epoch.toNumber(),
-                                    latestChallenge.activeProofPeriodStartBlock.toNumber(),
+                                    latestChallenge.epoch,
+                                    latestChallenge.activeProofPeriodStartBlock,
                                 ),
                                 blockchainId,
-                                latestChallenge.epoch.toNumber(),
-                                latestChallenge.activeProofPeriodStartBlock.toNumber(),
+                                latestChallenge.epoch,
+                                latestChallenge.activeProofPeriodStartBlock,
                             );
                         } else {
                             this.logger.info(
@@ -172,7 +172,9 @@ class ProofingService {
                         latestChallenge.sentSuccessfully = false;
                         latestChallenge.finalized = false;
                         await this.repositoryModuleManager.setCompletedAndFinalizedRandomSamplingChallengeRecord(
-                            latestChallenge,
+                            latestChallenge.id,
+                            latestChallenge.sentSuccessfully,
+                            latestChallenge.finalized,
                         );
                         await this.prepareAndSendProof(blockchainId, identityId);
                     }
@@ -190,12 +192,12 @@ class ProofingService {
                     'PROOF_ASSERTION_FETCHED',
                     this.generateOperationId(
                         blockchainId,
-                        latestChallenge.epoch.toNumber(),
-                        latestChallenge.activeProofPeriodStartBlock.toNumber(),
+                        latestChallenge.epoch,
+                        latestChallenge.activeProofPeriodStartBlock,
                     ),
                     blockchainId,
-                    latestChallenge.epoch.toNumber(),
-                    latestChallenge.activeProofPeriodStartBlock.toNumber(),
+                    latestChallenge.epoch,
+                    latestChallenge.activeProofPeriodStartBlock,
                 );
 
                 if (data.public.length === 0) {
@@ -246,12 +248,12 @@ class ProofingService {
                 'PROOF_ASSERTION_FETCHED',
                 this.generateOperationId(
                     blockchainId,
-                    newChallenge.epoch.toNumber(),
-                    newChallenge.activeProofPeriodStartBlock.toNumber(),
+                    newChallenge.epoch,
+                    newChallenge.activeProofPeriodStartBlock,
                 ),
                 blockchainId,
-                newChallenge.epoch.toNumber(),
-                newChallenge.activeProofPeriodStartBlock.toNumber(),
+                newChallenge.epoch,
+                newChallenge.activeProofPeriodStartBlock,
             );
 
             if (data.public.length === 0) {
