@@ -15,6 +15,12 @@ import {
 class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
     constructor(ctx) {
         super(ctx);
+
+        this.logger = ctx.config.logging.enableExperimentalScopes
+            ? ctx.logger.child({
+                  scope: 'HandleBatchGetRequestCommand',
+              })
+            : ctx.logger;
         this.tripleStoreService = ctx.tripleStoreService;
         this.paranetService = ctx.paranetService;
         this.blockchainModuleManager = ctx.blockchainModuleManager;
@@ -30,7 +36,9 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
         const { operationId, blockchain, includeMetadata } = commandData;
         let { uals, tokenIds } = commandData;
 
-        console.time(`HandleBatchGetRequestCommand [PREPARE]: ${operationId} ${uals.length}`);
+        this.logger.startTimer(
+            `HandleBatchGetRequestCommand [PREPARE]: ${operationId} ${uals.length}`,
+        );
         await this.operationIdService.updateOperationIdStatus(
             operationId,
             blockchain,
@@ -58,9 +66,13 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
             }
         }
 
-        console.timeEnd(`HandleBatchGetRequestCommand [PREPARE]: ${operationId} ${uals.length}`);
+        this.logger.endTimer(
+            `HandleBatchGetRequestCommand [PREPARE]: ${operationId} ${uals.length}`,
+        );
 
-        console.time(`HandleBatchGetRequestCommand [PROCESSING]: ${operationId} ${uals.length}`);
+        this.logger.startTimer(
+            `HandleBatchGetRequestCommand [PROCESSING]: ${operationId} ${uals.length}`,
+        );
 
         const assertionPromise = this.tripleStoreService.getAssertionsInBatch(
             TRIPLE_STORE_REPOSITORY.DKG,
@@ -87,9 +99,13 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
             ...(includeMetadata && metadata && { metadata }),
         };
 
-        console.timeEnd(`HandleBatchGetRequestCommand [PROCESSING]: ${operationId} ${uals.length}`);
+        this.logger.endTimer(
+            `HandleBatchGetRequestCommand [PROCESSING]: ${operationId} ${uals.length}`,
+        );
 
-        console.time(`HandleBatchGetRequestCommand [RESPONSE]: ${operationId} ${uals.length}`);
+        this.logger.startTimer(
+            `HandleBatchGetRequestCommand [RESPONSE]: ${operationId} ${uals.length}`,
+        );
 
         if (assertions?.length) {
             await this.operationIdService.updateOperationIdStatus(
@@ -99,7 +115,9 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
             );
         }
 
-        console.timeEnd(`HandleBatchGetRequestCommand [RESPONSE]: ${operationId} ${uals.length}`);
+        this.logger.endTimer(
+            `HandleBatchGetRequestCommand [RESPONSE]: ${operationId} ${uals.length}`,
+        );
 
         return { messageType: NETWORK_MESSAGE_TYPES.RESPONSES.ACK, messageData: responseData };
     }
