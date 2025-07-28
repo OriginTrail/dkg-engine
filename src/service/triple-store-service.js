@@ -16,7 +16,11 @@ import {
 class TripleStoreService {
     constructor(ctx) {
         this.config = ctx.config;
-        this.logger = ctx.logger;
+        this.logger = ctx.config.logging.enableExperimentalScopes
+            ? ctx.logger.child({
+                  scope: 'TripleStoreService',
+              })
+            : ctx.logger;
 
         this.tripleStoreModuleManager = ctx.tripleStoreModuleManager;
         this.operationIdService = ctx.operationIdService;
@@ -422,10 +426,10 @@ class TripleStoreService {
         // Performance instrumentation (enable only if operationId is supplied)
         const logTime = operationId !== undefined;
         const startTimer = (label) => {
-            if (logTime) console.time(label);
+            if (logTime) this.logger.startTimer(label);
         };
         const endTimer = (label) => {
-            if (logTime) console.timeEnd(label);
+            if (logTime) this.logger.endTimer(label);
         };
 
         const totalLabel = `[TripleStoreService.getAssertion TOTAL] ${operationId} ${ual}`;
@@ -554,10 +558,10 @@ class TripleStoreService {
         // Conditional performance logging
         const logTime = operationId !== undefined;
         const startTimer = (label) => {
-            if (logTime) console.time(label);
+            if (logTime) this.logger.startTimer(label);
         };
         const endTimer = (label) => {
-            if (logTime) console.timeEnd(label);
+            if (logTime) this.logger.endTimer(label);
         };
 
         const totalLabel = `[TripleStoreService.getAssertionsInBatch TOTAL] ${operationId} ${uals.length}`;
