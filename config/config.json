@@ -198,7 +198,7 @@
         "commandExecutorVerboseLoggingEnabled": false,
         "appDataPath": "data",
         "logging": {
-            "defaultLevel": "info",
+            "defaultLevel": "trace",
             "enableExperimentalScopes": true
         },
         "assetSync": {
@@ -406,7 +406,7 @@
         "commandExecutorVerboseLoggingEnabled": false,
         "appDataPath": "data",
         "logging": {
-            "defaultLevel": "trace",
+            "defaultLevel": "info",
             "enableExperimentalScopes": true
         },
         "assetSync": {
