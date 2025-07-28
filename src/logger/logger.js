@@ -96,7 +96,9 @@ class Logger {
 
         this._timers.delete(label);
         const diffNs = process.hrtime.bigint() - start;
-        const diffMs = (diffNs / 1e6).toFixed(2);
+        // TODO: Fix precision on micro/nano seconds scale
+        // eslint-disable-next-line no-undef
+        const diffMs = Number(diffNs / BigInt(1e6)).toFixed(2);
 
         this.pinoLogger.trace(`${label} - ${diffMs}ms`);
     }
