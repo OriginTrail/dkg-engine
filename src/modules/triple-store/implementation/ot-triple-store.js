@@ -546,15 +546,19 @@ class OtTripleStore {
         return result.data;
     }
 
-    async checkIfKnowledgeAssetExists(repository, kaUAL) {
+    async checkIfKnowledgeAssetExists(repository, kaUAL, timeout = 10000) {
         const query = `
             ASK {
                 GRAPH <${kaUAL}> {
                     ?s ?p ?o
                 }
             }`;
-
-        return this.ask(repository, query);
+        try {
+            return this.ask(repository, query, timeout);
+        } catch (error) {
+            this.logger.error(`Error checking if knowledge asset exists: ${error}`);
+            return false;
+        }
     }
 
     async getKnowledgeCollectionNamedGraphs(
@@ -782,7 +786,7 @@ class OtTripleStore {
             )
             .join(';\n')};`;
 
-        query += `DELETE WHERE { GRAPH <${BASE_NAMED_GRAPHS.METADATA}> <${kcUAL}> ?p ?o . }`;
+        query += `DELETE WHERE { GRAPH <${BASE_NAMED_GRAPHS.METADATA}> { <${kcUAL}> ?p ?o . } }`;
 
         await this.queryVoid(repository, query);
     }
