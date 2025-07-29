@@ -23,6 +23,7 @@ import {
     TRANSACTION_PRIORITY,
     CONTRACT_FUNCTION_GAS_LIMIT_INCREASE_FACTORS,
     ABIs,
+    EXPECTED_TRANSACTION_ERRORS,
 } from '../../../constants/constants.js';
 import Web3ServiceValidator from './web3-service-validator.js';
 
@@ -561,8 +562,10 @@ class Web3Service {
         operationalWallet,
     ) {
         let result;
-        const gasPrice = predefinedGasPrice ?? (await this.getGasPrice());
+        let gasPrice = predefinedGasPrice ?? (await this.getGasPrice());
         let gasLimit;
+        let retryCount = 0;
+        const maxRetries = 3;
 
         try {
             /* eslint-disable no-await-in-loop */
@@ -577,33 +580,69 @@ class Web3Service {
 
         gasLimit = gasLimit.mul(gasLimitMultiplier * 100).div(100);
 
-        this.logger.debug(
-            `Sending signed transaction ${functionName} to the blockchain ${this.getBlockchainId()}` +
-                ` with gas limit: ${gasLimit.toString()} and gasPrice ${gasPrice.toString()}. ` +
-                `Transaction queue length: ${this.getTotalTransactionQueueLength()}. Wallet used: ${
-                    operationalWallet.address
-                }`,
-        );
+        while (retryCount < maxRetries) {
+            try {
+                this.logger.debug(
+                    `Sending signed transaction ${functionName} to the blockchain ${this.getBlockchainId()}` +
+                        ` with gas limit: ${gasLimit.toString()} and gasPrice ${gasPrice.toString()}. ` +
+                        `Transaction queue length: ${this.getTotalTransactionQueueLength()}. Wallet used: ${
+                            operationalWallet.address
+                        }${retryCount > 0 ? ` (retry ${retryCount})` : ''}`,
+                );
 
-        const tx = await contractInstance.connect(operationalWallet)[functionName](...args, {
-            gasPrice,
-            gasLimit,
-        });
+                const tx = await contractInstance
+                    .connect(operationalWallet)
+                    [functionName](...args, {
+                        gasPrice,
+                        gasLimit,
+                    });
 
-        try {
-            result = await this.provider.waitForTransaction(
-                tx.hash,
-                TRANSACTION_CONFIRMATIONS,
-                TRANSACTION_POLLING_TIMEOUT_MILLIS,
-            );
+                try {
+                    result = await this.provider.waitForTransaction(
+                        tx.hash,
+                        TRANSACTION_CONFIRMATIONS,
+                        TRANSACTION_POLLING_TIMEOUT_MILLIS,
+                    );
 
-            if (result.status === 0) {
-                await this.provider.call(tx, tx.blockNumber);
+                    if (result.status === 0) {
+                        await this.provider.call(tx, tx.blockNumber);
+                    }
+                } catch (error) {
+                    this._decodeWaitForTxError(contractInstance, functionName, error, args);
+                }
+                return result;
+            } catch (error) {
+                const errorMessage = error.message.toLowerCase();
+
+                // Check for nonce-related errors
+                if (
+                    errorMessage.includes(
+                        EXPECTED_TRANSACTION_ERRORS.NONCE_TOO_LOW.toLowerCase(),
+                    ) ||
+                    errorMessage.includes(
+                        EXPECTED_TRANSACTION_ERRORS.REPLACEMENT_UNDERPRICED.toLowerCase(),
+                    ) ||
+                    errorMessage.includes(EXPECTED_TRANSACTION_ERRORS.ALREADY_KNOWN.toLowerCase())
+                ) {
+                    retryCount += 1;
+                    if (retryCount < maxRetries) {
+                        // Increase gas price by 20% for nonce errors
+                        gasPrice = Math.ceil(gasPrice * 1.2);
+                        this.logger.warn(
+                            `Nonce error detected for ${functionName}. Retrying with increased gas price: ${gasPrice} (retry ${retryCount}/${maxRetries})`,
+                        );
+                        continue;
+                    } else {
+                        this.logger.error(
+                            `Max retries (${maxRetries}) reached for nonce error in ${functionName}. Final gas price: ${gasPrice}`,
+                        );
+                    }
+                }
+
+                // If it's not a nonce error or we've exhausted retries, re-throw the error
+                throw error;
             }
-        } catch (error) {
-            this._decodeWaitForTxError(contractInstance, functionName, error, args);
         }
-        return result;
     }
 
     _decodeEstimateGasError(contractInstance, functionName, error, args) {

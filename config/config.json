@@ -95,7 +95,8 @@
                     "query": 60000,
                     "get": 10000,
                     "batchGet": 10000,
-                    "insert": 300000
+                    "insert": 300000,
+                    "ask": 10000
                 },
                 "implementation": {
                     "ot-blazegraph": {
@@ -197,11 +198,15 @@
         "maximumAssertionSizeInKb": 500000,
         "commandExecutorVerboseLoggingEnabled": false,
         "appDataPath": "data",
-        "logLevel": "info",
+        "logging": {
+            "defaultLevel": "trace",
+            "enableExperimentalScopes": true
+        },
         "assetSync": {
             "syncDKG": {
                 "enabled": true,
-                "syncBatchSize": 5
+                "syncBatchSize": 5,
+                "doneThreshold": 95
             },
             "syncParanets": []
         },
@@ -348,7 +353,8 @@
                     "query": 60000,
                     "get": 10000,
                     "batchGet": 10000,
-                    "insert": 300000
+                    "insert": 300000,
+                    "ask": 10000
                 },
                 "implementation": {
                     "ot-blazegraph": {
@@ -401,11 +407,15 @@
         "maximumAssertionSizeInKb": 500000,
         "commandExecutorVerboseLoggingEnabled": false,
         "appDataPath": "data",
-        "logLevel": "trace",
+        "logging": {
+            "defaultLevel": "info",
+            "enableExperimentalScopes": true
+        },
         "assetSync": {
             "syncDKG": {
                 "enabled": false,
-                "syncBatchSize": 20
+                "syncBatchSize": 20,
+                "doneThreshold": 95
             },
             "syncParanets": []
         },
@@ -565,7 +575,8 @@
                     "query": 60000,
                     "get": 10000,
                     "batchGet": 10000,
-                    "insert": 300000
+                    "insert": 300000,
+                    "ask": 10000
                 },
                 "implementation": {
                     "ot-blazegraph": {
@@ -633,11 +644,15 @@
         "maximumAssertionSizeInKb": 500000,
         "commandExecutorVerboseLoggingEnabled": false,
         "appDataPath": "data",
-        "logLevel": "trace",
+        "logging": {
+            "defaultLevel": "trace",
+            "enableExperimentalScopes": true
+        },
         "assetSync": {
             "syncDKG": {
                 "enabled": false,
-                "syncBatchSize": 20
+                "syncBatchSize": 20,
+                "doneThreshold": 95
             },
             "syncParanets": []
         },
@@ -773,7 +788,8 @@
                     "query": 60000,
                     "get": 10000,
                     "batchGet": 10000,
-                    "insert": 300000
+                    "insert": 300000,
+                    "ask": 10000
                 },
                 "implementation": {
                     "ot-blazegraph": {
@@ -834,11 +850,15 @@
         "maximumAssertionSizeInKb": 500000,
         "commandExecutorVerboseLoggingEnabled": false,
         "appDataPath": "data",
-        "logLevel": "trace",
+        "logging": {
+            "defaultLevel": "trace",
+            "enableExperimentalScopes": false
+        },
         "assetSync": {
             "syncDKG": {
                 "enabled": false,
-                "syncBatchSize": 20
+                "syncBatchSize": 20,
+                "doneThreshold": 95
             },
             "syncParanets": []
         },
@@ -987,7 +1007,8 @@
                     "query": 60000,
                     "get": 10000,
                     "batchGet": 10000,
-                    "insert": 300000
+                    "insert": 300000,
+                    "ask": 10000
                 },
                 "implementation": {
                     "ot-blazegraph": {
@@ -1064,11 +1085,15 @@
         "maximumAssertionSizeInKb": 500000,
         "commandExecutorVerboseLoggingEnabled": false,
         "appDataPath": "data",
-        "logLevel": "trace",
+        "logging": {
+            "defaultLevel": "trace",
+            "enableExperimentalScopes": false
+        },
         "assetSync": {
             "syncDKG": {
                 "enabled": false,
-                "syncBatchSize": 20
+                "syncBatchSize": 20,
+                "doneThreshold": 95
             },
             "syncParanets": []
         },
