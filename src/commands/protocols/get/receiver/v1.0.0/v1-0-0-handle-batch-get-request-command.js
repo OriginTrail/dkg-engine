@@ -39,10 +39,10 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
         this.logger.startTimer(
             `HandleBatchGetRequestCommand [PREPARE]: ${operationId} ${uals.length}`,
         );
-        await this.operationIdService.updateOperationIdStatus(
+        await this.operationIdService.emitChangeEvent(
+            this.operationStartEvent,
             operationId,
             blockchain,
-            this.operationStartEvent,
         );
 
         // Trim uals and tokenIds to the max limit of BATCH_GET_UAL_MAX_LIMIT
@@ -108,10 +108,10 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
         );
 
         if (assertions?.length) {
-            await this.operationIdService.updateOperationIdStatus(
+            await this.operationIdService.emitChangeEvent(
+                this.operationEndEvent,
                 operationId,
                 blockchain,
-                this.operationEndEvent,
             );
         }
 
