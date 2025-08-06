@@ -3,6 +3,7 @@ import {
     ERROR_TYPE,
     PARANET_SYNC_FREQUENCY_MILLS,
     OPERATION_ID_STATUS,
+    COMMAND_PRIORITY,
 } from '../../constants/constants.js';
 
 class StartParanetSyncCommands extends Command {
@@ -18,8 +19,6 @@ class StartParanetSyncCommands extends Command {
     }
 
     async execute() {
-        await this.commandExecutor.delete('paranetSyncCommand');
-
         const promises = [];
         this.config.assetSync?.syncParanets.forEach(async (paranetUAL) => {
             const operationId = this.operationIdService.generateId(
@@ -41,7 +40,7 @@ class StartParanetSyncCommands extends Command {
                 knowledgeCollectionId,
                 knowledgeAssetId,
             );
-            const paranetMetadata = await this.blockchainModuleManager.getParanetMetadata(
+            const nodesAccessPolicy = await this.blockchainModuleManager.getNodesAccessPolicy(
                 blockchain,
                 paranetId,
             );
@@ -53,13 +52,13 @@ class StartParanetSyncCommands extends Command {
                 knowledgeAssetId,
                 paranetUAL,
                 paranetId,
-                paranetMetadata,
+                nodesAccessPolicy,
                 operationId,
             };
 
             promises.push(
                 this.commandExecutor.add({
-                    name: 'paranetSyncCommand',
+                    name: `paranetSyncCommand-${paranetId}`,
                     data: commandData,
                     period: PARANET_SYNC_FREQUENCY_MILLS,
                 }),
@@ -92,6 +91,7 @@ class StartParanetSyncCommands extends Command {
             name: 'startParanetSyncCommands',
             data: {},
             transactional: false,
+            priority: COMMAND_PRIORITY.LOW,
         };
         Object.assign(command, map);
         return command;

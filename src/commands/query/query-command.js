@@ -4,6 +4,7 @@ import {
     QUERY_TYPES,
     OPERATION_ID_STATUS,
     ERROR_TYPE,
+    COMMAND_PRIORITY,
 } from '../../constants/constants.js';
 
 class QueryCommand extends Command {
@@ -138,8 +139,7 @@ class QueryCommand extends Command {
     default(map) {
         const command = {
             name: 'queryCommand',
-            delay: 0,
-            retries: 0,
+            priority: COMMAND_PRIORITY.HIGHEST,
             transactional: false,
         };
         Object.assign(command, map);

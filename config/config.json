@@ -92,10 +92,11 @@
             "tripleStore": {
                 "enabled": true,
                 "timeout": {
-                    "query": 90000,
+                    "query": 60000,
                     "get": 10000,
-                    "batchGet": 60000,
-                    "insert": 300000
+                    "batchGet": 10000,
+                    "insert": 300000,
+                    "ask": 10000
                 },
                 "implementation": {
                     "ot-blazegraph": {
@@ -197,11 +198,15 @@
         "maximumAssertionSizeInKb": 500000,
         "commandExecutorVerboseLoggingEnabled": false,
         "appDataPath": "data",
-        "logLevel": "info",
+        "logging": {
+            "defaultLevel": "trace",
+            "enableExperimentalScopes": true
+        },
         "assetSync": {
             "syncDKG": {
                 "enabled": true,
-                "syncBatchSize": 5
+                "syncBatchSize": 5,
+                "doneThreshold": 95
             },
             "syncParanets": []
         },
@@ -345,10 +350,11 @@
             "tripleStore": {
                 "enabled": true,
                 "timeout": {
-                    "query": 90000,
+                    "query": 60000,
                     "get": 10000,
-                    "batchGet": 60000,
-                    "insert": 300000
+                    "batchGet": 10000,
+                    "insert": 300000,
+                    "ask": 10000
                 },
                 "implementation": {
                     "ot-blazegraph": {
@@ -401,11 +407,15 @@
         "maximumAssertionSizeInKb": 500000,
         "commandExecutorVerboseLoggingEnabled": false,
         "appDataPath": "data",
-        "logLevel": "trace",
+        "logging": {
+            "defaultLevel": "info",
+            "enableExperimentalScopes": true
+        },
         "assetSync": {
             "syncDKG": {
                 "enabled": false,
-                "syncBatchSize": 20
+                "syncBatchSize": 20,
+                "doneThreshold": 95
             },
             "syncParanets": []
         },
@@ -562,10 +572,11 @@
             "tripleStore": {
                 "enabled": true,
                 "timeout": {
-                    "query": 90000,
+                    "query": 60000,
                     "get": 10000,
-                    "batchGet": 60000,
-                    "insert": 300000
+                    "batchGet": 10000,
+                    "insert": 300000,
+                    "ask": 10000
                 },
                 "implementation": {
                     "ot-blazegraph": {
@@ -633,11 +644,15 @@
         "maximumAssertionSizeInKb": 500000,
         "commandExecutorVerboseLoggingEnabled": false,
         "appDataPath": "data",
-        "logLevel": "trace",
+        "logging": {
+            "defaultLevel": "trace",
+            "enableExperimentalScopes": true
+        },
         "assetSync": {
             "syncDKG": {
                 "enabled": false,
-                "syncBatchSize": 20
+                "syncBatchSize": 20,
+                "doneThreshold": 95
             },
             "syncParanets": []
         },
@@ -770,10 +785,11 @@
             "tripleStore": {
                 "enabled": true,
                 "timeout": {
-                    "query": 90000,
+                    "query": 60000,
                     "get": 10000,
-                    "batchGet": 60000,
-                    "insert": 300000
+                    "batchGet": 10000,
+                    "insert": 300000,
+                    "ask": 10000
                 },
                 "implementation": {
                     "ot-blazegraph": {
@@ -834,11 +850,15 @@
         "maximumAssertionSizeInKb": 500000,
         "commandExecutorVerboseLoggingEnabled": false,
         "appDataPath": "data",
-        "logLevel": "trace",
+        "logging": {
+            "defaultLevel": "trace",
+            "enableExperimentalScopes": false
+        },
         "assetSync": {
             "syncDKG": {
                 "enabled": false,
-                "syncBatchSize": 20
+                "syncBatchSize": 20,
+                "doneThreshold": 95
             },
             "syncParanets": []
         },
@@ -966,7 +986,7 @@
                         "package": "./blockchain/implementation/gnosis/gnosis-service.js",
                         "config": {
                             "hubContractAddress": "0x882D0BF07F956b1b94BBfe9E77F47c6fc7D4EC8f",
-                            "gasPriceOracleLink": "https://api.gnosisscan.io/api?module=proxy&action=eth_gasPrice",
+                            "gasPriceOracleLink": "https://gnosis.blockscout.com/api/v1/gas-price-oracle",
                             "operatorFee": 0
                         }
                     },
@@ -984,10 +1004,11 @@
             "tripleStore": {
                 "enabled": true,
                 "timeout": {
-                    "query": 90000,
+                    "query": 60000,
                     "get": 10000,
-                    "batchGet": 60000,
-                    "insert": 300000
+                    "batchGet": 10000,
+                    "insert": 300000,
+                    "ask": 10000
                 },
                 "implementation": {
                     "ot-blazegraph": {
@@ -1064,11 +1085,15 @@
         "maximumAssertionSizeInKb": 500000,
         "commandExecutorVerboseLoggingEnabled": false,
         "appDataPath": "data",
-        "logLevel": "trace",
+        "logging": {
+            "defaultLevel": "trace",
+            "enableExperimentalScopes": false
+        },
         "assetSync": {
             "syncDKG": {
                 "enabled": false,
-                "syncBatchSize": 20
+                "syncBatchSize": 20,
+                "doneThreshold": 95
             },
             "syncParanets": []
         },

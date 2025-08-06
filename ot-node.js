@@ -5,11 +5,7 @@ import { createRequire } from 'module';
 import { execSync } from 'child_process';
 import DependencyInjection from './src/service/dependency-injection.js';
 import Logger from './src/logger/logger.js';
-import {
-    MIN_NODE_VERSION,
-    PARANET_ACCESS_POLICY,
-    NODE_ENVIRONMENTS,
-} from './src/constants/constants.js';
+import { MIN_NODE_VERSION, PARANET_ACCESS_POLICY } from './src/constants/constants.js';
 import FileService from './src/service/file-service.js';
 import OtnodeUpdateCommand from './src/commands/common/otnode-update-command.js';
 import OtAutoUpdater from './src/modules/auto-updater/implementation/ot-auto-updater.js';
@@ -27,6 +23,10 @@ class OTNode {
         this.initializeFileService();
         this.initializeAutoUpdaterModule();
         this.checkNodeVersion();
+
+        // Set up process event listeners
+        process.on('SIGINT', () => this.handleExit()); // Ctrl+C
+        process.on('SIGTERM', () => this.handleExit()); // kill command or Docker stop
     }
 
     async start() {
@@ -34,6 +34,12 @@ class OTNode {
         await this.removeUpdateFile();
 
         await MigrationExecutor.executeTripleStoreUserConfigurationMigration(
+            this.container,
+            this.logger,
+            this.config,
+        );
+
+        await MigrationExecutor.executeRedisSetupMigration(
             this.container,
             this.logger,
             this.config,
@@ -66,10 +72,9 @@ class OTNode {
         await this.startNetworkModule();
         this.resumeCommandExecutor();
         await this.initializeProofing();
-        if (process.env.NODE_ENV !== NODE_ENVIRONMENTS.MAINNET) {
-            await this.initializeClaimRewards();
-        }
+        await this.initializeClaimRewards();
         await this.initializeSyncService();
+        await this.initializeBlazegraphHealthService();
 
         this.logger.info('Node is up and running!');
     }
@@ -87,7 +92,7 @@ class OTNode {
     }
 
     initializeLogger() {
-        this.logger = new Logger(this.config.logLevel);
+        this.logger = new Logger(this.config.logging.defaultLevel);
     }
 
     initializeFileService() {
@@ -250,11 +255,11 @@ class OTNode {
     async initializeCommandExecutor() {
         try {
             const commandExecutor = this.container.resolve('commandExecutor');
-            commandExecutor.pauseQueue();
+            await commandExecutor.pauseCommandExecutor();
             await commandExecutor.addDefaultCommands();
-            commandExecutor
-                .replayOldCommands()
-                .then(() => this.logger.info('Finished replaying old commands'));
+            // commandExecutor
+            //     .replayOldCommands()
+            //     .then(() => this.logger.info('Finished replaying old commands'));
         } catch (e) {
             this.logger.error(
                 `Command executor initialization failed. Error message: ${e.message}`,
@@ -266,7 +271,7 @@ class OTNode {
     resumeCommandExecutor() {
         try {
             const commandExecutor = this.container.resolve('commandExecutor');
-            commandExecutor.resumeQueue();
+            commandExecutor.resumeCommandExecutor();
         } catch (e) {
             this.logger.error(
                 `Unable to resume command executor queue. Error message: ${e.message}`,
@@ -424,9 +429,22 @@ class OTNode {
         await syncService.initialize();
     }
 
+    async initializeBlazegraphHealthService() {
+        const blazegraphHealthService = this.container.resolve('blazegraphHealthService');
+        await blazegraphHealthService.initialize();
+        this.logger.info('Blazegraph Health Service initialized successfully');
+    }
+
     stop(code = 0) {
         this.logger.info('Stopping node...');
         process.exit(code);
+    }
+
+    async handleExit() {
+        this.logger.info('SIGINT or SIGTERM received. Shutting down...');
+        const commandExecutor = this.container.resolve('commandExecutor');
+        await commandExecutor.commandExecutorShutdown();
+        process.exit(0);
     }
 }
 

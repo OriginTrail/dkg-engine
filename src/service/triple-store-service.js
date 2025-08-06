@@ -11,12 +11,17 @@ import {
     HAS_NAMED_GRAPH_SUFFIX,
     DKG_METADATA_PREDICATES,
     SCHEMA_CONTEXT,
+    MAX_TOKEN_ID_PER_GET_PAGE,
 } from '../constants/constants.js';
 
 class TripleStoreService {
     constructor(ctx) {
         this.config = ctx.config;
-        this.logger = ctx.logger;
+        this.logger = ctx.config.logging.enableExperimentalScopes
+            ? ctx.logger.child({
+                  scope: 'TripleStoreService',
+              })
+            : ctx.logger;
 
         this.tripleStoreModuleManager = ctx.tripleStoreModuleManager;
         this.operationIdService = ctx.operationIdService;
@@ -433,51 +438,116 @@ class TripleStoreService {
         migrationFlag,
         visibility = TRIPLES_VISIBILITY.PUBLIC,
         repository = TRIPLE_STORE_REPOSITORY.DKG,
+        operationId = undefined,
     ) {
         // TODO: Use stateId
         let ual = `did:dkg:${blockchain}/${contract}/${knowledgeCollectionId}`;
 
-        let nquads;
-        if (typeof knowledgeAssetId === 'string') {
+        // Performance instrumentation (enable only if operationId is supplied)
+        const logTime = operationId !== undefined;
+        const startTimer = (label) => {
+            if (logTime) this.logger.startTimer(label);
+        };
+        const endTimer = (label) => {
+            if (logTime) this.logger.endTimer(label);
+        };
+
+        const totalLabel = `[TripleStoreService.getAssertion TOTAL] ${operationId} ${ual}`;
+        startTimer(totalLabel);
+
+        let nquads = {};
+        if (typeof knowledgeAssetId === 'number') {
             ual = `${ual}/${knowledgeAssetId}`;
+            const singleLabel = `[TripleStoreService.getAssertion SINGLE] ${operationId} ${ual}`;
+            startTimer(singleLabel);
+
             this.logger.debug(`Getting Assertion with the UAL: ${ual}.`);
             nquads = await this.tripleStoreModuleManager.getKnowledgeAssetNamedGraph(
                 this.repositoryImplementations[repository],
                 repository,
                 // TODO: Add state with implemented update
                 `${ual}`,
-                knowledgeAssetId,
                 visibility,
                 this.config.modules.tripleStore.timeout.get,
             );
+
+            endTimer(singleLabel);
         } else {
             this.logger.debug(`Getting Assertion with the UAL: ${ual}.`);
 
-            if (migrationFlag === '1') {
-                nquads = await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphs(
-                    this.repositoryImplementations[repository],
-                    repository,
-                    ual,
-                    knowledgeAssetId,
-                    visibility,
-                    this.config.modules.tripleStore.timeout.get,
+            const existsLabel = `[TripleStoreService.getAssertion EXISTS_CHECK] ${operationId} ${ual}`;
+            startTimer(existsLabel);
+
+            // first check if the knowledge collection exists in triple store using ASK
+            const firstKAInCollection = `${ual}/${tokenIds.startTokenId}/${TRIPLES_VISIBILITY.PUBLIC}`;
+            const lastKAInCollection = `${ual}/${tokenIds.endTokenId}/${TRIPLES_VISIBILITY.PUBLIC}`;
+            const firstKAExists = this.tripleStoreModuleManager.checkIfKnowledgeAssetExists(
+                this.repositoryImplementations[repository],
+                repository,
+                firstKAInCollection,
+                this.config.modules.tripleStore.timeout.ask,
+            );
+            const lastKAExists = this.tripleStoreModuleManager.checkIfKnowledgeAssetExists(
+                this.repositoryImplementations[repository],
+                repository,
+                lastKAInCollection,
+                this.config.modules.tripleStore.timeout.ask,
+            );
+
+            const [firstKAResult, lastKAResult] = await Promise.all([firstKAExists, lastKAExists]);
+
+            endTimer(existsLabel);
+
+            if (!(firstKAResult && lastKAResult)) {
+                this.logger.warn(
+                    `Knowledge Collection with the UAL: ${ual} does not exist in the Triple Store's ${repository} repository.`,
                 );
-            } else {
-                nquads = await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphsOld(
-                    this.repositoryImplementations[repository],
-                    repository,
-                    ual,
-                    tokenIds,
-                    visibility,
-                    this.config.modules.tripleStore.timeout.get,
-                );
+                endTimer(totalLabel);
+                return { public: [], private: [] };
             }
-        }
-        if (nquads?.public) {
-            nquads.public = nquads.public.split('\n').filter((line) => line !== '');
-        }
-        if (nquads?.private) {
-            nquads.private = nquads.private.split('\n').filter((line) => line !== '');
+            // tokenIds are used to construct named graphs
+            // do pagination through tokenIds
+
+            const collectionLabel = `[TripleStoreService.getAssertion COLLECTION] ${operationId} ${ual}`;
+            startTimer(collectionLabel);
+
+            if (visibility === TRIPLES_VISIBILITY.PUBLIC || visibility === TRIPLES_VISIBILITY.ALL) {
+                nquads.public = [];
+            }
+            if (
+                visibility === TRIPLES_VISIBILITY.PRIVATE ||
+                visibility === TRIPLES_VISIBILITY.ALL
+            ) {
+                nquads.private = [];
+            }
+            const maxTokenId = tokenIds.endTokenId;
+            for (let i = 0; i <= tokenIds.endTokenId; i += MAX_TOKEN_ID_PER_GET_PAGE) {
+                const paginationNquads =
+                    await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphsOld(
+                        this.repositoryImplementations[repository],
+                        repository,
+                        ual,
+                        {
+                            startTokenId: i + 1,
+                            endTokenId: Math.min(i + MAX_TOKEN_ID_PER_GET_PAGE, maxTokenId),
+                            burned: tokenIds.burned,
+                        },
+                        visibility,
+                        this.config.modules.tripleStore.timeout.get,
+                    );
+                if (paginationNquads?.public) {
+                    nquads.public.push(
+                        ...paginationNquads.public.split('\n').filter((line) => line !== ''),
+                    );
+                }
+                if (paginationNquads?.private) {
+                    nquads.private.push(
+                        ...paginationNquads.private.split('\n').filter((line) => line !== ''),
+                    );
+                }
+            }
+
+            endTimer(collectionLabel);
         }
 
         const numberOfnquads = (nquads?.public?.length ?? 0) + (nquads?.private?.length ?? 0);
@@ -494,37 +564,53 @@ class TripleStoreService {
             );
         }
 
+        endTimer(totalLabel);
         return nquads;
     }
 
-    async getAssertionsInBatch(repository, uals, ualTokenIds, visibility = 'public') {
+    async getAssertionsInBatch(
+        repository,
+        uals,
+        ualTokenIds,
+        visibility = 'public',
+        operationId = undefined,
+    ) {
+        // Conditional performance logging
+        const logTime = operationId !== undefined;
+        const startTimer = (label) => {
+            if (logTime) this.logger.startTimer(label);
+        };
+        const endTimer = (label) => {
+            if (logTime) this.logger.endTimer(label);
+        };
+
+        const totalLabel = `[TripleStoreService.getAssertionsInBatch TOTAL] ${operationId} ${uals.length}`;
+        startTimer(totalLabel);
+
         const results = await Promise.all(
             uals.map(async (ual) => {
-                const nquads =
-                    await this.tripleStoreModuleManager.getKnowledgeCollectionNamedGraphsOld(
-                        this.repositoryImplementations[repository],
-                        repository,
-                        // TODO: Add state with implemented update
-                        `${ual}`,
-                        ualTokenIds[ual],
-                        visibility,
-                        this.config.modules.tripleStore.timeout.batchGet,
-                    );
-                if (nquads?.public) {
-                    nquads.public = nquads.public.split('\n').filter((line) => line !== '');
-                }
-                if (nquads?.private) {
-                    nquads.private = nquads.private.split('\n').filter((line) => line !== '');
-                }
-
-                return nquads;
+                const { blockchain, contract, knowledgeCollectionId } =
+                    this.ualService.resolveUAL(ual);
+                return this.getAssertion(
+                    blockchain,
+                    contract,
+                    knowledgeCollectionId,
+                    null,
+                    ualTokenIds[ual],
+                    false,
+                    visibility,
+                    repository,
+                    operationId,
+                );
             }),
         );
+
         const result = {};
         for (const [index, ual] of uals.entries()) {
             result[ual] = results[index];
         }
 
+        endTimer(totalLabel);
         return result;
     }
 
@@ -551,6 +637,16 @@ class TripleStoreService {
         }
 
         return nquads;
+    }
+
+    async checkIfKnowledgeAssetExists(repository, kaUAL) {
+        const knowledgeAssetExists =
+            await this.tripleStoreModuleManager.checkIfKnowledgeAssetExists(
+                this.repositoryImplementations[repository],
+                repository,
+                kaUAL,
+            );
+        return knowledgeAssetExists;
     }
 
     async getAssertionMetadata(

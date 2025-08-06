@@ -24,6 +24,7 @@ class SyncService {
         this.commandExecutor = ctx.commandExecutor;
         this.operationIdService = ctx.operationIdService;
         this.syncStatus = {};
+        this.registeredIntervals = [];
     }
 
     async initialize() {
@@ -77,61 +78,110 @@ class SyncService {
         this.logger.info('[DKG SYNC] SyncService initialization completed');
     }
 
+    // Weirdly named, why not start mechanism?
     async syncMechanism(blockchainId) {
         this.logger.debug(`[DKG SYNC] Setting up sync mechanism for blockchain ${blockchainId}`);
-        // Flag to track if mechanism is running
-        let isRunning = false;
 
-        // Set up interval
-        const interval = setInterval(async () => {
-            // Skip if already running
-            if (isRunning) {
+        // Set up intervals
+        let isMissedRunning = false;
+        const intervalMissed = setInterval(async () => {
+            if (isMissedRunning) {
                 this.logger.debug(
-                    `[DKG SYNC] Sync mechanism for ${blockchainId} still running, skipping this interval`,
+                    `[DKG SYNC] Sync missed KC mechanism for ${blockchainId} still running, skipping this interval`,
                 );
                 return;
             }
 
             try {
-                isRunning = true;
-                this.logger.debug(`[DKG SYNC] Starting sync cycle for blockchain ${blockchainId}`);
+                isMissedRunning = true;
+                this.logger.debug(
+                    `[DKG SYNC] Starting sync missed KC cycle for blockchain ${blockchainId}`,
+                );
 
-                await this.runSync(blockchainId);
-                this.logger.debug(`[DKG SYNC] Completed sync cycle for blockchain ${blockchainId}`);
+                const syncRecords = (
+                    await this.repositoryModuleManager.getSyncRecordForBlockchain(blockchainId)
+                ).map((syncRecord) => syncRecord.toJSON());
+
+                // Run missed KC sync for each contract in parallel
+                await Promise.all(
+                    syncRecords.map((record) =>
+                        this.runSyncMissed(blockchainId, record.contractAddress),
+                    ),
+                );
+                this.logger.debug(
+                    `[DKG SYNC] Completed sync missed KC cycle for blockchain ${blockchainId}`,
+                );
             } catch (error) {
                 this.logger.error(
-                    `[DKG SYNC] Error in sync mechanism for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
+                    `[DKG SYNC] Error in sync missed KC mechanism for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
                 );
                 this.operationIdService.emitChangeEvent(
-                    OPERATION_ID_STATUS.SYNC.SYNC_FAILED,
+                    OPERATION_ID_STATUS.SYNC.SYNC_MISSED_FAILED,
                     uuidv4(),
                     blockchainId,
                     error.message,
                     error.stack,
                 );
             } finally {
-                isRunning = false;
+                isMissedRunning = false;
             }
         }, SYNC_INTERVAL);
 
-        // Store interval reference for cleanup
-        this[`${blockchainId}Interval`] = interval;
+        let isNewRunning = false;
+        const intervalNew = setInterval(async () => {
+            if (isNewRunning) {
+                this.logger.debug(
+                    `[DKG SYNC] Sync new KC mechanism for ${blockchainId} still running, skipping this interval`,
+                );
+                return;
+            }
+
+            try {
+                isNewRunning = true;
+                this.logger.debug(
+                    `[DKG SYNC] Starting sync new KC cycle for blockchain ${blockchainId}`,
+                );
+
+                const syncRecords = (
+                    await this.repositoryModuleManager.getSyncRecordForBlockchain(blockchainId)
+                ).map((syncRecord) => syncRecord.toJSON());
+
+                await this.runSyncNewKc(blockchainId, syncRecords);
+                this.logger.debug(
+                    `[DKG SYNC] Completed sync new KC cycle for blockchain ${blockchainId}`,
+                );
+            } catch (error) {
+                this.logger.error(
+                    `[DKG SYNC] Error in sync new KC mechanism for ${blockchainId}: ${error.message}, stack: ${error.stack}`,
+                );
+                this.operationIdService.emitChangeEvent(
+                    OPERATION_ID_STATUS.SYNC.SYNC_NEW_FAILED,
+                    uuidv4(),
+                    blockchainId,
+                    error.message,
+                    error.stack,
+                );
+            } finally {
+                isNewRunning = false;
+            }
+        }, SYNC_INTERVAL);
+
+        // Register intervals for the cleanup
+        this.registeredIntervals.push(intervalMissed);
+        this.registeredIntervals.push(intervalNew);
+
+        // this[`${blockchainId}Interval`] = interval;
         this.logger.info(`[DKG SYNC] Sync mechanism initialized for blockchain ${blockchainId}`);
     }
 
-    async runSync(blockchainId) {
-        // TODO: Add telemetry
-        // TODO: Add onchain registring how far you have synced DKG
-        this.logger.debug(`[DKG SYNC] Running sync for blockchain ${blockchainId}`);
+    async runSyncNewKc(blockchainId, syncRecords) {
         const syncOperationId = uuidv4();
         this.operationIdService.emitChangeEvent(
-            OPERATION_ID_STATUS.SYNC.SYNC_START,
+            OPERATION_ID_STATUS.SYNC.SYNC_NEW_START,
             syncOperationId,
             blockchainId,
         );
-        const syncRecords = (
-            await this.repositoryModuleManager.getSyncRecordForBlockchain(blockchainId)
-        ).map((syncRecord) => syncRecord.toJSON());
+
         const latestKnowledgeCollectionIds = {};
 
         const knowledgeCollectionResults = await Promise.all(
@@ -194,23 +244,37 @@ class SyncService {
 
         const contractPromises = Object.entries(latestKnowledgeCollectionIds).map(
             async ([contractAddress, syncObject]) => {
-                // Run both sync tasks in parallel for this one contract
-                await Promise.all([
-                    this.syncNewKc(blockchainId, contractAddress, syncObject),
-                    this.syncMissedKc(blockchainId, contractAddress),
-                ]);
+                await this.syncNewKc(blockchainId, contractAddress, syncObject);
             },
         );
 
-        // Run all contracts in parallel
         await Promise.all(contractPromises);
+
         this.operationIdService.emitChangeEvent(
-            OPERATION_ID_STATUS.SYNC.SYNC_END,
+            OPERATION_ID_STATUS.SYNC.SYNC_NEW_END,
             syncOperationId,
             blockchainId,
         );
     }
 
+    async runSyncMissed(blockchainId, contractAddress) {
+        const syncOperationId = uuidv4();
+        this.operationIdService.emitChangeEvent(
+            OPERATION_ID_STATUS.SYNC.SYNC_MISSED_START,
+            syncOperationId,
+            blockchainId,
+        );
+
+        await this.syncMissedKc(blockchainId, contractAddress);
+
+        this.operationIdService.emitChangeEvent(
+            OPERATION_ID_STATUS.SYNC.SYNC_MISSED_END,
+            syncOperationId,
+            blockchainId,
+        );
+    }
+
+    // TODO: Add syncOperationId with additional events to syncNewKc
     async syncNewKc(blockchainId, contractAddress, syncObject) {
         const uals = [];
         const { latestSyncedKc } = syncObject;
@@ -260,15 +324,19 @@ class SyncService {
             // Update metadata timestamps
             const updatedMetadata = { ...data.metadata };
             Object.entries(updatedMetadata).forEach(([ual, triples]) => {
-                updatedMetadata[ual] = triples.map((triple) => {
-                    if (triple.includes(DKG_METADATA_PREDICATES.PUBLISH_TIME)) {
-                        const splitTriple = triple.split(' ');
-                        return `${splitTriple[0]} ${
-                            splitTriple[1]
-                        } "${new Date().toISOString()}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`;
-                    }
-                    return triple;
-                });
+                if (Array.isArray(triples)) {
+                    updatedMetadata[ual] = triples.map((triple) => {
+                        if (triple.includes(DKG_METADATA_PREDICATES.PUBLISH_TIME)) {
+                            const splitTriple = triple.split(' ');
+                            return `${splitTriple[0]} ${
+                                splitTriple[1]
+                            } "${new Date().toISOString()}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`;
+                        }
+                        return triple;
+                    });
+                } else {
+                    updatedMetadata[ual] = [];
+                }
             });
             data.metadata = updatedMetadata;
 
@@ -329,6 +397,7 @@ class SyncService {
         }
     }
 
+    // TODO: Add syncOperationId with additional events to syncMissedKc
     async syncMissedKc(blockchainId, contract) {
         const missedKcForRetry = await this.repositoryModuleManager.getMissedKcForRetry(
             blockchainId,
@@ -384,15 +453,19 @@ class SyncService {
             // Update metadata timestamps
             const updatedMetadata = { ...data.metadata };
             Object.entries(updatedMetadata).forEach(([ual, triples]) => {
-                updatedMetadata[ual] = triples.map((triple) => {
-                    if (triple.includes(DKG_METADATA_PREDICATES.PUBLISH_TIME)) {
-                        const splitTriple = triple.split(' ');
-                        return `${splitTriple[0]} ${
-                            splitTriple[1]
-                        } "${new Date().toISOString()}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`;
-                    }
-                    return triple;
-                });
+                if (Array.isArray(triples)) {
+                    updatedMetadata[ual] = triples.map((triple) => {
+                        if (triple.includes(DKG_METADATA_PREDICATES.PUBLISH_TIME)) {
+                            const splitTriple = triple.split(' ');
+                            return `${splitTriple[0]} ${
+                                splitTriple[1]
+                            } "${new Date().toISOString()}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`;
+                        }
+                        return triple;
+                    });
+                } else {
+                    updatedMetadata[ual] = [];
+                }
             });
             data.metadata = updatedMetadata;
 
@@ -512,7 +585,11 @@ class SyncService {
     }
 
     // Add cleanup method to stop intervals
-    cleanup() {}
+    cleanup() {
+        for (const interval of this.registeredIntervals) {
+            clearInterval(interval);
+        }
+    }
 }
 
 export default SyncService;

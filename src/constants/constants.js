@@ -386,7 +386,7 @@ export const NETWORK_MESSAGE_TIMEOUT_MILLS = {
         REQUEST: 60 * 1000,
     },
     BATCH_GET: {
-        REQUEST: 60 * 1000,
+        REQUEST: 30 * 1000,
     },
 };
 
@@ -669,9 +669,15 @@ export const OPERATION_ID_STATUS = {
     },
     SYNC: {
         SYNC_START: 'SYNC_START',
+        SYNC_NEW_START: 'SYNC_NEW_START',
+        SYNC_MISSED_START: 'SYNC_MISSED_START',
         SYNC_END: 'SYNC_END',
+        SYNC_NEW_END: 'SYNC_NEW_END',
+        SYNC_MISSED_END: 'SYNC_MISSED_END',
         SYNC_PROGRESS_STATUS: 'SYNC_PROGRESS_STATUS',
         SYNC_FAILED: 'SYNC_FAILED',
+        SYNC_NEW_FAILED: 'SYNC_NEW_FAILED',
+        SYNC_MISSED_FAILED: 'SYNC_MISSED_FAILED',
     },
 };
 
@@ -706,6 +712,9 @@ export const EXPECTED_TRANSACTION_ERRORS = {
     NODE_NOT_AWARDED: 'NodeNotAwarded',
     WRONG_MERKLE_PROOF: 'WrongMerkleProof',
     NO_MINTED_ASSETS: 'NoMintedAssets',
+    NONCE_TOO_LOW: 'nonce too low',
+    REPLACEMENT_UNDERPRICED: 'replacement transaction underpriced',
+    ALREADY_KNOWN: 'already known',
 };
 
 /**
@@ -782,7 +791,9 @@ export const NETWORK_SIGNATURES_FOLDER = 'network';
  * How many commands will run in parallel
  * @type {number}
  */
-export const COMMAND_QUEUE_PARALLELISM = 150;
+export const GENERAL_COMMAND_QUEUE_PARALLELISM = 100;
+
+export const BATCH_GET_COMMAND_QUEUE_PARALLELISM = 20;
 
 export const GET_LATEST_SERVICE_AGREEMENT_BATCH_SIZE = 50;
 
@@ -1077,7 +1088,7 @@ export const V6_CONTENT_STORAGE_MAP = {
     OTP_DEVNET: '0xABd59A9aa71847F499d624c492d3903dA953d67a',
 };
 
-export const PROOFING_INTERVAL = 12 * 1000;
+export const PROOFING_INTERVAL = 5 * 60 * 1000;
 export const PROOFING_MAX_ATTEMPTS = 120;
 export const REORG_PROOFING_BUFFER = 60 * 1000;
 export const CHUNK_SIZE = 32;
@@ -1091,3 +1102,9 @@ export const BATCH_GET_UAL_MAX_LIMIT = 1000;
 export const SYNC_INTERVAL = 12 * 1000;
 export const SYNC_BATCH_GET_WAIT_TIME = 1000;
 export const SYNC_BATCH_GET_MAX_ATTEMPTS = 15 * 60;
+
+export const MAX_TOKEN_ID_PER_GET_PAGE = 50;
+
+export const BLAZEGRAPH_HEALTH_INTERVAL = 60 * 1000;
+
+export const MAX_COMMAND_LIFETIME = 15 * 60 * 1000;

@@ -1,5 +1,5 @@
 import BaseController from './base-rpc-controller.js';
-import { NETWORK_MESSAGE_TYPES } from '../../constants/constants.js';
+import { NETWORK_MESSAGE_TYPES, COMMAND_PRIORITY } from '../../constants/constants.js';
 
 class PublishController extends BaseController {
     constructor(ctx) {
@@ -12,13 +12,12 @@ class PublishController extends BaseController {
     async v1_0_0HandleRequest(message, remotePeerId, protocol) {
         const { operationId, messageType } = message.header;
 
-        const command = { sequence: [], delay: 0, transactional: false, data: {} };
+        const command = { sequence: [], transactional: false, data: {} };
         const [handleRequestCommand] = this.getCommandSequence(protocol);
         if (messageType === NETWORK_MESSAGE_TYPES.REQUESTS.PROTOCOL_REQUEST) {
             Object.assign(command, {
                 name: handleRequestCommand,
-                period: 5000,
-                retries: 3,
+                priority: COMMAND_PRIORITY.HIGHEST,
             });
 
             await this.operationIdService.cacheOperationIdDataToMemory(operationId, {
