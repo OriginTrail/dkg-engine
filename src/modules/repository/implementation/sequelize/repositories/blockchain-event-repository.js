@@ -58,7 +58,7 @@ class BlockchainEventRepository {
         return this.model.update(
             { processed: true },
             {
-                where: { blockchain },
+                where: { blockchain, processed: false },
                 ...options,
             },
         );
