@@ -116,7 +116,7 @@ class HandleProtocolMessageCommand extends Command {
         this.logger.error(`Command error (${this.errorType}): ${errorMessage}`);
         if (errorMessage !== null) {
             this.logger.debug(`Marking operation id ${operationId} as failed`);
-            await this.removeOperationIdCache(operationId);
+            await this.operationIdService.removeOperationIdCache(operationId);
         }
         this.operationIdService.emitChangeEvent(
             this.errorType,
