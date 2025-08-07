@@ -55,7 +55,7 @@ class BlazegraphHealthService {
 
         try {
             const response = await axios.get(`${repositoryUrl}/blazegraph/status`, {
-                timeout: 1000,
+                timeout: 3 * 1000,
             });
 
             if (response.status === 200) {
