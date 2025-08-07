@@ -37,10 +37,11 @@ class HandleFinalityRequestCommand extends HandleProtocolMessageCommand {
         if (state) {
             ualWithState = `${ual}:${state}`;
         }
-        await this.operationIdService.updateOperationIdStatus(
+
+        this.operationIdService.emitChangeEvent(
+            OPERATION_ID_STATUS.FINALITY.PUBLISH_FINALITY_REMOTE_START,
             operationId,
             blockchain,
-            OPERATION_ID_STATUS.FINALITY.PUBLISH_FINALITY_REMOTE_START,
         );
 
         let response;
@@ -70,10 +71,10 @@ class HandleFinalityRequestCommand extends HandleProtocolMessageCommand {
             OPERATION_ID_STATUS.FINALITY.PUBLISH_FINALITY_END,
             OPERATION_ID_STATUS.COMPLETED,
         ]);
-        await this.operationIdService.updateOperationIdStatus(
+        this.operationIdService.emitChangeEvent(
+            OPERATION_ID_STATUS.FINALITY.PUBLISH_FINALITY_REMOTE_END,
             operationId,
             blockchain,
-            OPERATION_ID_STATUS.FINALITY.PUBLISH_FINALITY_REMOTE_END,
         );
 
         // eslint-disable-next-line no-param-reassign

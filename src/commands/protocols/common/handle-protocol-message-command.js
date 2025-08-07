@@ -22,11 +22,7 @@ class HandleProtocolMessageCommand extends Command {
     async execute(command) {
         const { remotePeerId, operationId, protocol, blockchain } = command.data;
 
-        this.operationIdService.updateOperationIdStatus(
-            operationId,
-            blockchain,
-            this.operationStartEvent,
-        );
+        this.operationIdService.emitChangeEvent(this.operationStartEvent, operationId, blockchain);
 
         try {
             const { messageType, messageData } = await this.prepareMessage(command.data);
@@ -37,11 +33,6 @@ class HandleProtocolMessageCommand extends Command {
                 messageType,
                 operationId,
                 messageData,
-            );
-            await this.operationIdService.updateOperationIdStatus(
-                operationId,
-                blockchain,
-                this.operationEndEvent,
             );
         } catch (error) {
             if (command.retries) {
@@ -122,7 +113,19 @@ class HandleProtocolMessageCommand extends Command {
     async handleError(errorMessage, command) {
         const { operationId, blockchain, remotePeerId, protocol } = command.data;
 
-        await super.handleError(operationId, blockchain, errorMessage, this.errorType, true);
+        this.logger.error(`Command error (${this.errorType}): ${errorMessage}`);
+        if (errorMessage !== null) {
+            this.logger.debug(`Marking operation id ${operationId} as failed`);
+            await this.removeOperationIdCache(operationId);
+        }
+        this.operationIdService.emitChangeEvent(
+            this.errorType,
+            operationId,
+            blockchain,
+            errorMessage,
+            this.errorType,
+        );
+
         await this.networkModuleManager.sendMessageResponse(
             protocol,
             remotePeerId,
