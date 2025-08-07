@@ -89,12 +89,6 @@ class PublishReplicationCommand extends Command {
                 return Command.empty();
             }
 
-            await this.operationIdService.updateOperationIdStatus(
-                operationId,
-                blockchain,
-                OPERATION_ID_STATUS.FAILED,
-            );
-
             try {
                 await this.operationIdService.updateOperationIdStatus(
                     operationId,
