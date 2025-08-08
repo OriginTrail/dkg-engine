@@ -326,8 +326,8 @@ export const MIGRATION_FLAG_PATH = '.enrichment_migration_done_dkg';
 export const CONTRACT_FUNCTION_GAS_LIMIT_INCREASE_FACTORS = {};
 
 export const GNOSIS_DEFAULT_GAS_PRICE = {
-    TESTNET: 25,
-    MAINNET: 5,
+    TESTNET: 1,
+    MAINNET: 1,
 };
 
 export const NEURO_DEFAULT_GAS_PRICE = {
