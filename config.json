@@ -1,0 +1,161 @@
+{
+    "logLevel": "trace",
+    "modules": {
+        "httpClient": {
+            "enabled": true,
+            "implementation": {
+                "express-http-client": {
+                    "package": "./http-client/implementation/express-http-client.js",
+                    "config": {
+                        "port": 8900
+                    }
+                }
+            }
+        },
+        "repository": {
+            "enabled": true,
+            "implementation": {
+                "sequelize-repository": {
+                    "package": "./repository/implementation/sequelize/sequelize-repository.js",
+                    "config": {
+                        "database": "operationaldb0"
+                    }
+                }
+            }
+        },
+        "tripleStore": {
+            "enabled": true,
+            "implementation": {
+                "ot-blazegraph": {
+                    "enabled": true,
+                    "package": "./triple-store/implementation/ot-blazegraph/ot-blazegraph.js",
+                    "config": {
+                        "repositories": {
+                            "dkg": {
+                                "url": "http://localhost:9999",
+                                "name": "dkg-0",
+                                "username": "admin",
+                                "password": ""
+                            },
+                            "privateCurrent": {
+                                "url": "http://localhost:9999",
+                                "name": "private-current-0",
+                                "username": "admin",
+                                "password": ""
+                            },
+                            "publicCurrent": {
+                                "url": "http://localhost:9999",
+                                "name": "public-current-0",
+                                "username": "admin",
+                                "password": ""
+                            }
+                        }
+                    }
+                },
+                "ot-fuseki": {
+                    "enabled": false,
+                    "package": "./triple-store/implementation/ot-fuseki/ot-fuseki.js",
+                    "config": {
+                        "repositories": {
+                            "dkg": {
+                                "url": "http://localhost:3030",
+                                "name": "dkg-0",
+                                "username": "admin",
+                                "password": ""
+                            }
+                        }
+                    }
+                },
+                "ot-graphdb": {
+                    "enabled": false,
+                    "package": "./triple-store/implementation/ot-graphdb/ot-graphdb.js",
+                    "config": {
+                        "repositories": {
+                            "dkg": {
+                                "url": "http://localhost:7200",
+                                "name": "dkg-0",
+                                "username": "admin",
+                                "password": ""
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "network": {
+            "enabled": true,
+            "implementation": {
+                "libp2p-service": {
+                    "package": "./network/implementation/libp2p-service.js",
+                    "config": {
+                        "port": 9100,
+                        "bootstrap": [
+                            "/ip4/0.0.0.0/tcp/9100/p2p/QmWyf3dtqJnhuCpzEDTNmNFYc5tjxTrXhGcUUmGHdg2gtj"
+                        ],
+                        "privateKey": "CAAS4QQwggJdAgEAAoGBALOYSCZsmINMpFdH8ydA9CL46fB08F3ELfb9qiIq+z4RhsFwi7lByysRnYT/NLm8jZ4RvlsSqOn2ZORJwBywYD5MCvU1TbEWGKxl5LriW85ZGepUwiTZJgZdDmoLIawkpSdmUOc1Fbnflhmj/XzAxlnl30yaa/YvKgnWtZI1/IwfAgMBAAECgYEAiZq2PWqbeI6ypIVmUr87z8f0Rt7yhIWZylMVllRkaGw5WeGHzQwSRQ+cJ5j6pw1HXMOvnEwxzAGT0C6J2fFx60C6R90TPos9W0zSU+XXLHA7AtazjlSnp6vHD+RxcoUhm1RUPeKU6OuUNcQVJu1ZOx6cAcP/I8cqL38JUOOS7XECQQDex9WUKtDnpHEHU/fl7SvCt0y2FbGgGdhq6k8nrWtBladP5SoRUFuQhCY8a20fszyiAIfxQrtpQw1iFPBpzoq1AkEAzl/s3XPGi5vFSNGLsLqbVKbvoW9RUaGN8o4rU9oZmPFL31Jo9FLA744YRer6dYE7jJMel7h9VVWsqa9oLGS8AwJALYwfv45Nbb6yGTRyr4Cg/MtrFKM00K3YEGvdSRhsoFkPfwc0ZZvPTKmoA5xXEC8eC2UeZhYlqOy7lL0BNjCzLQJBAMpvcgtwa8u6SvU5B0ueYIvTDLBQX3YxgOny5zFjeUR7PS+cyPMQ0cyql8jNzEzDLcSg85tkDx1L4wi31Pnm/j0CQFH/6MYn3r9benPm2bYSe9aoJp7y6ht2DmXmoveNbjlEbb8f7jAvYoTklJxmJCcrdbNx/iCj2BuAinPPgEmUzfQ="
+                    }
+                }
+            }
+        },
+        "blockchain": {
+            "implementation": {
+                "hardhat1:31337": {
+                    "enabled": true,
+                    "package": "./blockchain/implementation/hardhat/hardhat-service.js",
+                    "config": {
+                        "operationalWallets": [
+                            {
+                                "evmAddress": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+                                "privateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+                            }
+                        ],
+                        "rpcEndpoints": ["http://localhost:8545"],
+                        "evmManagementWalletPublicKey": "0xba2Ef8C82FdF88ac9ca4163b7cAb1A0628d6b936",
+                        "evmManagementWalletPrivateKey": "0x35e66144e44e2afea7a0d2870f7a66c59455145026e8744cfac3c895f603d8ed",
+                        "nodeName": "LocalNode1"
+                    }
+                },
+                "hardhat2:31337": {
+                    "package": "./blockchain/implementation/hardhat/hardhat-service.js",
+                    "config": {
+                        "operationalWallets": [
+                            {
+                                "evmAddress": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+                                "privateKey": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+                            }
+                        ],
+                        "rpcEndpoints": ["http://localhost:9545"],
+                        "evmManagementWalletPublicKey": "0xba2Ef8C82FdF88ac9ca4163b7cAb1A0628d6b936",
+                        "evmManagementWalletPrivateKey": "0x35e66144e44e2afea7a0d2870f7a66c59455145026e8744cfac3c895f603d8ed",
+                        "sharesTokenName": "LocalNode1",
+                        "sharesTokenSymbol": "LN1"
+                    }
+                }
+            }
+        },
+        "blockchainEvents": {
+            "enabled": true,
+            "implementation": {
+                "ot-ethers": {
+                    "enabled": true,
+                    "package": "./blockchain-events/implementation/ot-ethers/ot-ethers.js",
+                    "config": {
+                        "blockchains": ["hardhat1:31337", "hardhat2:31337"],
+                        "rpcEndpoints": {
+                            "hardhat1:31337": ["http://localhost:8545"],
+                            "hardhat2:31337": ["http://localhost:9545"]
+                        },
+                        "hubContractAddress": {
+                            "hardhat1:31337": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                            "hardhat2:31337": "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "auth": {
+        "ipWhitelist": ["::1", "127.0.0.1"]
+    },
+    "appDataPath": "data0"
+}

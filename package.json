@@ -1,10 +1,16 @@
 {
-    "name": "origintrail_node",
+    "name": "origintrail-node",
     "version": "8.1.1-rc.11",
-    "description": "OTNode V8",
+    "description": "OriginTrail Node - Decentralized Knowledge Graph Node Library",
     "main": "index.js",
     "type": "module",
-    "scripts": {
+    "files": [
+        "src/**/*",
+        "config/**/*",
+        "index.js",
+        "README.md"
+    ],
+"scripts": {
         "compile-contracts": "npm explore dkg-evm-module -- npm run compile",
         "bootstrap-node": "node index.js tools/local-network-setup/.bootstrap_origintrail_noderc",
         "start": "node index.js",
@@ -27,44 +33,17 @@
         "set-stake": "node scripts/set-stake.js",
         "set-operator-fee": "node scripts/set-operator-fee.js"
     },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/OriginTrail/ot-node.git"
-    },
     "keywords": [
+        "origintrail",
         "ot-node",
-        "v8"
+        "decentralized",
+        "knowledge-graph",
+        "blockchain",
+        "dkg"
     ],
-    "author": "TraceLabs",
-    "license": "ISC",
-    "bugs": {
-        "url": "https://github.com/OriginTrail/ot-node/issues"
-    },
-    "homepage": "https://origintrail.io/",
     "engines": {
         "node": ">=16.0.0",
         "npm": ">=8.0.0"
-    },
-    "devDependencies": {
-        "@cucumber/cucumber": "^11.2.0",
-        "chai": "^4.3.6",
-        "concurrently": "^9.1.2",
-        "d3": "^7.8.5",
-        "d3-node": "^3.0.0",
-        "dkg.js": "^8.0.8",
-        "eslint": "^8.23.0",
-        "eslint-config-airbnb": "^19.0.4",
-        "eslint-config-prettier": "^8.5.0",
-        "hardhat": "^2.22.19",
-        "husky": "^8.0.1",
-        "lint-staged": "^13.0.3",
-        "mocha": "^10.0.0",
-        "nyc": "^15.1.0",
-        "prettier": "^2.7.1",
-        "rollup": "^4.40.0",
-        "sharp": "^0.32.6",
-        "sinon": "^14.0.0",
-        "slugify": "^1.6.5"
     },
     "dependencies": {
         "@comunica/query-sparql": "^4.0.2",
@@ -114,6 +93,7 @@
         "pino": "^9.7.0",
         "pino-pretty": "^13.0.0",
         "rc": "^1.2.8",
+        "redis": "^4.0.0",
         "rolling-rate-limiter": "^0.2.13",
         "semver": "^7.5.2",
         "sequelize": "^6.29.0",
@@ -125,5 +105,36 @@
         "umzug": "^3.2.1",
         "unzipper": "^0.10.11",
         "uuid": "^8.3.2"
-    }
+    },
+    "devDependencies": {
+        "@cucumber/cucumber": "^11.2.0",
+        "chai": "^4.3.6",
+        "concurrently": "^9.1.2",
+        "d3": "^7.8.5",
+        "d3-node": "^3.0.0",
+        "dkg.js": "^8.0.8",
+        "eslint": "^8.23.0",
+        "eslint-config-airbnb": "^19.0.4",
+        "eslint-config-prettier": "^8.5.0",
+        "hardhat": "^2.22.19",
+        "husky": "^8.0.1",
+        "lint-staged": "^13.0.3",
+        "mocha": "^10.0.0",
+        "nyc": "^15.1.0",
+        "prettier": "^2.7.1",
+        "rollup": "^4.40.0",
+        "sharp": "^0.32.6",
+        "sinon": "^14.0.0",
+        "slugify": "^1.6.5"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/OriginTrail/ot-node.git"
+    },
+    "author": "TraceLabs",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/OriginTrail/ot-node/issues"
+    },
+    "homepage": "https://origintrail.io/"
 }

@@ -2,6 +2,7 @@
 import 'dotenv/config';
 import fs from 'fs-extra';
 import OTNode from './ot-node.js';
+
 import { NODE_ENVIRONMENTS } from './src/constants/constants.js';
 
 process.env.NODE_ENV =
@@ -126,3 +127,106 @@ process.on('uncaughtException', (err) => {
     console.error('Something went really wrong! OT-node shutting down...', err);
     process.exit(1);
 });
+
+/**
+ * Simple OT-Node Library
+ * Provides a single instance that can be started and stopped
+ */
+class OTNodeLibrary {
+    constructor() {
+        this.node = null;
+        this.isRunning = false;
+    }
+
+    /**
+     * Start the OT-Node
+     * @param {Object} config - Configuration object or path to config file
+     * @param {Object} options - Additional options
+     * @returns {Promise<OTNode>} The started OT-Node instance
+     */
+    async start(config = null, options = {}) {
+        if (this.isRunning) {
+            throw new Error('OT-Node is already running. Call stop() first.');
+        }
+
+        const { dataPath = null, logLevel = 'info', silent = false } = options;
+
+        // Set environment variables
+        process.env.OT_NODE_LIBRARY_MODE = 'true';
+        if (dataPath) {
+            process.env.OT_NODE_DATA_PATH = dataPath;
+        }
+        if (logLevel) {
+            process.env.LOG_LEVEL = logLevel;
+        }
+        if (silent) {
+            process.env.OT_NODE_SILENT = 'true';
+        }
+
+        try {
+            // Create OT-Node instance
+            this.node = new OTNode(config);
+
+            // Override the stop method to prevent process.exit
+            this.node.stop = () => {
+                this.node.logger?.info('Stopping node...');
+                this.isRunning = false;
+                this.node = null;
+            };
+
+            // Override handleExit to prevent process.exit
+            this.node.handleExit = async () => {
+                this.node.logger?.info('SIGINT or SIGTERM received. Shutting down node...');
+                const commandExecutor = this.node.container?.resolve('commandExecutor');
+                if (commandExecutor) {
+                    await commandExecutor.commandExecutorShutdown();
+                }
+                this.isRunning = false;
+                this.node = null;
+            };
+
+            // Start the node
+            await this.node.start();
+            this.isRunning = true;
+
+            return this.node;
+        } catch (error) {
+            this.node = null;
+            this.isRunning = false;
+            throw error;
+        }
+    }
+
+    /**
+     * Stop the OT-Node
+     * @returns {Promise<boolean>} True if node was stopped, false if not running
+     */
+    async stop() {
+        if (!this.isRunning || !this.node) {
+            return false;
+        }
+
+        this.node.stop();
+        return true;
+    }
+
+    /**
+     * Get the current node instance
+     * @returns {OTNode|null} Node instance or null if not running
+     */
+    getNode() {
+        return this.node;
+    }
+
+    /**
+     * Check if the node is running
+     * @returns {boolean} True if node is running
+     */
+    isNodeRunning() {
+        return this.isRunning;
+    }
+}
+
+// Export the library and OTNode class
+export { OTNodeLibrary, OTNode };
+export default OTNodeLibrary;

@@ -24,9 +24,11 @@ class OTNode {
         this.initializeAutoUpdaterModule();
         this.checkNodeVersion();
 
-        // Set up process event listeners
-        process.on('SIGINT', () => this.handleExit()); // Ctrl+C
-        process.on('SIGTERM', () => this.handleExit()); // kill command or Docker stop
+        // Only set up process event listeners if not running as library
+        if (!process.env.OT_NODE_LIBRARY_MODE) {
+            process.on('SIGINT', () => this.handleExit()); // Ctrl+C
+            process.on('SIGTERM', () => this.handleExit()); // kill command or Docker stop
+        }
     }
 
     async start() {
@@ -92,7 +94,13 @@ class OTNode {
     }
 
     initializeLogger() {
-        this.logger = new Logger(this.config.logging.defaultLevel);
+        const logLevel = process.env.LOG_LEVEL || this.config.logging.defaultLevel;
+        this.logger = new Logger(logLevel);
+
+        // Suppress console output if silent mode is enabled
+        if (process.env.OT_NODE_SILENT === 'true') {
+            this.logger.silent = true;
+        }
     }
 
     initializeFileService() {
@@ -118,6 +126,11 @@ class OTNode {
         if (!this.config.configFilename) {
             // set default user configuration filename
             this.config.configFilename = '.origintrail_noderc';
+        }
+
+        // Support for external data path
+        if (process.env.OT_NODE_DATA_PATH) {
+            this.config.appDataPath = process.env.OT_NODE_DATA_PATH;
         }
     }
 
@@ -437,14 +450,24 @@ class OTNode {
 
     stop(code = 0) {
         this.logger.info('Stopping node...');
-        process.exit(code);
+
+        // Only exit process if not running as library
+        if (!process.env.OT_NODE_LIBRARY_MODE) {
+            process.exit(code);
+        }
     }
 
     async handleExit() {
         this.logger.info('SIGINT or SIGTERM received. Shutting down...');
-        const commandExecutor = this.container.resolve('commandExecutor');
-        await commandExecutor.commandExecutorShutdown();
-        process.exit(0);
+        const commandExecutor = this.container?.resolve('commandExecutor');
+        if (commandExecutor) {
+            await commandExecutor.commandExecutorShutdown();
+        }
+
+        // Only exit process if not running as library
+        if (!process.env.OT_NODE_LIBRARY_MODE) {
+            process.exit(0);
+        }
     }
 }
 

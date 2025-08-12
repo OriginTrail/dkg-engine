@@ -161,6 +161,11 @@ class FileService {
     }
 
     getDataFolderPath() {
+        // Support for external data path
+        if (process.env.OT_NODE_DATA_PATH) {
+            return process.env.OT_NODE_DATA_PATH;
+        }
+
         if (
             process.env.NODE_ENV === NODE_ENVIRONMENTS.DEVNET ||
             process.env.NODE_ENV === NODE_ENVIRONMENTS.TESTNET ||
