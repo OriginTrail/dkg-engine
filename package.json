@@ -1,6 +1,6 @@
 {
     "name": "origintrail-node",
-    "version": "8.1.1-rc.12",
+    "version": "8.1.1-rc.13",
     "description": "OriginTrail Node - Decentralized Knowledge Graph Node Library",
     "main": "index.js",
     "type": "module",
