@@ -10,46 +10,52 @@ process.env.NODE_ENV =
         ? process.env.NODE_ENV
         : NODE_ENVIRONMENTS.DEVELOPMENT;
 
-(async () => {
-    let userConfig = null;
-    try {
-        if (process.env.NODE_ENV === NODE_ENVIRONMENTS.DEVELOPMENT && process.argv.length === 3) {
-            const configurationFilename = process.argv[2];
-            userConfig = JSON.parse(await fs.promises.readFile(process.argv[2]));
-            userConfig.configFilename = configurationFilename;
+// Only run the main function if this module is executed directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+    (async () => {
+        let userConfig = null;
+        try {
+            if (
+                process.env.NODE_ENV === NODE_ENVIRONMENTS.DEVELOPMENT &&
+                process.argv.length === 3
+            ) {
+                const configurationFilename = process.argv[2];
+                userConfig = JSON.parse(await fs.promises.readFile(process.argv[2]));
+                userConfig.configFilename = configurationFilename;
+            }
+        } catch (error) {
+            console.log('Unable to read user configuration from file: ', process.argv[2]);
+            process.exit(1);
         }
-    } catch (error) {
-        console.log('Unable to read user configuration from file: ', process.argv[2]);
-        process.exit(1);
-    }
-    try {
-        const node = new OTNode(userConfig);
-        await node.start();
-    } catch (e) {
-        console.error(`Error occurred while start ot-node, error message: ${e}. ${e.stack}`);
-        // console.error(`Trying to recover from older version`);
-        // if (process.env.NODE_ENV !== NODE_ENVIRONMENTS.DEVELOPMENT) {
-        //     const rootPath = path.join(appRootPath.path, '..');
-        //     const oldVersionsDirs = (await fs.promises.readdir(rootPath, { withFileTypes: true }))
-        //         .filter((dirent) => dirent.isDirectory())
-        //         .map((dirent) => dirent.name)
-        //         .filter((name) => semver.valid(name) && !appRootPath.path.includes(name));
-        //
-        //     if (oldVersionsDirs.length === 0) {
-        //         console.error(
-        //             `Failed to start OT-Node, no backup code available. Error message: ${e.message}`,
-        //         );
-        //         process.exit(1);
-        //     }
-        //
-        //     const oldVersion = oldVersionsDirs.sort(semver.compare).pop();
-        //     const oldversionPath = path.join(rootPath, oldVersion);
-        //     execSync(`ln -sfn ${oldversionPath} ${rootPath}/current`);
-        //     await fs.promises.rm(appRootPath.path, { force: true, recursive: true });
-        // }
-        process.exit(1);
-    }
-})();
+        try {
+            const node = new OTNode(userConfig);
+            await node.start();
+        } catch (e) {
+            console.error(`Error occurred while start ot-node, error message: ${e}. ${e.stack}`);
+            // console.error(`Trying to recover from older version`);
+            // if (process.env.NODE_ENV !== NODE_ENVIRONMENTS.DEVELOPMENT) {
+            //     const rootPath = path.join(appRootPath.path, '..');
+            //     const oldVersionsDirs = (await fs.promises.readdir(rootPath, { withFileTypes: true }))
+            //         .filter((dirent) => dirent.isDirectory())
+            //         .map((dirent) => dirent.name)
+            //         .filter((name) => semver.valid(name) && !appRootPath.path.includes(name));
+            //
+            //     if (oldVersionsDirs.length === 0) {
+            //         console.error(
+            //             `Failed to start OT-Node, no backup code available. Error message: ${e.message}`,
+            //         );
+            //         process.exit(1);
+            //     }
+            //
+            //     const oldVersion = oldVersionsDirs.sort(semver.compare).pop();
+            //     const oldversionPath = path.join(rootPath, oldVersion);
+            //     execSync(`ln -sfn ${oldversionPath} ${rootPath}/current`);
+            //     await fs.promises.rm(appRootPath.path, { force: true, recursive: true });
+            // }
+            process.exit(1);
+        }
+    })();
+}
 
 process.on('unhandledRejection', (err) => {
     // Handle specific libp2p peer lookup failures that escape try-catch blocks
@@ -165,18 +171,19 @@ class OTNodeLibrary {
 
         try {
             // Create OT-Node instance
-            this.node = new OTNode(config);
+            const userConfig = JSON.parse(await fs.promises.readFile(config));
+            this.node = new OTNode(userConfig);
 
             // Override the stop method to prevent process.exit
             this.node.stop = () => {
-                this.node.logger?.info('Stopping node...');
+                console.log('Stopping node...');
                 this.isRunning = false;
                 this.node = null;
             };
 
             // Override handleExit to prevent process.exit
             this.node.handleExit = async () => {
-                this.node.logger?.info('SIGINT or SIGTERM received. Shutting down node...');
+                console.log('SIGINT or SIGTERM received. Shutting down node...');
                 const commandExecutor = this.node.container?.resolve('commandExecutor');
                 if (commandExecutor) {
                     await commandExecutor.commandExecutorShutdown();

@@ -1,5 +1,5 @@
 import path from 'path';
-import appRootPath from 'app-root-path';
+import { fileURLToPath } from 'url';
 
 class JsonSchemaService {
     constructor(ctx) {
@@ -7,8 +7,13 @@ class JsonSchemaService {
     }
 
     async loadSchema(version, schemaName, argumentsObject = {}) {
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = path.dirname(__filename);
+        // Get the package root directory (two levels up from this file)
+        const packageRoot = path.resolve(__dirname, '..', '..');
+
         const schemaPath = path.resolve(
-            appRootPath.path,
+            packageRoot, // This will resolve to the origintrail-node package directory
             `src/controllers/http-api/${version}/request-schema/${schemaName}-schema-${version}.js`,
         );
         const schemaModule = await import(schemaPath);
