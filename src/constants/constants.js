@@ -1096,7 +1096,7 @@ export const CHUNK_SIZE = 32;
 export const CLAIM_REWARDS_INTERVAL = 60 * 60 * 1000;
 export const CLAIM_REWARDS_BATCH_SIZE = 10;
 
-export const BATCH_GET_BATCH_SIZE = 5;
+export const BATCH_GET_BATCH_SIZE = 2;
 export const BATCH_GET_UAL_MAX_LIMIT = 1000;
 
 export const SYNC_INTERVAL = 12 * 1000;
