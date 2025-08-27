@@ -653,29 +653,18 @@ class TripleStoreService {
         blockchain,
         contract,
         knowledgeCollectionId,
-        knowledgeAssetId,
         repository = TRIPLE_STORE_REPOSITORY.DKG,
     ) {
-        const ual = `did:dkg:${blockchain}/${contract}/${knowledgeCollectionId}${
-            Number.isInteger(knowledgeAssetId) ? `/${knowledgeAssetId}` : ''
-        }`;
+        const ual = `did:dkg:${blockchain}/${contract}/${knowledgeCollectionId}`;
         this.logger.debug(`Getting Assertion Metadata with the UAL: ${ual}.`);
-        let nquads;
-        if (Number.isInteger(knowledgeAssetId)) {
-            nquads = await this.tripleStoreModuleManager.getKnowledgeAssetMetadata(
-                this.repositoryImplementations[repository],
-                repository,
-                ual,
-                this.config.modules.tripleStore.timeout.get,
-            );
-        } else {
-            nquads = await this.tripleStoreModuleManager.getKnowledgeCollectionMetadata(
-                this.repositoryImplementations[repository],
-                repository,
-                ual,
-                this.config.modules.tripleStore.timeout.get,
-            );
-        }
+
+        let nquads = await this.tripleStoreModuleManager.getKnowledgeCollectionMetadata(
+            this.repositoryImplementations[repository],
+            repository,
+            ual,
+            this.config.modules.tripleStore.timeout.get,
+        );
+
         nquads = nquads.split('\n').filter((line) => line !== '');
 
         this.logger.debug(

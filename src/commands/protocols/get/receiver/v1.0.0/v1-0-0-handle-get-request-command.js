@@ -118,7 +118,6 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
                         blockchain,
                         contract,
                         knowledgeCollectionId,
-                        knowledgeAssetId,
                     );
                     promises.push(metadataPromise);
                 }
@@ -161,7 +160,6 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
                 blockchain,
                 contract,
                 knowledgeCollectionId,
-                knowledgeAssetId,
             );
             promises.push(metadataPromise);
         }
