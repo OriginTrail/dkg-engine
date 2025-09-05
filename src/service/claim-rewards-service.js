@@ -129,12 +129,14 @@ class ClaimRewardsService {
                     );
                     // TODO: How will this impact mainnet where this function landed at same time as proofing
                     if (!hasEverDelegated) {
-                        if (lastClaimedEpochAddressesMap[`${currentEpoch - 1}`]) {
-                            lastClaimedEpochAddressesMap[`${currentEpoch - 1}`].push(
+                        const v81ReleaseEpoch =
+                            await this.blockchainModuleManager.getV81ReleaseEpoch(blockchainId);
+                        if (lastClaimedEpochAddressesMap[`${v81ReleaseEpoch - 1}`]) {
+                            lastClaimedEpochAddressesMap[`${v81ReleaseEpoch - 1}`].push(
                                 ...delegatorAddresses,
                             );
                         } else {
-                            lastClaimedEpochAddressesMap[`${currentEpoch - 1}`] =
+                            lastClaimedEpochAddressesMap[`${v81ReleaseEpoch - 1}`] =
                                 delegatorAddresses;
                         }
                     }

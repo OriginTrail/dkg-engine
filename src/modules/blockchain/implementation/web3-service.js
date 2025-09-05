@@ -1300,6 +1300,15 @@ class Web3Service {
         });
     }
 
+    async getV81ReleaseEpoch() {
+        return this.callContractFunction(
+            this.contracts.ParametersStorage,
+            'v81ReleaseEpoch',
+            [],
+            CONTRACTS.PARAMETERS_STORAGE,
+        );
+    }
+
     async getAssetStorageContractsAddress() {
         return Object.keys(this.assetStorageContracts);
     }
