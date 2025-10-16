@@ -36,15 +36,21 @@ class GnosisService extends Web3Service {
                 this.logger.warn(
                     `Gas price oracle: ${this.config.gasPriceOracleLink} returns gas price in unsupported format. Using default value: ${this.defaultGasPrice} Gwei.`,
                 );
+                return this.defaultGasPrice;
             }
         } catch (error) {
             this.logger.warn(
                 `Failed to fetch the gas price from the Gnosis: ${error}. Using default value: ${this.defaultGasPrice} Gwei.`,
             );
+            return this.defaultGasPrice;
         }
-        if (gasPrice) {
+        if (
+            gasPrice &&
+            ethers.utils.parseUnits(gasPrice.toString(), 'gwei').gt(this.defaultGasPrice)
+        ) {
             return gasPrice;
         }
+
         return this.defaultGasPrice;
     }
 

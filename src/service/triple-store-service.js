@@ -10,6 +10,7 @@ import {
     HAS_KNOWLEDGE_ASSET_SUFFIX,
     HAS_NAMED_GRAPH_SUFFIX,
     DKG_METADATA_PREDICATES,
+    SCHEMA_CONTEXT,
     MAX_TOKEN_ID_PER_GET_PAGE,
 } from '../constants/constants.js';
 
@@ -56,14 +57,6 @@ class TripleStoreService {
                 `to the Triple Store's ${repository} repository.`,
         );
 
-        // TODO: Add with the introduction of RDF-star mode
-        // const tripleAnnotations = this.dataService.createTripleAnnotations(
-        //     knowledgeAssetsTriples,
-        //     UAL_PREDICATE,
-        //     knowledgeAssetsUALs.map((ual) => `<${ual}>`),
-        // );
-        // const unifiedGraphTriples = [...triples, ...tripleAnnotations];
-        const promises = [];
         const publicAssertion = triples.public ?? triples;
 
         const filteredPublic = [];
@@ -96,27 +89,36 @@ class TripleStoreService {
 
         const allPossibleNamedGraphs = [];
 
-        promises.push(
-            this.tripleStoreModuleManager.createKnowledgeCollectionNamedGraphs(
-                this.repositoryImplementations[repository],
-                repository,
-                publicKnowledgeAssetsUALs,
-                publicKnowledgeAssetsTriplesGrouped,
-                TRIPLES_VISIBILITY.PUBLIC,
-                this.config.modules.tripleStore.timeout.insert,
-            ),
-        );
+        let privateGraphsInsert = '';
+        let currentPrivateMetadataTriples = '';
+        let connectionPrivateMetadataTriples = '';
 
-        promises.push(
-            this.tripleStoreModuleManager.insertMetadataTriples(
-                this.repositoryImplementations[repository],
-                repository,
-                knowledgeCollectionUAL,
-                publicKnowledgeAssetsUALs,
-                TRIPLES_VISIBILITY.PUBLIC,
-                this.config.modules.tripleStore.timeout.insert,
-            ),
-        );
+        const publicGraphsInsert = publicKnowledgeAssetsUALs
+            .map(
+                (ual, index) => `
+            GRAPH <${ual}/${TRIPLES_VISIBILITY.PUBLIC}> {
+                ${publicKnowledgeAssetsTriplesGrouped[index].join('\n')}
+            }
+        `,
+            )
+            .join('\n');
+
+        const currentPublicMetadataTriples = publicKnowledgeAssetsUALs
+            .map(
+                (ual) =>
+                    `<current:graph> <${DKG_PREDICATE}${HAS_NAMED_GRAPH_SUFFIX}> <${ual}/${TRIPLES_VISIBILITY.PUBLIC}> .`,
+            )
+            .join('\n');
+
+        const connectionPublicMetadataTriples = publicKnowledgeAssetsUALs
+            .map((ual) => {
+                const graphWithVisibility = `${ual}/${TRIPLES_VISIBILITY.PUBLIC}`;
+                return [
+                    `<${knowledgeCollectionUAL}> <${DKG_PREDICATE}${HAS_KNOWLEDGE_ASSET_SUFFIX}> <${ual}> .`,
+                    `<${knowledgeCollectionUAL}> <${DKG_PREDICATE}${HAS_NAMED_GRAPH_SUFFIX}> <${graphWithVisibility}> .`,
+                ].join('\n');
+            })
+            .join('\n');
 
         // current metadata triple relates to which named graph that represents Knowledge Asset hold the lates(current) data
         // so for each Knowledge Asset there will be one current metadata triple
@@ -173,26 +175,33 @@ class TripleStoreService {
                 }
             }
 
-            promises.push(
-                this.tripleStoreModuleManager.createKnowledgeCollectionNamedGraphs(
-                    this.repositoryImplementations[repository],
-                    repository,
-                    privateKnowledgeAssetsUALs,
-                    privateKnowledgeAssetsTriplesGrouped,
-                    TRIPLES_VISIBILITY.PRIVATE,
-                    this.config.modules.tripleStore.timeout.insert,
-                ),
-            );
-            promises.push(
-                this.tripleStoreModuleManager.insertMetadataTriples(
-                    this.repositoryImplementations[repository],
-                    repository,
-                    knowledgeCollectionUAL,
-                    privateKnowledgeAssetsUALs,
-                    TRIPLES_VISIBILITY.PRIVATE,
-                    this.config.modules.tripleStore.timeout.insert,
-                ),
-            );
+            privateGraphsInsert = privateKnowledgeAssetsUALs
+                .map(
+                    (ual, index) => `
+            GRAPH <${ual}/${TRIPLES_VISIBILITY.PRIVATE}> {
+                ${privateKnowledgeAssetsTriplesGrouped[index].join('\n')}
+            }
+        `,
+                )
+                .join('\n');
+
+            currentPrivateMetadataTriples = privateKnowledgeAssetsUALs
+                .map(
+                    (ual) =>
+                        `<current:graph> <${DKG_PREDICATE}${HAS_NAMED_GRAPH_SUFFIX}> <${ual}/${TRIPLES_VISIBILITY.PRIVATE}> .`,
+                )
+                .join('\n');
+
+            connectionPrivateMetadataTriples = privateKnowledgeAssetsUALs
+                .map((ual) => {
+                    const graphWithVisibility = `${ual}/${TRIPLES_VISIBILITY.PRIVATE}`;
+                    return [
+                        `<${knowledgeCollectionUAL}> <${DKG_PREDICATE}${HAS_KNOWLEDGE_ASSET_SUFFIX}> <${ual}> .`,
+                        `<${knowledgeCollectionUAL}> <${DKG_PREDICATE}${HAS_NAMED_GRAPH_SUFFIX}> <${graphWithVisibility}> .`,
+                    ].join('\n');
+                })
+                .join('\n');
+
             // current metadata triple relates to which named graph that represents Knowledge Asset hold the lates(current) data
             // so for each Knowledge Asset there will be one current metadata triple
             // in this case there are privateKnowledgeAssetsUALs.length number of named graphs created so for each there will be one current metadata triple
@@ -218,20 +227,6 @@ class TripleStoreService {
             );
         }
 
-        if (paranetUAL) {
-            await Promise.all(promises);
-            await this.tripleStoreModuleManager.createParanetKnoledgeCollectionConnection(
-                this.repositoryImplementations[repository],
-                repository,
-                knowledgeCollectionUAL,
-                paranetUAL,
-                contentType,
-                this.config.modules.tripleStore.timeout.insert,
-            );
-            totalNumberOfTriplesInserted += allPossibleNamedGraphs.length; // one triple will be created for each Knowledge Asset inserted into paranet
-            this.logger.info(`Adding connection triples for paranet: ${paranetUAL}`);
-        }
-
         // TODO: add new metadata triples and move to function insertMetadataTriples
         let metadataTriples = publicKnowledgeAssetsUALs
             .map(
@@ -251,16 +246,24 @@ class TripleStoreService {
                 metadata.blockTimestamp * 1000,
             ).toISOString()}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`;
 
-        totalNumberOfTriplesInserted += publicKnowledgeAssetsUALs.length + 5; // one metadata triple for each public KA
+        // totalNumberOfTriplesInserted += publicKnowledgeAssetsUALs.length + 5; // one metadata triple for each public KA
+        const insertQuery = `
+            PREFIX schema: <${SCHEMA_CONTEXT}>
+            INSERT DATA {
+                ${publicGraphsInsert}
+                ${privateGraphsInsert}
+                GRAPH <${BASE_NAMED_GRAPHS.CURRENT}> {
+                    ${currentPublicMetadataTriples}
+                    ${currentPrivateMetadataTriples}
+                }
+                GRAPH <${BASE_NAMED_GRAPHS.METADATA}> {
+                    ${connectionPublicMetadataTriples}
+                    ${connectionPrivateMetadataTriples}
+                    ${metadataTriples}
+                }
 
-        promises.push(
-            this.tripleStoreModuleManager.insertKnowledgeCollectionMetadata(
-                this.repositoryImplementations[repository],
-                repository,
-                metadataTriples,
-                this.config.modules.tripleStore.timeout.insert,
-            ),
-        );
+            }
+        `;
 
         const uniqueTripleCount = tripleSet.size;
         totalNumberOfTriplesInserted += uniqueTripleCount;
@@ -270,7 +273,24 @@ class TripleStoreService {
 
         while (attempts < retries && !success) {
             try {
-                await Promise.all(promises);
+                await this.tripleStoreModuleManager.queryVoid(
+                    this.repositoryImplementations[repository],
+                    repository,
+                    insertQuery,
+                    this.config.modules.tripleStore.timeout.insert,
+                );
+                if (paranetUAL) {
+                    await this.tripleStoreModuleManager.createParanetKnoledgeCollectionConnection(
+                        this.repositoryImplementations[repository],
+                        repository,
+                        knowledgeCollectionUAL,
+                        paranetUAL,
+                        contentType,
+                        this.config.modules.tripleStore.timeout.insert,
+                    );
+                    totalNumberOfTriplesInserted += allPossibleNamedGraphs.length; // one triple will be created for each Knowledge Asset inserted into paranet
+                    this.logger.info(`Adding connection triples for paranet: ${paranetUAL}`);
+                }
                 success = true;
 
                 this.logger.info(
@@ -633,29 +653,18 @@ class TripleStoreService {
         blockchain,
         contract,
         knowledgeCollectionId,
-        knowledgeAssetId,
         repository = TRIPLE_STORE_REPOSITORY.DKG,
     ) {
-        const ual = `did:dkg:${blockchain}/${contract}/${knowledgeCollectionId}${
-            Number.isInteger(knowledgeAssetId) ? `/${knowledgeAssetId}` : ''
-        }`;
+        const ual = `did:dkg:${blockchain}/${contract}/${knowledgeCollectionId}`;
         this.logger.debug(`Getting Assertion Metadata with the UAL: ${ual}.`);
-        let nquads;
-        if (Number.isInteger(knowledgeAssetId)) {
-            nquads = await this.tripleStoreModuleManager.getKnowledgeAssetMetadata(
-                this.repositoryImplementations[repository],
-                repository,
-                ual,
-                this.config.modules.tripleStore.timeout.get,
-            );
-        } else {
-            nquads = await this.tripleStoreModuleManager.getKnowledgeCollectionMetadata(
-                this.repositoryImplementations[repository],
-                repository,
-                ual,
-                this.config.modules.tripleStore.timeout.get,
-            );
-        }
+
+        let nquads = await this.tripleStoreModuleManager.getKnowledgeCollectionMetadata(
+            this.repositoryImplementations[repository],
+            repository,
+            ual,
+            this.config.modules.tripleStore.timeout.get,
+        );
+
         nquads = nquads.split('\n').filter((line) => line !== '');
 
         this.logger.debug(
