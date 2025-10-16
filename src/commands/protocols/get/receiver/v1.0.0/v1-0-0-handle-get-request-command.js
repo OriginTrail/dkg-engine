@@ -118,7 +118,6 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
                         blockchain,
                         contract,
                         knowledgeCollectionId,
-                        knowledgeAssetId,
                     );
                     promises.push(metadataPromise);
                 }
@@ -161,7 +160,6 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
                 blockchain,
                 contract,
                 knowledgeCollectionId,
-                knowledgeAssetId,
             );
             promises.push(metadataPromise);
         }
@@ -174,10 +172,10 @@ class HandleGetRequestCommand extends HandleProtocolMessageCommand {
         };
 
         if (assertion?.public?.length || assertion?.length) {
-            await this.operationIdService.updateOperationIdStatus(
+            await this.operationIdService.emitChangeEvent(
+                this.operationEndEvent,
                 operationId,
                 blockchain,
-                OPERATION_ID_STATUS.GET.GET_REMOTE_END,
             );
         }
 
