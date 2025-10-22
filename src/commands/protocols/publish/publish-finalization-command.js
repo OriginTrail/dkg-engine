@@ -84,15 +84,7 @@ class PublishFinalizationCommand extends Command {
         const ual = this.ualService.deriveUAL(blockchain, contractAddress, id);
 
         try {
-            await this.validatePublishData(
-                operationId,
-                blockchain,
-                merkleRoot,
-                cachedMerkleRoot,
-                byteSize,
-                assertion,
-                ual,
-            );
+            await this.validatePublishData(merkleRoot, cachedMerkleRoot, byteSize, assertion, ual);
         } catch (e) {
             this.logger.error(`Failed to validate publish data: ${e.message}`);
             this.operationIdService.emitChangeEvent(
@@ -173,25 +165,9 @@ class PublishFinalizationCommand extends Command {
         return Command.empty();
     }
 
-    async validatePublishData(
-        operationId,
-        blockchain,
-        merkleRoot,
-        cachedMerkleRoot,
-        byteSize,
-        assertion,
-        ual,
-    ) {
+    async validatePublishData(merkleRoot, cachedMerkleRoot, byteSize, assertion, ual) {
         if (merkleRoot !== cachedMerkleRoot) {
             const errorMessage = `Invalid Merkle Root for Knowledge Collection: ${ual}. Received value from blockchain: ${merkleRoot}, Cached value from publish operation: ${cachedMerkleRoot}`;
-
-            this.logger.error(`Command error (${this.errorType}): ${errorMessage}`);
-
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.FAILED,
-                operationId,
-                blockchain,
-            );
 
             throw new Error(errorMessage);
         }
@@ -202,14 +178,6 @@ class PublishFinalizationCommand extends Command {
 
         if (byteSize.toString() !== calculatedAssertionSize.toString()) {
             const errorMessage = `Invalid Assertion Size for Knowledge Collection: ${ual}. Received value from blockchain: ${byteSize}, Calculated value: ${calculatedAssertionSize}`;
-
-            this.logger.error(`Command error (${this.errorType}): ${errorMessage}`);
-
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.FAILED,
-                operationId,
-                blockchain,
-            );
 
             throw new Error(errorMessage);
         }
