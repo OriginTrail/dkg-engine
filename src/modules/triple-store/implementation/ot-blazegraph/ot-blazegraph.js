@@ -220,7 +220,7 @@ class OtBlazegraph extends OtTripleStore {
         } catch (error) {
             if (error.response && error.response.status === 404) {
                 // Expected error: GraphDB is up but has not created node0 repository
-                // Ot-node will create repo in initialization
+                // dkg-engine will create repo in initialization
                 return false;
             }
             this.logger.error(
