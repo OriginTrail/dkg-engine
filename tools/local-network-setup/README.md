@@ -14,20 +14,20 @@ This tool will help you set up a local DKG V8 network running with the Hardhat b
 
 # Setup instructions
 
-In order to run the local network you fist need to clone the "ot-node" repository.
+In order to run the local network you fist need to clone the "dkg-engine" repository.
 <br/>
 
-## 1. CLONE OT-NODE REPOSITORY & INSTALL DEPENDENCIES
+## 1. CLONE DKG-ENGINE REPOSITORY & INSTALL DEPENDENCIES
 
-After cloning the **ot-node** repository, please checkout to "v8/develop" branch and install dependencies by running:
+After cloning the **dkg-engine** repository, please checkout to "v8/develop" branch and install dependencies by running:
 
 ```bash
-git clone https://github.com/OriginTrail/ot-node.git && cd ot-node/ && npm install && cd ..
+git clone https://github.com/OriginTrail/dkg-engine.git && cd dkg-engine/ && npm install && cd ..
 ```
 
 <br/>
 
-### 2.2 Create the .env file inside the "ot-node" directory:
+### 2.2 Create the .env file inside the "dkg-engine" directory:
 
 ```bash
 nano .env

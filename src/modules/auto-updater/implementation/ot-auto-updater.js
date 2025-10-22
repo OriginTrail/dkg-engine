@@ -7,8 +7,8 @@ import semver from 'semver';
 import axios from 'axios';
 import unzipper from 'unzipper';
 
-const REPOSITORY_URL = 'https://github.com/OriginTrail/ot-node';
-const ARCHIVE_REPOSITORY_URL = 'github.com/OriginTrail/ot-node/archive/';
+const REPOSITORY_URL = 'https://github.com/OriginTrail/dkg-engine';
+const ARCHIVE_REPOSITORY_URL = 'github.com/OriginTrail/dkg-engine/archive/';
 
 class OTAutoUpdater {
     async initialize(config, logger) {
@@ -50,7 +50,7 @@ class OTAutoUpdater {
 
     async update() {
         try {
-            this.logger.debug(`AutoUpdater - Updating ot-node from ${REPOSITORY_URL}`);
+            this.logger.debug(`AutoUpdater - Updating dkg-engine from ${REPOSITORY_URL}`);
             const currentDirectory = appRootPath.path;
             const rootPath = path.join(currentDirectory, '..');
 
@@ -173,7 +173,7 @@ class OTAutoUpdater {
     downloadUpdate(destination) {
         return new Promise((resolve, reject) => {
             const url = `https://${path.join(ARCHIVE_REPOSITORY_URL, this.config.branch)}.zip`;
-            this.logger.debug(`AutoUpdater - Downloading ot-node .zip file from url: ${url}`);
+            this.logger.debug(`AutoUpdater - Downloading dkg-engine .zip file from url: ${url}`);
             axios({ method: 'get', url, responseType: 'stream' })
                 .then((response) => {
                     const fileStream = fs.createWriteStream(destination);
@@ -191,7 +191,7 @@ class OTAutoUpdater {
                 .catch((error) => {
                     reject(
                         Error(
-                            `AutoUpdater - Unable to download new version of ot-node. Error: ${error.message}`,
+                            `AutoUpdater - Unable to download new version of dkg-engine. Error: ${error.message}`,
                         ),
                     );
                 });
@@ -199,7 +199,7 @@ class OTAutoUpdater {
     }
 
     unzipFile(destination, source) {
-        this.logger.debug(`AutoUpdater - Unzipping ot-node new version archive`);
+        this.logger.debug(`AutoUpdater - Unzipping dkg-engine new version archive`);
         return new Promise((resolve, reject) => {
             const fileReadStream = fs
                 .createReadStream(source)
@@ -220,7 +220,7 @@ class OTAutoUpdater {
         const destinationDirFiles = await fs.readdir(extractedDataPath);
         if (destinationDirFiles.length !== 1) {
             await fs.remove(extractedDataPath);
-            throw Error('Extracted archive for new ot-node version is not valid');
+            throw Error('Extracted archive for new dkg-engine version is not valid');
         }
         const sourcePath = path.join(extractedDataPath, destinationDirFiles[0]);
         await fs.remove(destinationPath);
