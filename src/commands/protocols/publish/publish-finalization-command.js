@@ -182,45 +182,36 @@ class PublishFinalizationCommand extends Command {
         assertion,
         ual,
     ) {
-        try {
-            if (merkleRoot !== cachedMerkleRoot) {
-                const errorMessage = `Invalid Merkle Root for Knowledge Collection: ${ual}. Received value from blockchain: ${merkleRoot}, Cached value from publish operation: ${cachedMerkleRoot}`;
+        if (merkleRoot !== cachedMerkleRoot) {
+            const errorMessage = `Invalid Merkle Root for Knowledge Collection: ${ual}. Received value from blockchain: ${merkleRoot}, Cached value from publish operation: ${cachedMerkleRoot}`;
 
-                this.logger.error(`Command error (${this.errorType}): ${errorMessage}`);
-
-                this.operationIdService.emitChangeEvent(
-                    OPERATION_ID_STATUS.FAILED,
-                    operationId,
-                    blockchain,
-                );
-            }
-
-            const calculatedAssertionSize = this.dataService.calculateAssertionSize(
-                assertion.public ?? assertion,
-            );
-
-            if (byteSize.toString() !== calculatedAssertionSize.toString()) {
-                const errorMessage = `Invalid Assertion Size for Knowledge Collection: ${ual}. Received value from blockchain: ${byteSize}, Calculated value: ${calculatedAssertionSize}`;
-
-                this.logger.error(`Command error (${this.errorType}): ${errorMessage}`);
-
-                this.operationIdService.emitChangeEvent(
-                    OPERATION_ID_STATUS.FAILED,
-                    operationId,
-                    blockchain,
-                );
-
-                throw new Error(errorMessage);
-            }
-        } catch (e) {
-            this.logger.error(`Command error (${this.errorType}): ${e.message}`);
+            this.logger.error(`Command error (${this.errorType}): ${errorMessage}`);
 
             this.operationIdService.emitChangeEvent(
                 OPERATION_ID_STATUS.FAILED,
                 operationId,
                 blockchain,
             );
-            throw e;
+
+            throw new Error(errorMessage);
+        }
+
+        const calculatedAssertionSize = this.dataService.calculateAssertionSize(
+            assertion.public ?? assertion,
+        );
+
+        if (byteSize.toString() !== calculatedAssertionSize.toString()) {
+            const errorMessage = `Invalid Assertion Size for Knowledge Collection: ${ual}. Received value from blockchain: ${byteSize}, Calculated value: ${calculatedAssertionSize}`;
+
+            this.logger.error(`Command error (${this.errorType}): ${errorMessage}`);
+
+            this.operationIdService.emitChangeEvent(
+                OPERATION_ID_STATUS.FAILED,
+                operationId,
+                blockchain,
+            );
+
+            throw new Error(errorMessage);
         }
     }
 
