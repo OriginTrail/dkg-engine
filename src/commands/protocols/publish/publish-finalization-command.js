@@ -209,6 +209,8 @@ class PublishFinalizationCommand extends Command {
                     operationId,
                     blockchain,
                 );
+
+                throw new Error(errorMessage);
             }
         } catch (e) {
             this.logger.error(`Command error (${this.errorType}): ${e.message}`);
