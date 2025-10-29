@@ -1,16 +1,19 @@
 import { Sender } from '@questdb/nodejs-client';
+import {
+    TELEMETRY_CONNECTION_STATUS,
+    TELEMETRY_INTERVALS,
+    TELEMETRY_BATCH_CONFIG,
+    TELEMETRY_NULL_VALUE,
+    TELEMETRY_MAX_LOG_OPERATION_IDS,
+} from '../../../constants/constants.js';
 
 class QuestTelemetry {
     constructor() {
         this.localSender = null;
         this.lastErrorLogTime = 0;
-        this.errorLogInterval = 60000; // 1 minute between error logs
         this.retryAttempts = 0;
-        this.maxRetryAttempts = 5;
-        this.baseRetryDelay = 1000; // 1 second
         
         // Health monitoring
-        this.healthCheckInterval = 3 * 60 * 1000; // 3 minutes
         this.healthCheckTimer = null;
         this.telemetryStats = {
             totalEvents: 0,
@@ -20,7 +23,7 @@ class QuestTelemetry {
             proofEvents: 0,
             successfulProofEvents: 0,
             lastHealthCheck: Date.now(),
-            connectionStatus: 'disconnected',
+            connectionStatus: TELEMETRY_CONNECTION_STATUS.DISCONNECTED,
             startTime: Date.now() // Track when telemetry module started
         };
         
@@ -36,32 +39,32 @@ class QuestTelemetry {
             recentProofEvents: [], // Last 50 proof events
             processedProofEvents: new Set(), // Track processed proof events to prevent duplicates
             lastProofEventTime: null,
-            maxRecentEvents: 50,
             totalDroppedEvents: 0, // Lifetime counter
             erroredEvents: new Map(), // Track errored events by type
             erroredEventsByBlockchain: new Map() // Track errored events by blockchain
         };
         
         // Event batching
-        this.batchSize = 50; // Send batch when 50 events collected
-        this.maxBatchSize = 200; // Maximum batch size to prevent memory leaks
-        this.batchTimeout = 5000; // Send batch after 5 seconds
         this.eventBatch = [];
         this.batchTimer = null;
         
         // Bulletproof features
         this.isShuttingDown = false;
         this.connectionHealthTimer = null;
-        this.connectionHealthInterval = 30 * 1000; // 30 seconds
         this.lastSuccessfulSend = Date.now();
-        this.maxTimeWithoutSuccess = 5 * 60 * 1000; // 5 minutes
         
         // Event persistence for when QuestDB is down
         this.persistentEventQueue = [];
-        this.maxPersistentQueueSize = 10000; // Increased to 10,000 events
         this.isConnectionDown = false;
         this.retryQueueTimer = null;
-        this.retryQueueInterval = 10 * 1000; // 10 seconds
+        
+        // Concurrency guards
+        this.isFlushingBatch = false;
+        this.isRetryingEvents = false;
+        this.isRecreatingConnection = false;
+        
+        // Health check tracking
+        this.healthCheckCount = 0;
     }
 
     async initialize(config, logger) {
@@ -72,29 +75,17 @@ class QuestTelemetry {
         this.startBatchTimer();
         this.startConnectionHealthCheck();
         this.startRetryQueueTimer();
-        
-        // Graceful shutdown handling
-        process.on('SIGINT', () => this.gracefulShutdown());
-        process.on('SIGTERM', () => this.gracefulShutdown());
-    }
-
-    async gracefulShutdown() {
-        if (this.isShuttingDown) return;
-        this.isShuttingDown = true;
-        
-        this.logger.info('QuestDB telemetry graceful shutdown initiated');
-        await this.cleanup();
     }
 
     async createLocalSender() {
         try {
             this.localSender = Sender.fromConfig(this.config.localEndpoint);
             this.retryAttempts = 0;
-            this.telemetryStats.connectionStatus = 'connected';
+            this.telemetryStats.connectionStatus = TELEMETRY_CONNECTION_STATUS.CONNECTED;
             this.lastSuccessfulSend = Date.now();
             this.logger.debug('QuestDB local sender created successfully');
         } catch (error) {
-            this.telemetryStats.connectionStatus = 'failed';
+            this.telemetryStats.connectionStatus = TELEMETRY_CONNECTION_STATUS.FAILED;
             this.logError(`Failed to create QuestDB local sender: ${error.message}`);
         }
     }
@@ -102,37 +93,59 @@ class QuestTelemetry {
     startHealthMonitoring() {
         this.healthCheckTimer = setInterval(() => {
             this.logHealthStatus();
-        }, this.healthCheckInterval);
+        }, TELEMETRY_INTERVALS.HEALTH_CHECK);
         
         this.logger.info('QuestDB telemetry health monitoring started (every 3 minutes)');
     }
 
     startConnectionHealthCheck() {
-        this.connectionHealthTimer = setInterval(() => {
-            this.checkConnectionHealth();
-        }, this.connectionHealthInterval);
+        this.connectionHealthTimer = setInterval(async () => {
+            try {
+                await this.checkConnectionHealth();
+            } catch (error) {
+                this.logger.error(`Error in connection health check: ${error.message}`);
+            }
+        }, TELEMETRY_INTERVALS.CONNECTION_HEALTH);
         
         this.logger.info('QuestDB telemetry connection health check started (every 30 seconds)');
     }
 
     startRetryQueueTimer() {
-        this.retryQueueTimer = setInterval(() => {
-            this.retryPersistentEvents();
-        }, this.retryQueueInterval);
+        this.retryQueueTimer = setInterval(async () => {
+            // Skip if already retrying to prevent concurrent execution
+            if (this.isRetryingEvents) {
+                this.logger.debug('Skipping retry cycle - previous retry still in progress');
+                return;
+            }
+            
+            try {
+                await this.retryPersistentEvents();
+            } catch (error) {
+                this.logger.error(`Error in retry queue timer: ${error.message}`);
+            }
+        }, TELEMETRY_INTERVALS.RETRY_QUEUE);
         
         this.logger.info('QuestDB telemetry persistent event retry timer started (every 10 seconds)');
     }
 
-    checkConnectionHealth() {
+    async checkConnectionHealth() {
         const timeSinceLastSuccess = Date.now() - this.lastSuccessfulSend;
         
-        if (timeSinceLastSuccess > this.maxTimeWithoutSuccess) {
+        if (timeSinceLastSuccess > TELEMETRY_BATCH_CONFIG.MAX_TIME_WITHOUT_SUCCESS) {
             this.logger.warn(`No successful telemetry sends for ${Math.round(timeSinceLastSuccess / 1000)}s, recreating connection`);
-            this.recreateConnection();
+            await this.recreateConnection();
         }
     }
 
     async recreateConnection() {
+        // Prevent concurrent recreation attempts
+        if (this.isRecreatingConnection) {
+            this.logger.debug('Connection recreation already in progress, skipping');
+            return;
+        }
+        
+        this.isRecreatingConnection = true;
+        
         try {
             if (this.localSender) {
                 await this.localSender.flush();
@@ -141,15 +154,27 @@ class QuestTelemetry {
             await this.createLocalSender();
         } catch (error) {
             this.logError(`Failed to recreate QuestDB connection: ${error.message}`);
+        } finally {
+            this.isRecreatingConnection = false;
         }
     }
 
     startBatchTimer() {
-        this.batchTimer = setInterval(() => {
-            this.flushBatch();
-        }, this.batchTimeout);
+        this.batchTimer = setInterval(async () => {
+            // Skip if already flushing to prevent concurrent execution
+            if (this.isFlushingBatch) {
+                this.logger.debug('Skipping batch flush - previous flush still in progress');
+                return;
+            }
+            
+            try {
+                await this.flushBatch();
+            } catch (error) {
+                this.logger.error(`Error in batch timer: ${error.message}`);
+            }
+        }, TELEMETRY_INTERVALS.BATCH_TIMEOUT);
         
-        this.logger.info(`QuestDB telemetry batching started (batch size: ${this.batchSize}, max: ${this.maxBatchSize}, timeout: ${this.batchTimeout}ms)`);
+        this.logger.info(`QuestDB telemetry batching started (batch size: ${TELEMETRY_BATCH_CONFIG.BATCH_SIZE}, max: ${TELEMETRY_BATCH_CONFIG.MAX_BATCH_SIZE}, timeout: ${TELEMETRY_INTERVALS.BATCH_TIMEOUT}ms)`);
     }
 
     async flushBatch() {
@@ -157,8 +182,17 @@ class QuestTelemetry {
             return;
         }
 
-        const batchToSend = [...this.eventBatch];
-        this.eventBatch = [];
+        // Set guard to prevent concurrent flushes
+        if (this.isFlushingBatch) {
+            this.logger.debug('Flush already in progress, skipping');
+            return;
+        }
+        
+        this.isFlushingBatch = true;
+        
+        try {
+            const batchToSend = [...this.eventBatch];
+            this.eventBatch = [];
         
         // Count proof events in this batch
         const proofEvents = batchToSend.filter(event => {
@@ -177,9 +211,9 @@ class QuestTelemetry {
                 for (const event of batchToSend) {
                     const table = this.localSender.table('event');
                     
-                    table.symbol('operationId', event.operationId || 'NULL');
-                    table.symbol('blockchainId', event.blockchainId || 'NULL');
-                    table.symbol('name', event.name || 'NULL');
+                    table.symbol('operationId', event.operationId || TELEMETRY_NULL_VALUE);
+                    table.symbol('blockchainId', event.blockchainId || TELEMETRY_NULL_VALUE);
+                    table.symbol('name', event.name || TELEMETRY_NULL_VALUE);
                     if (event.value1 !== null) table.symbol('value1', event.value1);
                     if (event.value2 !== null) table.symbol('value2', event.value2);
                     if (event.value3 !== null) table.symbol('value3', event.value3);
@@ -192,7 +226,7 @@ class QuestTelemetry {
             });
             
             this.telemetryStats.successfulEvents += batchToSend.length;
-            this.telemetryStats.connectionStatus = 'connected';
+            this.telemetryStats.connectionStatus = TELEMETRY_CONNECTION_STATUS.CONNECTED;
             this.lastSuccessfulSend = Date.now();
             
             // Track successful proof events
@@ -201,7 +235,7 @@ class QuestTelemetry {
             }
         } catch (err) {
             this.telemetryStats.failedEvents += batchToSend.length;
-            this.telemetryStats.connectionStatus = 'error';
+            this.telemetryStats.connectionStatus = TELEMETRY_CONNECTION_STATUS.ERROR;
             this.logError(`Error sending batch of ${batchToSend.length} events to QuestDB: ${err.message}`);
             
             // Track errored events by type and blockchain
@@ -216,13 +250,19 @@ class QuestTelemetry {
                 this.metrics.erroredEventsByBlockchain.set(blockchainKey, blockchainCount + 1);
             });
             
-            // Log failed proof events (important to know)
+            // Log failed proof events (important to know) - limit to first 10 IDs to avoid huge logs
             if (proofEvents.length > 0) {
-                this.logger.error(`[TELEMETRY] Failed to send ${proofEvents.length} proof events: ${proofEvents.map(e => e.operationId).join(', ')}`);
+                const sampleIds = proofEvents.slice(0, TELEMETRY_MAX_LOG_OPERATION_IDS).map(e => e.operationId).join(', ');
+                const suffix = proofEvents.length > TELEMETRY_MAX_LOG_OPERATION_IDS ? ` (and ${proofEvents.length - TELEMETRY_MAX_LOG_OPERATION_IDS} more)` : '';
+                this.logger.error(`[TELEMETRY] Failed to send ${proofEvents.length} proof events: ${sampleIds}${suffix}`);
             }
             
             // Fallback: try to send events individually
             await this.fallbackToIndividualEvents(batchToSend);
+        }
+        } finally {
+            // Always release the guard
+            this.isFlushingBatch = false;
         }
     }
 
@@ -234,9 +274,9 @@ class QuestTelemetry {
                 await this.retryWithBackoff(async () => {
                     const table = this.localSender.table('event');
                     
-                    table.symbol('operationId', event.operationId || 'NULL');
-                    table.symbol('blockchainId', event.blockchainId || 'NULL');
-                    table.symbol('name', event.name || 'NULL');
+                    table.symbol('operationId', event.operationId || TELEMETRY_NULL_VALUE);
+                    table.symbol('blockchainId', event.blockchainId || TELEMETRY_NULL_VALUE);
+                    table.symbol('name', event.name || TELEMETRY_NULL_VALUE);
                     if (event.value1 !== null) table.symbol('value1', event.value1);
                     if (event.value2 !== null) table.symbol('value2', event.value2);
                     if (event.value3 !== null) table.symbol('value3', event.value3);
@@ -279,13 +319,12 @@ class QuestTelemetry {
 
         // Calculate batch status
         const batchStatus = this.eventBatch.length > 0 
-            ? `Pending for next batch: ${this.eventBatch.length}/${this.batchSize}`
+            ? `Pending for next batch: ${this.eventBatch.length}/${TELEMETRY_BATCH_CONFIG.BATCH_SIZE}`
             : 'Batch: empty';
         
-        // Calculate queue status
-        const queueStatus = this.persistentEventQueue.length > 0
-            ? `Queue: ${this.persistentEventQueue.length}/${this.maxPersistentQueueSize}`
-            : 'Queue: empty';
+        // Calculate queue status with consistent percentage format
+        const queuePercentage = Math.round((this.persistentEventQueue.length / TELEMETRY_BATCH_CONFIG.MAX_PERSISTENT_QUEUE_SIZE) * 100);
+        const queueStatus = `Queue: ${this.persistentEventQueue.length}/${TELEMETRY_BATCH_CONFIG.MAX_PERSISTENT_QUEUE_SIZE} (${queuePercentage}%)`;
 
         // Explain what happened to non-successful events
         let failureExplanation = '';
@@ -339,15 +378,15 @@ class QuestTelemetry {
             this.logErrorDetails();
         }
 
+        // Increment health check counter
+        this.healthCheckCount++;
+        
         // Log detailed metrics every 3rd health check (9 minutes)
-        if (this.telemetryStats.lastHealthCheck > 0 && (Date.now() - this.telemetryStats.lastHealthCheck) > 0) {
-            const healthCheckCount = Math.floor((now - this.telemetryStats.lastHealthCheck) / this.healthCheckInterval);
-            if (healthCheckCount % 3 === 0) {
-                this.logDetailedMetrics();
-                
-                // Log error details if any (backup in case not logged above)
-                this.logErrorDetails();
-            }
+        if (this.healthCheckCount % 3 === 0) {
+            this.logDetailedMetrics();
+            
+            // Log error details if any (backup in case not logged above)
+            this.logErrorDetails();
         }
 
         // Reset stats for next period
@@ -470,10 +509,6 @@ class QuestTelemetry {
         }
     }
 
-    logLifetimeProofSummary() {
-        // This method is no longer needed as we moved proof logging to logProofStatus()
-        // Keep empty for now to avoid breaking existing timers
-    }
 
     getMetricsSummary() {
         const topEventTypes = Array.from(this.metrics.eventsByType.entries())
@@ -513,28 +548,28 @@ class QuestTelemetry {
 
     logError(message) {
         const now = Date.now();
-        if (now - this.lastErrorLogTime > this.errorLogInterval) {
+        if (now - this.lastErrorLogTime > TELEMETRY_INTERVALS.ERROR_LOG) {
             this.logger.error(message);
             this.lastErrorLogTime = now;
         }
     }
 
     async retryWithBackoff(operation) {
-        for (let attempt = 0; attempt < this.maxRetryAttempts; attempt++) {
+        for (let attempt = 0; attempt < TELEMETRY_BATCH_CONFIG.MAX_RETRY_ATTEMPTS; attempt++) {
             try {
                 return await operation();
             } catch (error) {
-                if (attempt === this.maxRetryAttempts - 1) {
+                if (attempt === TELEMETRY_BATCH_CONFIG.MAX_RETRY_ATTEMPTS - 1) {
                     throw error;
                 }
                 
-                const delay = this.baseRetryDelay * Math.pow(2, attempt);
-                this.logError(`QuestDB operation failed, retrying in ${delay}ms (attempt ${attempt + 1}/${this.maxRetryAttempts}): ${error.message}`);
+                const delay = TELEMETRY_BATCH_CONFIG.BASE_RETRY_DELAY * Math.pow(2, attempt);
+                this.logError(`QuestDB operation failed, retrying in ${delay}ms (attempt ${attempt + 1}/${TELEMETRY_BATCH_CONFIG.MAX_RETRY_ATTEMPTS}): ${error.message}`);
                 await new Promise(resolve => setTimeout(resolve, delay));
                 
                 // Recreate sender on connection errors
                 if (error.message.includes('ECONNRESET') || error.message.includes('connection')) {
-                    this.telemetryStats.connectionStatus = 'reconnecting';
+                    this.telemetryStats.connectionStatus = TELEMETRY_CONNECTION_STATUS.RECONNECTING;
                     await this.createLocalSender();
                 }
             }
@@ -546,54 +581,94 @@ class QuestTelemetry {
             return;
         }
 
-        this.logger.info(`Attempting to retry ${this.persistentEventQueue.length} persistent events`);
+        // Set guard to prevent concurrent retries
+        if (this.isRetryingEvents) {
+            this.logger.debug('Retry already in progress, skipping');
+            return;
+        }
         
-        const eventsToRetry = [...this.persistentEventQueue];
-        this.persistentEventQueue = [];
-
+        this.isRetryingEvents = true;
+        
         try {
-            await this.retryWithBackoff(async () => {
-                for (const event of eventsToRetry) {
+            this.logger.info(`Attempting to retry ${this.persistentEventQueue.length} persistent events`);
+            
+            const eventsToRetry = [...this.persistentEventQueue];
+            this.persistentEventQueue = [];
+
+            // Retry all events in parallel for better performance
+            const retryPromises = eventsToRetry.map((event) =>
+                this.retryWithBackoff(async () => {
                     const table = this.localSender.table('event');
                     
-                    table.symbol('operationId', event.operationId || 'NULL');
-                    table.symbol('blockchainId', event.blockchainId || 'NULL');
-                    table.symbol('name', event.name || 'NULL');
+                    table.symbol('operationId', event.operationId || TELEMETRY_NULL_VALUE);
+                    table.symbol('blockchainId', event.blockchainId || TELEMETRY_NULL_VALUE);
+                    table.symbol('name', event.name || TELEMETRY_NULL_VALUE);
                     if (event.value1 !== null) table.symbol('value1', event.value1);
                     if (event.value2 !== null) table.symbol('value2', event.value2);
                     if (event.value3 !== null) table.symbol('value3', event.value3);
                     table.timestampColumn('timestamp', event.timestamp * 1000);
                     
                     await table.at(Date.now(), 'ms');
+                }).then(() => ({ status: 'fulfilled', event }))
+                  .catch((error) => ({ status: 'rejected', event, error }))
+            );
+
+            const results = await Promise.allSettled(retryPromises);
+            
+            // Flush all successful events at once
+            try {
+                await this.localSender.flush();
+            } catch (flushError) {
+                this.logError(`Failed to flush events during retry: ${flushError.message}`);
+            }
+
+            // Count successes and failures
+            let successCount = 0;
+            let failedEvents = [];
+            
+            results.forEach((result) => {
+                if (result.status === 'fulfilled' && result.value.status === 'fulfilled') {
+                    successCount++;
+                } else {
+                    const eventData = result.status === 'fulfilled' ? result.value.event : result.reason?.event;
+                    if (eventData) {
+                        failedEvents.push(eventData);
+                    }
+                }
+            });
+
+            if (successCount > 0) {
+                this.telemetryStats.successfulEvents += successCount;
+                this.telemetryStats.connectionStatus = TELEMETRY_CONNECTION_STATUS.CONNECTED;
+                this.lastSuccessfulSend = Date.now();
+                this.isConnectionDown = false;
+                this.logger.info(`Successfully retried ${successCount}/${eventsToRetry.length} persistent events to QuestDB`);
+            }
+
+            if (failedEvents.length > 0) {
+                // Put failed events back in queue for next retry
+                this.persistentEventQueue.unshift(...failedEvents);
+                
+                // If queue gets too large, drop oldest events
+                if (this.persistentEventQueue.length > TELEMETRY_BATCH_CONFIG.MAX_PERSISTENT_QUEUE_SIZE) {
+                    const droppedCount = this.persistentEventQueue.length - TELEMETRY_BATCH_CONFIG.MAX_PERSISTENT_QUEUE_SIZE;
+                    this.persistentEventQueue = this.persistentEventQueue.slice(0, TELEMETRY_BATCH_CONFIG.MAX_PERSISTENT_QUEUE_SIZE);
+                    
+                    // Track dropped events
+                    this.telemetryStats.droppedEvents += droppedCount;
+                    this.metrics.totalDroppedEvents += droppedCount;
+                    this.logger.warn(`PERMANENTLY DROPPED ${droppedCount} events due to queue size limit (total dropped: ${this.metrics.totalDroppedEvents})`);
                 }
                 
-                await this.localSender.flush();
-            });
-            
-            this.telemetryStats.successfulEvents += eventsToRetry.length;
-            this.telemetryStats.connectionStatus = 'connected';
-            this.lastSuccessfulSend = Date.now();
-            this.isConnectionDown = false;
-            
-            this.logger.info(`Successfully retried ${eventsToRetry.length} persistent events to QuestDB`);
-        } catch (err) {
-            // Put events back in queue for next retry
-            this.persistentEventQueue.unshift(...eventsToRetry);
-            
-            // If queue gets too large, drop oldest events
-            if (this.persistentEventQueue.length > this.maxPersistentQueueSize) {
-                const droppedCount = this.persistentEventQueue.length - this.maxPersistentQueueSize;
-                this.persistentEventQueue = this.persistentEventQueue.slice(0, this.maxPersistentQueueSize);
-                
-                // Track dropped events
-                this.telemetryStats.droppedEvents += droppedCount;
-                this.metrics.totalDroppedEvents += droppedCount;
-                this.logger.warn(`PERMANENTLY DROPPED ${droppedCount} events due to queue size limit (total dropped: ${this.metrics.totalDroppedEvents})`);
+                if (successCount === 0) {
+                    this.telemetryStats.connectionStatus = TELEMETRY_CONNECTION_STATUS.ERROR;
+                    this.isConnectionDown = true;
+                }
+                this.logError(`Failed to retry ${failedEvents.length}/${eventsToRetry.length} persistent events`);
             }
-            
-            this.telemetryStats.connectionStatus = 'error';
-            this.isConnectionDown = true;
-            this.logError(`Failed to retry persistent events: ${err.message}`);
+        } finally {
+            // Always release the guard
+            this.isRetryingEvents = false;
         }
     }
 
@@ -631,9 +706,9 @@ class QuestTelemetry {
                 try {
                     const table = this.localSender.table('event');
                     
-                    table.symbol('operationId', event.operationId || 'NULL');
-                    table.symbol('blockchainId', event.blockchainId || 'NULL');
-                    table.symbol('name', event.name || 'NULL');
+                    table.symbol('operationId', event.operationId || TELEMETRY_NULL_VALUE);
+                    table.symbol('blockchainId', event.blockchainId || TELEMETRY_NULL_VALUE);
+                    table.symbol('name', event.name || TELEMETRY_NULL_VALUE);
                     if (event.value1 !== null) table.symbol('value1', event.value1);
                     if (event.value2 !== null) table.symbol('value2', event.value2);
                     if (event.value3 !== null) table.symbol('value3', event.value3);
@@ -659,14 +734,14 @@ class QuestTelemetry {
             this.persistentEventQueue.push(event);
             
             // If memory queue is full, drop oldest events
-            if (this.persistentEventQueue.length > this.maxPersistentQueueSize) {
+            if (this.persistentEventQueue.length > TELEMETRY_BATCH_CONFIG.MAX_PERSISTENT_QUEUE_SIZE) {
                 const droppedEvent = this.persistentEventQueue.shift();
                 this.telemetryStats.droppedEvents++;
                 this.metrics.totalDroppedEvents++;
                 this.logger.warn(`PERMANENTLY DROPPED event ${droppedEvent.operationId} due to queue size limit (total dropped: ${this.metrics.totalDroppedEvents})`);
             }
             
-            this.telemetryStats.connectionStatus = 'disconnected';
+            this.telemetryStats.connectionStatus = TELEMETRY_CONNECTION_STATUS.DISCONNECTED;
             this.isConnectionDown = true;
             this.logError('QuestDB local sender not available, event queued for retry');
             return;
@@ -676,12 +751,12 @@ class QuestTelemetry {
         this.eventBatch.push(event);
 
         // Prevent memory leaks: force flush if batch gets too large
-        if (this.eventBatch.length >= this.maxBatchSize) {
-            this.logger.warn(`Batch size limit reached (${this.maxBatchSize}), forcing flush`);
+        if (this.eventBatch.length >= TELEMETRY_BATCH_CONFIG.MAX_BATCH_SIZE) {
+            this.logger.warn(`Batch size limit reached (${TELEMETRY_BATCH_CONFIG.MAX_BATCH_SIZE}), forcing flush`);
             await this.flushBatch();
         }
         // Send batch if it's full
-        else if (this.eventBatch.length >= this.batchSize) {
+        else if (this.eventBatch.length >= TELEMETRY_BATCH_CONFIG.BATCH_SIZE) {
             await this.flushBatch();
         }
     }
@@ -739,7 +814,7 @@ class QuestTelemetry {
                 
                 // Parse operation ID for clearer display
                 const operationDetails = this.parseOperationId(operationId, blockchainId);
-                const periodMinutes = Math.round(this.healthCheckInterval / (1000 * 60)); // 3 minutes
+                const periodMinutes = Math.round(TELEMETRY_INTERVALS.HEALTH_CHECK / (1000 * 60)); // 3 minutes
                 const eventCount = periodFinalizedCount + 1;
                 const eventText = eventCount === 1 ? 'event' : 'events';
                 this.logger.info(`[TELEMETRY PROOFS] PROOF_CHALANGE_FINALIZED received from ot-node and emitted to QuestDB for ${blockchainId} ${operationDetails} - ${eventCount} ${eventText} received in last ${periodMinutes} minutes`);
@@ -754,7 +829,7 @@ class QuestTelemetry {
                 
                 // Parse operation ID for clearer display
                 const operationDetails = this.parseOperationId(operationId, blockchainId);
-                const periodMinutes = Math.round(this.healthCheckInterval / (1000 * 60)); // 3 minutes
+                const periodMinutes = Math.round(TELEMETRY_INTERVALS.HEALTH_CHECK / (1000 * 60)); // 3 minutes
                 const eventCount = periodSubmittedCount + 1;
                 const eventText = eventCount === 1 ? 'event' : 'events';
                 this.logger.info(`[TELEMETRY PROOFS] PROOF_SUBMITTED received from ot-node and emitted to QuestDB for ${blockchainId} ${operationDetails} - ${eventCount} ${eventText} received in last ${periodMinutes} minutes`);
@@ -769,7 +844,7 @@ class QuestTelemetry {
             });
             
             // Limit size
-            if (this.metrics.recentProofEvents.length > this.metrics.maxRecentEvents) {
+            if (this.metrics.recentProofEvents.length > TELEMETRY_BATCH_CONFIG.MAX_RECENT_EVENTS) {
                 this.metrics.recentProofEvents.shift();
             }
             

@@ -448,7 +448,7 @@ class OTNode {
             const telemetryModuleManager = this.container.resolve('telemetryModuleManager');
             if (telemetryModuleManager && telemetryModuleManager.getImplementation()) {
                 this.logger.info('Cleaning up telemetry...');
-                await telemetryModuleManager.getImplementation().module.cleanup();
+                await telemetryModuleManager.getImplementation().cleanup();
             }
         } catch (error) {
             this.logger.error(`Error during telemetry cleanup: ${error.message}`);
