@@ -326,8 +326,8 @@ export const MIGRATION_FLAG_PATH = '.enrichment_migration_done_dkg';
 export const CONTRACT_FUNCTION_GAS_LIMIT_INCREASE_FACTORS = {};
 
 export const GNOSIS_DEFAULT_GAS_PRICE = {
-    TESTNET: 25,
-    MAINNET: 5,
+    TESTNET: 1,
+    MAINNET: 1,
 };
 
 export const NEURO_DEFAULT_GAS_PRICE = {
@@ -712,6 +712,9 @@ export const EXPECTED_TRANSACTION_ERRORS = {
     NODE_NOT_AWARDED: 'NodeNotAwarded',
     WRONG_MERKLE_PROOF: 'WrongMerkleProof',
     NO_MINTED_ASSETS: 'NoMintedAssets',
+    NONCE_TOO_LOW: 'nonce too low',
+    REPLACEMENT_UNDERPRICED: 'replacement transaction underpriced',
+    ALREADY_KNOWN: 'already known',
 };
 
 /**
@@ -1093,7 +1096,7 @@ export const CHUNK_SIZE = 32;
 export const CLAIM_REWARDS_INTERVAL = 60 * 60 * 1000;
 export const CLAIM_REWARDS_BATCH_SIZE = 10;
 
-export const BATCH_GET_BATCH_SIZE = 5;
+export const BATCH_GET_BATCH_SIZE = 2;
 export const BATCH_GET_UAL_MAX_LIMIT = 1000;
 
 export const SYNC_INTERVAL = 12 * 1000;

@@ -15,6 +15,12 @@ import {
 class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
     constructor(ctx) {
         super(ctx);
+
+        this.logger = ctx.config.logging.enableExperimentalScopes
+            ? ctx.logger.child({
+                  scope: 'HandleBatchGetRequestCommand',
+              })
+            : ctx.logger;
         this.tripleStoreService = ctx.tripleStoreService;
         this.paranetService = ctx.paranetService;
         this.blockchainModuleManager = ctx.blockchainModuleManager;
@@ -30,10 +36,13 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
         const { operationId, blockchain, includeMetadata } = commandData;
         let { uals, tokenIds } = commandData;
 
-        await this.operationIdService.updateOperationIdStatus(
+        this.logger.startTimer(
+            `HandleBatchGetRequestCommand [PREPARE]: ${operationId} ${uals.length}`,
+        );
+        await this.operationIdService.emitChangeEvent(
+            this.operationStartEvent,
             operationId,
             blockchain,
-            this.operationStartEvent,
         );
 
         // Trim uals and tokenIds to the max limit of BATCH_GET_UAL_MAX_LIMIT
@@ -57,11 +66,20 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
             }
         }
 
+        this.logger.endTimer(
+            `HandleBatchGetRequestCommand [PREPARE]: ${operationId} ${uals.length}`,
+        );
+
+        this.logger.startTimer(
+            `HandleBatchGetRequestCommand [PROCESSING]: ${operationId} ${uals.length}`,
+        );
+
         const assertionPromise = this.tripleStoreService.getAssertionsInBatch(
             TRIPLE_STORE_REPOSITORY.DKG,
             uals,
             tokenIds,
             TRIPLES_VISIBILITY.PUBLIC,
+            operationId,
         );
 
         promises.push(assertionPromise);
@@ -81,13 +99,25 @@ class HandleBatchGetRequestCommand extends HandleProtocolMessageCommand {
             ...(includeMetadata && metadata && { metadata }),
         };
 
+        this.logger.endTimer(
+            `HandleBatchGetRequestCommand [PROCESSING]: ${operationId} ${uals.length}`,
+        );
+
+        this.logger.startTimer(
+            `HandleBatchGetRequestCommand [RESPONSE]: ${operationId} ${uals.length}`,
+        );
+
         if (assertions?.length) {
-            await this.operationIdService.updateOperationIdStatus(
+            await this.operationIdService.emitChangeEvent(
+                this.operationEndEvent,
                 operationId,
                 blockchain,
-                this.operationEndEvent,
             );
         }
+
+        this.logger.endTimer(
+            `HandleBatchGetRequestCommand [RESPONSE]: ${operationId} ${uals.length}`,
+        );
 
         return { messageType: NETWORK_MESSAGE_TYPES.RESPONSES.ACK, messageData: responseData };
     }

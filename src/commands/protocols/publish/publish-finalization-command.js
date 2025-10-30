@@ -32,8 +32,10 @@ class PublishFinalizationCommand extends Command {
         const { txHash, blockNumber } = event;
         const { id, publishOperationId, merkleRoot, byteSize } = eventData;
         const { blockchain, contractAddress } = event;
-        const operationId = await this.operationIdService.generateOperationId(
+        const operationId = this.operationIdService.generateId();
+        this.operationIdService.emitChangeEvent(
             OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_START,
+            operationId,
             blockchain,
             publishOperationId,
         );
@@ -82,15 +84,7 @@ class PublishFinalizationCommand extends Command {
         const ual = this.ualService.deriveUAL(blockchain, contractAddress, id);
 
         try {
-            await this.validatePublishData(
-                operationId,
-                blockchain,
-                merkleRoot,
-                cachedMerkleRoot,
-                byteSize,
-                assertion,
-                ual,
-            );
+            await this.validatePublishData(merkleRoot, cachedMerkleRoot, byteSize, assertion, ual);
         } catch (e) {
             this.logger.error(`Failed to validate publish data: ${e.message}`);
             this.operationIdService.emitChangeEvent(
@@ -103,10 +97,10 @@ class PublishFinalizationCommand extends Command {
         }
 
         try {
-            await this.operationIdService.updateOperationIdStatus(
+            await this.operationIdService.emitChangeEvent(
+                OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_STORE_ASSERTION_START,
                 operationId,
                 blockchain,
-                OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_STORE_ASSERTION_START,
             );
 
             const totalTriples = await this.tripleStoreService.insertKnowledgeCollection(
@@ -119,10 +113,10 @@ class PublishFinalizationCommand extends Command {
             await this.repositoryModuleManager.incrementInsertedTriples(totalTriples ?? 0);
             this.logger.info(`Number of triples added to the database +${totalTriples}`);
 
-            await this.operationIdService.updateOperationIdStatus(
+            await this.operationIdService.emitChangeEvent(
+                OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_STORE_ASSERTION_END,
                 operationId,
                 blockchain,
-                OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_STORE_ASSERTION_END,
             );
 
             const myPeerId = this.networkModuleManager.getPeerId().toB58String();
@@ -133,15 +127,9 @@ class PublishFinalizationCommand extends Command {
                     publisherPeerId,
                 );
 
-                await this.operationService.markOperationAsCompleted(
-                    operationId,
-                    blockchain,
-                    {
-                        completedNodes: 1,
-                        allNodesReplicatedData: true,
-                    },
-                    [...this.operationService.completedStatuses],
-                );
+                for (const status of this.operationService.completedStatuses) {
+                    this.operationIdService.emitChangeEvent(status, operationId, blockchain);
+                }
             } else {
                 const networkProtocols = this.operationService.getNetworkProtocols();
                 const node = { id: publisherPeerId, protocol: networkProtocols[0] };
@@ -164,7 +152,8 @@ class PublishFinalizationCommand extends Command {
                 );
             }
         } catch (e) {
-            await this.handleError(operationId, blockchain, e.message, this.errorType, true);
+            this.logger.error(`Command error (${this.errorType}): ${e.message}`);
+
             this.operationIdService.emitChangeEvent(
                 OPERATION_ID_STATUS.FAILED,
                 operationId,
@@ -176,42 +165,21 @@ class PublishFinalizationCommand extends Command {
         return Command.empty();
     }
 
-    async validatePublishData(
-        operationId,
-        blockchain,
-        merkleRoot,
-        cachedMerkleRoot,
-        byteSize,
-        assertion,
-        ual,
-    ) {
-        try {
-            if (merkleRoot !== cachedMerkleRoot) {
-                await this.handleError(
-                    operationId,
-                    blockchain,
-                    `Invalid Merkle Root for Knowledge Collection: ${ual}. Received value from blockchain: ${merkleRoot}, Cached value from publish operation: ${cachedMerkleRoot}`,
-                    this.errorType,
-                    true,
-                );
-            }
+    async validatePublishData(merkleRoot, cachedMerkleRoot, byteSize, assertion, ual) {
+        if (merkleRoot !== cachedMerkleRoot) {
+            const errorMessage = `Invalid Merkle Root for Knowledge Collection: ${ual}. Received value from blockchain: ${merkleRoot}, Cached value from publish operation: ${cachedMerkleRoot}`;
 
-            const calculatedAssertionSize = this.dataService.calculateAssertionSize(
-                assertion.public ?? assertion,
-            );
+            throw new Error(errorMessage);
+        }
 
-            if (byteSize.toString() !== calculatedAssertionSize.toString()) {
-                await this.handleError(
-                    operationId,
-                    blockchain,
-                    `Invalid Assertion Size for Knowledge Collection: ${ual}. Received value from blockchain: ${byteSize}, Calculated value: ${calculatedAssertionSize}`,
-                    this.errorType,
-                    true,
-                );
-            }
-        } catch (e) {
-            await this.handleError(operationId, blockchain, e.message, this.errorType, true);
-            throw e;
+        const calculatedAssertionSize = this.dataService.calculateAssertionSize(
+            assertion.public ?? assertion,
+        );
+
+        if (byteSize.toString() !== calculatedAssertionSize.toString()) {
+            const errorMessage = `Invalid Assertion Size for Knowledge Collection: ${ual}. Received value from blockchain: ${byteSize}, Calculated value: ${calculatedAssertionSize}`;
+
+            throw new Error(errorMessage);
         }
     }
 

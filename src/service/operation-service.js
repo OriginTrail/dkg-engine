@@ -73,10 +73,17 @@ class OperationService {
             operationId,
             OPERATION_STATUS.COMPLETED,
         );
+        for (let i = 0; i < endStatuses.length; i += 1) {
+            const status = endStatuses[i];
+            const response = {
+                status,
+            };
 
-        for (const status of endStatuses) {
-            // eslint-disable-next-line no-await-in-loop
-            await this.operationIdService.updateOperationIdStatus(operationId, blockchain, status);
+            this.operationIdService.emitChangeEvent(status, operationId, blockchain);
+            if (i === endStatuses.length - 1) {
+                // eslint-disable-next-line no-await-in-loop
+                await this.repositoryModuleManager.updateOperationIdRecord(response, operationId);
+            }
         }
     }
 

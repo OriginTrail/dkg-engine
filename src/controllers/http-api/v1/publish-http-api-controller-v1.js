@@ -30,10 +30,10 @@ class PublishController extends BaseController {
             blockchain,
         );
 
-        await this.operationIdService.updateOperationIdStatus(
+        this.operationIdService.emitChangeEvent(
+            OPERATION_ID_STATUS.PUBLISH.PUBLISH_INIT_START,
             operationId,
             blockchain,
-            OPERATION_ID_STATUS.PUBLISH.PUBLISH_INIT_START,
         );
 
         this.returnResponse(res, 202, {

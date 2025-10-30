@@ -83,7 +83,7 @@ class OtGraphdb extends OtTripleStore {
         } catch (e) {
             if (e.response && e.response.status === 404) {
                 // Expected error: GraphDB is up but has not created node0 repository
-                // Ot-node will create repo in initialization
+                // dkg-engine will create repo in initialization
                 return true;
             }
             return false;

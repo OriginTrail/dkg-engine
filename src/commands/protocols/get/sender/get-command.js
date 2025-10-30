@@ -39,7 +39,11 @@ class GetCommand extends Command {
             errorMessage,
             errorType,
         );
-        this.operationIdService.emitChangeEvent(OPERATION_ID_STATUS.GET.GET_FAILED, operationId);
+        this.operationIdService.emitChangeEvent(
+            OPERATION_ID_STATUS.GET.GET_FAILED,
+            operationId,
+            blockchain,
+        );
     }
 
     /**
@@ -150,10 +154,11 @@ class GetCommand extends Command {
                 return Command.empty();
             }
         }
-        await this.operationIdService.updateOperationIdStatus(
+
+        this.operationIdService.emitChangeEvent(
+            OPERATION_ID_STATUS.GET.GET_VALIDATE_ASSET_END,
             operationId,
             blockchain,
-            OPERATION_ID_STATUS.GET.GET_VALIDATE_ASSET_END,
         );
 
         await this.operationIdService.updateOperationIdStatus(
@@ -258,10 +263,10 @@ class GetCommand extends Command {
         }
         this.logger.debug(`Could not find asset with UAL: ${ual} locally`);
 
-        await this.operationIdService.updateOperationIdStatus(
+        await this.operationIdService.emitChangeEvent(
+            OPERATION_ID_STATUS.GET.GET_LOCAL_END,
             operationId,
             blockchain,
-            OPERATION_ID_STATUS.GET.GET_LOCAL_END,
         );
 
         await this.operationIdService.updateOperationIdStatus(
