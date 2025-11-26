@@ -1,331 +1,134 @@
-<a name="readme-top"></a>
 
 ---
 
-<br />
-<div align="center">
-  <a href="https://github.com/OriginTrail/ot-node">
-    <img src="images/banner.gif" alt="OriginTrail Node Banner">
-  </a>
-
-  <h3 align="center"><b>OT-Node</b></h3>
-
-  <p align="center">
-    </br>
-    <a href="https://docs.origintrail.io/">OriginTrail Docs</a>
-    ·
-    <a href="https://github.com/OriginTrail/ot-node/issues">Report Bug</a>
-    ·
-    <a href="https://github.com/OriginTrail/ot-node/issues">Request Feature</a>
-  </p>
-</div>
-
-</br>
-
-<details open>
-  <summary>
-    <b>Table of Contents</b>
-  </summary>
-  <ol>
-    <li>
-      <a href="#📚-about-the-project">📚 About The Project</a>
-      <ul>
-        <li><a href="#what-is-the-decentralized-knowledge-graph">What is the Decentralized Knowledge Graph?</a></li>
-        <li><a href="#the-origintrail-dkg-architecture">The OriginTrail DKG Architecture</a></li>
-        <li><a href="#what-is-a-knowledge-asset">What is a Knowledge Asset?</a></li>
-      </ul>
-    </li>
-    <li>
-      <a href="#🚀-getting-started">🚀 Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#local-network-setup">Local Network Setup</a></li>
-        <li><a href="#dkg-node-setup">DKG Node Setup</a></li>
-        <li><a href="#build-on-dkg">Build on DKG</a></li>
-      </ul>
-    </li>
-    <li><a href="#📄-license">📄 License</a></li>
-    <li><a href="#🤝-contributing">🤝 Contributing</a></li>
-    <li><a href="#📰-social-media">📰 Social Media</a></li>
-  </ol>
-</details>
+### 🔹 Strengths
+- **Hackathon framing** (event, track, theme) is right at the top.  
+- **Demo video** is embedded and linked.  
+- **Quick Judge Path** is concise and reproducible.  
+- **Project overview** explains the purpose in plain language.  
+- **Judge resources** link directly to supporting files.  
+- **Challenge alignment** maps to the hackathon tracks.  
+- **Impact section** highlights stakeholders clearly.  
+- **References & repo structure** add credibility.  
+- **License** ensures openness.
 
 ---
 
-<br/>
-
-## 📚 About The Project
-
-<details open>
-<summary>
-
-### **What is the Decentralized Knowledge Graph?**
-
-</summary>
-
-<br/>
-
-<div align="center">
-    <img src="images/nodes.png" alt="Knowledge Asset" width="200">
-</div>
-
-OriginTrail Decentralized Knowledge Graph (DKG), hosted on the OriginTrail Decentralized Network (ODN) as trusted knowledge infrastructure, is shared global Knowledge Graph of Knowledge Assets. Running on the basis of the permissionless multi-chain OriginTrail protocol, it combines blockchains and knowledge graph technology to enable trusted AI applications based on key W3C standards.
-
-</details>
-
-<details open>
-<summary>
-
-### **The OriginTrail DKG Architecture**
-
-</summary>
-
-<br/>
-
-The OriginTrail tech stack is a three layer structure, consisting of the multi-chain consensus layer (OriginTrail layer 1, running on multiple blockchains), the Decentralized Knowledge Graph layer (OriginTrail Layer 2, hosted on the ODN) and Trusted Knowledge applications in the application layer.
-
-<div align="center">
-    <img src="images/dkg-architecture.png" alt="DKG Architecture" width="400">
-</div>
-
-Further, the architecture differentiates between **the public, replicated knowledge graph** shared by all network nodes according to the protocol, and **private Knowledge graphs** hosted separately by each of the OriginTrail nodes.
-
-**Anyone can run an OriginTrail node and become part of the ODN, contributing to the network capacity and hosting the OriginTrail DKG. The OriginTrail node is the ultimate data service for data and knowledge intensive Web3 applications and is used as the key backbone for trusted AI applications (see https://chatdkg.ai)**
-
-</details>
-
-<details open>
-<summary>
-
-### **What is a Knowledge Asset?**
-
-</summary>
-
-<br/>
-
-<div align="center">
-    <img src="images/ka.png" alt="Knowledge Asset" width="200">
-</div>
-
-**Knowledge Asset is the new, AI‑ready resource for the Internet**
-
-Knowledge Assets are verifiable containers of structured knowledge that live on the OriginTrail DKG and provide:
-
--   **Discoverability - UAL is the new URL**. Uniform Asset Locators (UALs, based on the W3C Decentralized Identifiers) are a new Web3 knowledge identifier (extensions of the Uniform Resource Locators - URLs) which identify a specific piece of knowledge and make it easy to find and connect with other Knowledge Assets.
--   **Ownership - NFTs enable ownership**. Each Knowledge Asset contains an NFT token that enables ownership, knowledge asset administration and market mechanisms.
--   **Verifiability - On-chain information origin and verifiable trail**. The blockchain tech increases trust, security, transparency, and the traceability of information.
-
-By their nature, Knowledge Assets are semantic resources (following the W3C Semantic Web set of standards), and through their symbolic representations inherently AI ready. See more at https://chatdkg.ai
-<br/>
-
-**Discover Knowledge Assets with the DKG Explorer:**
-
-<div align="center">
-    <table>
-        <tr>
-            <td align="center">
-                <a href="https://dkg.origintrail.io/explore?ual=did:dkg:otp/0x5cac41237127f94c2d21dae0b14bfefa99880630/309100">
-                  <img src="images/knowledge-assets-graph1.svg" width="300" alt="Knowledge Assets Graph 1">
-                </a>
-                <br><b>Supply Chains</b>
-            </td>
-            <td align="center">
-                <a href="https://dkg.origintrail.io/explore?ual=did:dkg:otp/0x5cac41237127f94c2d21dae0b14bfefa99880630/309285">
-                  <img src="images/knowledge-assets-graph2.svg" width="300" alt="Knowledge Assets Graph 2">
-                </a>
-                <br><b>Construction</b>
-            </td>
-            <td align="center">
-                <a href="https://dkg.origintrail.io/explore?ual=did:dkg:otp/0x5cac41237127f94c2d21dae0b14bfefa99880630/309222">
-                  <img src="images/knowledge-assets-graph3.svg" width="300" alt="Knowledge Assets Graph 3">
-                </a>
-                <br><b>Life sciences and healthcare</b>
-            </td>
-            <td align="center">
-                <a href="https://dkg.origintrail.io/explore?ual=did:dkg:otp/0x5cac41237127f94c2d21dae0b14bfefa99880630/308028">
-                  <img src="images/knowledge-assets-graph4.svg" width="300" alt="Knowledge Assets Graph 3">
-                </a>
-                <br><b>Metaverse</b>
-            </td>
-        </tr>
-    </table>
-</div>
-
-</details>
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-<br/>
-
-## 🚀 Getting Started
+### 🔹 Recommended Refinements
+1. **Close the Quick Judge Path code block cleanly** — right now you have an extra blank line before the closing triple backticks. Remove that so Markdown renders properly.  
+2. **Add the sample console output snippet** under Quick Judge Path so judges see exactly what to expect.  
+3. **Judge Resources section** — add one‑line context for each link (e.g., “step‑by‑step reproducibility guide”).  
+4. **Impact section** — add one more stakeholder: *AI Governance Researchers* (since that’s part of your theme).  
 
 ---
 
-### Prerequisites
+### 🔹 Final Polished README.md (Copy & Paste)
 
-<br/>
+```markdown
+# 🏆 Hackathon Submission: COS™ Blockchain Compliance Tracker — Built on DKG Edge Node
 
--   **Node.js** 20.18
--   **npm** 10.8.2
+**Event:** [OriginTrail Global Hackathon 2025](https://dorahacks.io/hackathon/origintrail-scaling-trust-ai/detail)  
+**Track(s):** 📝 Decentralized Community Notes + 🗣️ Social Graph Reputation  
+**Theme:** Ethics‑First Governance for AI and Infrastructure Projects  
 
 ---
 
-<br/>
+## 🎥 Demo Video
+Watch the 2‑minute demo here:  
+[![COS™ Demo Video](https://img.youtube.com/vi/8bb8-A9xRLc/0.jpg)](https://youtu.be/8bb8-A9xRLc)  
+Direct link: https://youtu.be/8bb8-A9xRLc  
 
-### Local Network Setup
+---
 
-<br/>
-
-First, clone the repo:
+## ⚡ Quick Judge Path
 
 ```bash
-git clone https://github.com/OriginTrail/ot-node.git
-cd ot-node
-```
-
-Switch the branch to `v8/develop`:
-
-```bash
-git checkout v8/develop
-```
-
-Install dependencies using `npm`:
-
-```bash
+git clone https://github.com/cmacademyconsulting/dkg-edge-node-cos-compliance-tracker.git
+cd dkg-edge-node-cos-compliance-tracker/apps/cos-compliance-tracker
 npm install
+cp .env.example .env   # add Infura Project ID + PRIVATE_KEY
+node demo.js
 ```
 
-Create the .env file inside the "ot-node" directory:
+👉 Expected output:
 
 ```bash
-nano .env
+🚀 Starting COS Compliance Tracker demo...
+📤 Publishing compliance note to DKG...
+{
+  "@context": "https://www.w3.org/ns/odrl.jsonld",
+  "type": "ComplianceNote",
+  "name": "Safety Inspection Report",
+  "issued": "2025-11-26T05:56:51Z",
+  "evidence": {
+    "txid": "0xabc123...789",
+    "network": "Ethereum Sepolia",
+    "blockTimestamp": "2025-11-26T05:56:51Z"
+  }
+}
+🔎 Verifying TxID on Sepolia Etherscan...
+✅ Demo complete. Compliance note published and verified.
 ```
 
-and paste the following content inside (save and close):
-
-```bash
-NODE_ENV=development
-RPC_ENDPOINT_BC1=http://localhost:8545
-RPC_ENDPOINT_BC2=http://localhost:9545
-REPOSITORY_PASSWORD=
-```
-
-Run the Triple Store.
-
-To use default Triple Store (`blazegraph`), download the exec file and run it with the following command in the separate process:
-
-```bash
-java -server -Xmx6g -jar blazegraph.jar
-```
-
-It's highly recommended to use a larger heap size (6GB or 8GB), as the DKG node will require a lot of memory.
-
-Ensure your MySQL instance is running on port 3306 with the password matching REPOSITORY_PASSWORD in your .env file. Additionally, set up Redis on its default port 6379. Both are required for the nodes to start properly.
-
-Then, depending on the OS, use one of the scripts in order to run the local network with provided number of nodes (minimal amount of nodes should be 6):
-
-**MacOS**
-
-```bash
-bash ./tools/local-network-setup/setup-macos-environment.sh --nodes=6
-```
-
-**Linux**
-
-```bash
-./tools/local-network-setup/setup-linux-environment.sh --nodes=6
-```
+Verify TxID on [Sepolia Etherscan](https://sepolia.etherscan.io/).
 
 ---
 
-<br/>
-
-### DKG Node Setup
-
-<br/>
-
-In order to run a DKG node on the **V8 Testnet**, please read the official documentation: https://docs.origintrail.io/dkg-v8-upcoming-version/run-a-v8-core-node-on-testnet
+## 📚 Project Overview
+COS™ Blockchain Compliance Tracker embeds **ethics‑first governance** into AI and donor‑funded infrastructure projects.  
+It transforms governance events into **immutable blockchain records** linked to transaction IDs, block numbers, and timestamps.  
+These records are extended into **OriginTrail DKG Knowledge Assets**, enabling verifiable compliance, oversight, and sustainability metrics.
 
 ---
 
-<br/>
-
-### Build on DKG
-
-<br/>
-
-The OriginTrail SDKs are client libraries for your applications, used to interact and connect with the OriginTrail Decentralized Knowledge Graph.
-From an architectural standpoint, the SDK libraries are application interfaces into the DKG, enabling you to create and manage Knowledge Assets through your apps, as well as perform network queries (such as search, or SPARQL queries), as illustrated below.
-
-<div align="center">
-    <img src="images/sdk.png" alt="SDK" width="200">
-</div>
-
-The OriginTrail SDK libraries are being built in various languages by the team and the community, as listed below:
-
--   dkg.js - V8 JavaScript SDK implementation
-    -   [Github repository](https://github.com/OriginTrail/dkg.js/tree/v8/develop)
-    -   [Documentation](https://docs.origintrail.io/dkg-v8-upcoming-version/v8-dkg-sdk/dkg-v8-js-client)
--   dkg.py - V8 Python SDK implementation
-    -   [Github repository](https://github.com/OriginTrail/dkg.py/tree/v8/develop)
-    -   [Documentation](https://docs.origintrail.io/dkg-v8-upcoming-version/v8-dkg-sdk/dkg-v8-py-client)
+## 🧑‍⚖️ Judge Resources
+- [Detailed Hackathon README](./apps/cos-compliance-tracker/README.md) — full submission package  
+- [Judge Instructions](./apps/cos-compliance-tracker/judge_instructions.md) — step‑by‑step reproducibility guide  
+- [Judge Checklist](./apps/cos-compliance-tracker/appendix/judge_checklist.md) — one‑page tick‑box verification table  
+- [Proofs (demo_run.json)](./apps/cos-compliance-tracker/proofs/demo_run.json) — machine‑readable demo output  
+- [Audit Table (audit_table.csv)](./apps/cos-compliance-tracker/appendix/audit_table.csv) — consolidated governance events  
 
 ---
 
-<br/>
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+## ✨ Challenge Alignment
+- **Decentralized Community Notes:** Compliance events logged as verifiable triples (`Event → VerifiedBy → TxID`) in JSON‑LD.  
+- **Social Graph Reputation:** Oversight logs mapped into reputation scores for auditors, contractors, and agencies.  
+
+---
+
+## 📊 Impact
+- **Donors:** Gain confidence in fund allocation through verifiable ESG notes and transparent audit trails.  
+- **Project Managers:** Streamline compliance oversight with transparent reputation scoring and accountability metrics.  
+- **Communities:** Assured ethical delivery of projects with sustainability indices backed by immutable records.  
+- **Judges:** Experience a fully reproducible demo with transparent click‑paths, ensuring credibility and ease of verification.  
+- **AI Governance Researchers:** Access reproducible framework for embedding ethics into AI workflows.  
+
+---
+
+## 📘 References
+- COS™ Working Paper (Zenodo DOI): [10.5281/zenodo.17620309](https://doi.org/10.5281/zenodo.17620309)  
+- OriginTrail Global Hackathon 2025 Challenge Page: [Scaling Trust in the Age of AI](https://dorahacks.io/hackathon/origintrail-scaling-trust-ai/detail)  
+- Supporting references in `/apps/cos-compliance-tracker/docs/references.bib`  
+
+---
+
+## 📂 Repo Structure
+```
+dkg-edge-node-cos-compliance-tracker/
+├── apps/
+│   └── cos-compliance-tracker/
+│       ├── README.md              # Detailed hackathon submission
+│       ├── demo.js                # Demo script
+│       ├── judge_instructions.md  # Step-by-step guide
+│       ├── appendix/              # Audit table, screenshots, checklist
+│       ├── proofs/                # Demo run JSON
+│       └── docs/                  # Ethics, governance, methodology, roadmap
+```
+
+---
 
 ## 📄 License
-
-Distributed under the Apache-2.0 License. See `LICENSE` file for more information.
-
-<br/>
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-## 🤝 Contributing
-
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
-
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
-Don't forget to give the project a star! Thanks again!
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-<br/>
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-## 📰 Social Media
-
-<br/>
-
-<div align="center">
-  <a href="https://medium.com/origintrail">
-    <img src="images/icons/medium.svg" alt="Medium Badge" width="30" style="margin-right: 10px"/>
-  </a>
-  <a href="https://t.me/origintrail">
-    <img src="images/icons/telegram.svg" alt="Telegram Badge" width="30" style="margin-right: 10px"/>
-  </a>
-  <a href="https://x.com/origin_trail">
-    <img src="images/icons/x.svg" alt="X Badge" width="30" style="margin-right: 10px"/>
-  </a>
-  <a href="https://www.youtube.com/c/origintrail">
-    <img src="images/icons/youtube.svg" alt="YouTube Badge" width="30" style="margin-right: 10px"/>
-  </a>
-  <a href="https://www.linkedin.com/company/origintrail/">
-    <img src="images/icons/linkedin.svg" alt="LinkedIn Badge" width="30" style="margin-right: 10px"/>
-  </a>
-  <a href="https://discord.gg/cCRPzzmnNT">
-    <img src="images/icons/discord.svg" alt="Discord Badge" width="30" style="margin-right: 10px"/>
-  </a>
-  <a href="https://www.reddit.com/r/OriginTrail/">
-    <img src="images/icons/reddit.svg" alt="Reddit Badge" width="30" style="margin-right: 10px"/>
-  </a>
-  <a href="https://coinmarketcap.com/currencies/origintrail/">
-    <img src="images/icons/coinmarketcap.svg" alt="Coinmarketcap Badge" width="30" style="margin-right: 10px"/>
-  </a>
-</div>
+Licensed under **CC BY 4.0** for reproducibility and open governance.
+```
 
 ---
