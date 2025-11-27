@@ -27,15 +27,17 @@ async function runDemo() {
     const block = await provider.getBlock(receipt.blockNumber);
 
     // Compliance note object
-    const complianceNote = {
-      event: message,
-      evidence: {
-        txid: tx.hash,
-        blockNumber: receipt.blockNumber,
-        blockTimestamp: block.timestamp
-      },
-      verified: true
-    };
+const complianceNote = {
+  event: message,
+  hash: hash,   // include computed keccak256 hash
+  evidence: {
+    txid: tx.hash,
+    blockNumber: receipt.blockNumber,
+    blockTimestamp: block.timestamp
+  },
+  verified: true
+};
+
 
     console.log(JSON.stringify(complianceNote, null, 2));
     console.log("🔎 Verified TxID on Sepolia Etherscan:", `https://sepolia.etherscan.io/tx/${tx.hash}`);

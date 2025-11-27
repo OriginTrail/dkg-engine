@@ -1,9 +1,0 @@
-# COS™ Blockchain Compliance Tracker Audit Table,,,,,
-"# Includes prior reproducible runs (Nov 21, 2025) and one fresh run (Nov 26, 2025).",,,,,
-# All TxIDs can be verified on Sepolia Etherscan.,,,,,
-Event,Description,SHA256 Hash,TxID,Block Number,Timestamp
-SafetyInspection,Fresh run for SafetyInspection event,3d3c3e5f2c1f7f1f6f3b9e7c1c2d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d,0x9039fb8a220213bec87d5eefe67faeb55567378b2926dafb10a9054e57042e51,9711192,2025-11-26T14:01:42.480Z
-CarbonPermit,Carbon emission permit verified by regulator,3eb4387f9226f9c45702c2411505d90b5357c9065468cf02df0a9fad7bafb6de,0x79811149f55e710a6e9b339413487dffd8e2fea1911263d842d23908aabb742e,9675700,2025-11-21T12:56:28.305Z
-GenderInclusionReport,Gender inclusion report submitted,947761db2c1c8c2c3fde2f08c9358d47eddab7071c6c627c3ef641a99700438b,0x9a4a77cbe438e3a5cfe7564ae972d08aee284329ec947e521c61d7cf5dd7fb44,9675701,2025-11-21T12:56:41.627Z
-AuditLog,Auditor compliance check completed,c4533ae21db1fc668eec2bc39401089a9d3645ec30246b7bb3a65db6de97ac01,0xb967be604e5646206c8b060a43b369809a266238979adc9ffa55eb02602a736c,9675703,2025-11-21T12:57:05.852Z
-SustainabilityIndex,Sustainability index updated,c1d36c4c6ceff5f06b667e3da15eacb66e0004d3202f5be7aeb8a5778a40585d,0xca5f8fa2568e0db543b38726ca851f7665ce6686a5e092b1c05a908b5773f364,9675706,2025-11-21T12:57:40.522Z
