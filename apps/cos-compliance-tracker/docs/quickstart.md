@@ -38,11 +38,20 @@ echo EnvironmentalCheck: Environmental compliance check passed | sha256sum
 ```bash
 node demo.js "SafetyInspection: Worker safety inspection completed on site"
 ```
-Outputs:
-- Tx hash  
-- Block number  
-- Block timestamp  
-- JSON compliance note  
+
+Expected output:
+```json
+{
+  "event": "SafetyInspection: Worker safety inspection completed on site",
+  "hash": "f90d04055edc258a17232db4172cd206995de4fa244a017f523e83662060977f",
+  "evidence": {
+    "txid": "0x008f0fdf9c8f96b0d4ad5bbd0063723abbeda980767d02c62a95f279d737a82c",
+    "blockNumber": 9718072,
+    "blockTimestamp": 1764250824
+  },
+  "verified": true
+}
+```
 
 ### 6. Verify TxID
 Paste the Tx hash into [Sepolia Etherscan](https://sepolia.etherscan.io) and confirm:
@@ -66,12 +75,36 @@ Save screenshots of:
 
 Store them in `/appendix/screenshots.md`.
 
+---
+
 ### Offline Fallback Demo
 If you don’t have Sepolia ETH or Infura credentials:
-1. Run the fallback script:
-   node demo_plain.js "SafetyInspection: Worker safety inspection completed on site"
-2. This will output the event → hash mapping locally.
-3. No blockchain transaction is submitted, but reproducibility is preserved.
+
+```bash
+node demo_plain.js "SafetyInspection: Worker safety inspection completed on site"
+```
+
+Expected output:
+```json
+{
+  "event": "SafetyInspection: Worker safety inspection completed on site",
+  "hash": "f90d04055edc258a17232db4172cd206995de4fa244a017f523e83662060977f",
+  "verified": false,
+  "note": "Local-only demo: no transaction submitted"
+}
+```
+
+Reproducibility is preserved via local hash generation and screenshots.
+
+---
+
+### Demo Video (to be added)
+A short video walkthrough will be linked here before final submission, showing:
+- Hash generation  
+- Demo transaction run  
+- Etherscan verification  
+- Offline fallback demo  
+- Audit table entry and screenshots
 
 
 ---

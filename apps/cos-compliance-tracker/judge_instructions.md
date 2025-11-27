@@ -15,13 +15,13 @@ This guide provides step‑by‑step instructions for verifying the reproducibil
    ```
 
 2. **Configure environment**
-- Copy `.env.example` to `.env`
-- Add your **own Infura Project ID** and **Sepolia PRIVATE_KEY**
-- Example:
-   ```bash
-   RPC_URL_SEPOLIA=https://sepolia.infura.io/v3/YOUR_PROJECT_ID
-   PRIVATE_KEY=0xYOUR_PRIVATE_KEY
-   ```
+   - Copy `.env.example` to `.env`
+   - Add your **own Infura Project ID** and **Sepolia PRIVATE_KEY**
+   - Example:
+     ```env
+     RPC_URL_SEPOLIA=https://sepolia.infura.io/v3/YOUR_PROJECT_ID
+     PRIVATE_KEY=0xYOUR_PRIVATE_KEY
+     ```
 
 ⚠️ **Important:** This repository does **not** include private credentials.  
 Judges must use their own Infura Project ID and Sepolia wallet key to reproduce the demo.
@@ -33,24 +33,53 @@ Judges must use their own Infura Project ID and Sepolia wallet key to reproduce 
 Run demo script for governance events:
 
 ```bash
-node apps/cos-compliance-tracker/demo.js "SafetyInspection"
-node apps/cos-compliance-tracker/demo.js "QualityAudit"
-node apps/cos-compliance-tracker/demo.js "EnvironmentalCheck"
+node demo.js "SafetyInspection: Worker safety inspection completed on site"
 ```
 
-**Outputs include:** Event · SHA‑256 Hash · TxID · Block Number · Timestamp
+Expected output:
+```json
+{
+  "event": "SafetyInspection: Worker safety inspection completed on site",
+  "hash": "f90d04055edc258a17232db4172cd206995de4fa244a017f523e83662060977f",
+  "evidence": {
+    "txid": "0x008f0fdf9c8f96b0d4ad5bbd0063723abbeda980767d02c62a95f279d737a82c",
+    "blockNumber": 9718072,
+    "blockTimestamp": 1764250824
+  },
+  "verified": true
+}
+```
 
-Fallback demo (plain‑text):
+Run additional governance events:
 ```bash
-npm run demo:plain
+node demo.js "QualityAudit: Independent quality audit completed"
+node demo.js "EnvironmentalCheck: Environmental compliance check passed"
 ```
-Provides simplified outputs for universal compatibility.
+
+---
+
+## 🖥️ Offline Fallback Demo
+
+If you don’t have Sepolia ETH or Infura credentials:
+```bash
+node demo_plain.js "SafetyInspection: Worker safety inspection completed on site"
+```
+
+Expected output:
+```json
+{
+  "event": "SafetyInspection: Worker safety inspection completed on site",
+  "hash": "f90d04055edc258a17232db4172cd206995de4fa244a017f523e83662060977f",
+  "verified": false,
+  "note": "Local-only demo: no transaction submitted"
+}
+```
 
 ---
 
 ## 🔍 TxID Verification
 
-1. Copy a TxID from the demo output or `/appendix/audit_table.csv`  
+1. Copy a TxID from the demo output or `audit_table.csv`  
 2. Paste into [Sepolia Etherscan](https://sepolia.etherscan.io/)  
 3. Confirm block number and timestamp match demo output  
 
@@ -59,12 +88,12 @@ Provides simplified outputs for universal compatibility.
 ## 📊 Reproducibility Workflow
 
 See `/appendix/commands.md` for the full reproducibility checklist:
-- Generate SHA‑256 hashes
-- Submit demo transactions
-- Verify TxIDs on Sepolia
-- Record results in `audit_table.csv`
-- Capture screenshots in `screenshots.md`
-- Follow judge checklist
+- Generate SHA‑256 hashes  
+- Submit demo transactions  
+- Verify TxIDs on Sepolia  
+- Record results in `audit_table.csv`  
+- Capture screenshots in `screenshots.md`  
+- Follow `judge_checklist.md`  
 
 ---
 
@@ -96,7 +125,7 @@ The demo video illustrates the flow:
 ## ⚖️ Ethics‑First Commitments
 - See `/docs/ethics_statement.md` for transparency, accountability, and sustainability principles  
 - License: CC BY 4.0  
-- Reproducibility assets: `/appendix/audit_table.csv`, `/appendix/commands.md`, `/docs/demo_narration.md`, `/docs/demo_slides.md`, `/docs/demo_storyboard.md`, `/docs/demo_timing.md`
+- Reproducibility assets: `audit_table.csv`, `commands.md`, `screenshots.md`, `judge_checklist.md`, plus demo narration and slides in `/docs`
 
 ---
 
@@ -106,5 +135,6 @@ The demo video illustrates the flow:
 - Roadmap: `/docs/roadmap.md`  
 - Governance Framework: `/docs/governance_framework.md`  
 - Challenge Alignment: `/docs/challenge_alignment.md`
-```
 
+
+---

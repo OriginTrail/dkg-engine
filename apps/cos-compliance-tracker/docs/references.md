@@ -40,7 +40,16 @@ For full BibTeX entries, see `/docs/references.bib`.
 
 ---
 
+## 🔎 How Judges Use These References
+- **Blockchain & DKG**: Judges can cross‑verify TxIDs in `/appendix/audit_table.csv` against Ethereum Sepolia and OriginTrail DKG documentation.  
+- **Governance & ESG**: Judges can confirm alignment with World Bank, OECD, and UNDP governance indicators.  
+- **Standards**: Judges can validate compliance claims against CMAA and FIDIC standards.  
+- **Primary Citation**: Zenodo DOI ensures academic reproducibility and permanent archiving.
+
+---
+
 ## ✅ Notes
 - All references are reproducible and verifiable via official sources.  
 - COS™ citation is permanently archived with Zenodo DOI for academic credibility.  
-- These references underpin the methodology, governance framework, and ethics statement in `/docs`.
+- These references underpin the methodology, governance framework, and ethics statement in `/docs`.  
+- Reproducibility assets (`audit_table.csv`, `commands.md`, `screenshots.md`) demonstrate practical application of these references for hackathon judges.
