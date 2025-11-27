@@ -8,21 +8,20 @@ This guide provides step‑by‑step instructions for verifying the reproducibil
 ## ✅ Setup
 
 1. **Clone the repository**
-   ```
-   git clone https://github.com/cmacademyconsulting/dkg-edge-node-cos-compliance-tracker.git
-   cd dkg-edge-node-cos-compliance-tracker/apps/cos-compliance-tracker
+   ```bash
+   git clone https://github.com/Constructionmgmtpractitioner/dkg-engine.git
+   cd dkg-engine/apps/cos-compliance-tracker
    npm install
-
-
+   ```
 
 2. **Configure environment**
 - Copy `.env.example` to `.env`
 - Add your **own Infura Project ID** and **Sepolia PRIVATE_KEY**
 - Example:
-     ```
-  RPC_URL_SEPOLIA=https://sepolia.infura.io/v3/YOUR_PROJECT_ID
-  PRIVATE_KEY=0xYOUR_PRIVATE_KEY
-     ```
+   ```bash
+   RPC_URL_SEPOLIA=https://sepolia.infura.io/v3/YOUR_PROJECT_ID
+   PRIVATE_KEY=0xYOUR_PRIVATE_KEY
+   ```
 
 ⚠️ **Important:** This repository does **not** include private credentials.  
 Judges must use their own Infura Project ID and Sepolia wallet key to reproduce the demo.
@@ -31,13 +30,12 @@ Judges must use their own Infura Project ID and Sepolia wallet key to reproduce 
 
 ## 🚀 Demo Verification
 
-Run demo script for each governance event:
+Run demo script for governance events:
+
 ```bash
-npm run demo -- SafetyInspection
-npm run demo -- CarbonPermit
-npm run demo -- GenderInclusionReport
-npm run demo -- AuditLog
-npm run demo -- SustainabilityIndex
+node apps/cos-compliance-tracker/demo.js "SafetyInspection"
+node apps/cos-compliance-tracker/demo.js "QualityAudit"
+node apps/cos-compliance-tracker/demo.js "EnvironmentalCheck"
 ```
 
 **Outputs include:** Event · SHA‑256 Hash · TxID · Block Number · Timestamp
@@ -55,6 +53,18 @@ Provides simplified outputs for universal compatibility.
 1. Copy a TxID from the demo output or `/appendix/audit_table.csv`  
 2. Paste into [Sepolia Etherscan](https://sepolia.etherscan.io/)  
 3. Confirm block number and timestamp match demo output  
+
+---
+
+## 📊 Reproducibility Workflow
+
+See `/appendix/commands.md` for the full reproducibility checklist:
+- Generate SHA‑256 hashes
+- Submit demo transactions
+- Verify TxIDs on Sepolia
+- Record results in `audit_table.csv`
+- Capture screenshots in `screenshots.md`
+- Follow judge checklist
 
 ---
 
@@ -86,7 +96,7 @@ The demo video illustrates the flow:
 ## ⚖️ Ethics‑First Commitments
 - See `/docs/ethics_statement.md` for transparency, accountability, and sustainability principles  
 - License: CC BY 4.0  
-- Reproducibility assets: `/appendix/audit_table.csv`, `/docs/demo_narration.md`, `/docs/demo_slides.md`, `/docs/demo_storyboard.md`, `/docs/demo_timing.md`
+- Reproducibility assets: `/appendix/audit_table.csv`, `/appendix/commands.md`, `/docs/demo_narration.md`, `/docs/demo_slides.md`, `/docs/demo_storyboard.md`, `/docs/demo_timing.md`
 
 ---
 
@@ -96,3 +106,5 @@ The demo video illustrates the flow:
 - Roadmap: `/docs/roadmap.md`  
 - Governance Framework: `/docs/governance_framework.md`  
 - Challenge Alignment: `/docs/challenge_alignment.md`
+```
+

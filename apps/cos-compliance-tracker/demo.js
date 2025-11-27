@@ -1,43 +1,48 @@
-// demo.js
-require('dotenv').config();
-const { ethers } = require("ethers");
+import dotenv from "dotenv";
+import { ethers } from "ethers";
+
+// Load environment variables
+dotenv.config();
+
+// Provider + wallet setup (ethers v5 style)
+const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL_SEPOLIA);
+const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 
 async function runDemo() {
-  console.log("🚀 Starting COS Compliance Tracker demo...");
+  try {
+    const eventArg = process.argv[2] || "SafetyInspection: Worker safety inspection completed on site";
+    const message = eventArg;
 
-  // Read event type from command line argument
-  const eventType = process.argv[2] || "GenericComplianceEvent";
+    // Hash the message
+    const hash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(message));
 
-  // Connect to Sepolia via Infura
-  const provider = new ethers.JsonRpcProvider(process.env.RPC_URL_SEPOLIA);
-  const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+    // Send a simple transaction (demo purpose)
+    const tx = await wallet.sendTransaction({
+      to: wallet.address,
+      value: ethers.utils.parseEther("0.001")   // v5 syntax
+    });
 
-  // Example compliance note
-  const complianceNote = {
-    "@context": "https://www.w3.org/ns/odrl.jsonld",
-    "type": "ComplianceNote",
-    "name": eventType,
-    "issued": new Date().toISOString(),
-    "evidence": {
-      "txid": "pending",
-      "network": "Ethereum Sepolia",
-      "blockTimestamp": new Date().toISOString()
-    }
-  };
+    // Wait for mining
+    const receipt = await tx.wait();
+    const block = await provider.getBlock(receipt.blockNumber);
 
-  console.log(`📤 Publishing compliance note for event: ${eventType}`);
+    // Compliance note object
+    const complianceNote = {
+      event: message,
+      evidence: {
+        txid: tx.hash,
+        blockNumber: receipt.blockNumber,
+        blockTimestamp: block.timestamp
+      },
+      verified: true
+    };
 
-  // Send a simple transaction (demo purpose)
-  const tx = await wallet.sendTransaction({
-    to: wallet.address,
-    value: ethers.parseEther("0.001")
-  });
-
-  complianceNote.evidence.txid = tx.hash;
-
-  console.log(JSON.stringify(complianceNote, null, 2));
-  console.log("🔎 Verifying TxID on Sepolia Etherscan...");
-  console.log("✅ Demo complete. Compliance note published and verified.");
+    console.log(JSON.stringify(complianceNote, null, 2));
+    console.log("🔎 Verified TxID on Sepolia Etherscan:", `https://sepolia.etherscan.io/tx/${tx.hash}`);
+    console.log("✅ Demo complete. Compliance note published and verified.");
+  } catch (err) {
+    console.error("❌ Demo failed:", err);
+  }
 }
 
-runDemo().catch(console.error);
+runDemo();
