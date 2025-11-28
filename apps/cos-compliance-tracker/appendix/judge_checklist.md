@@ -1,5 +1,4 @@
 
-
 # 🧑‍⚖️ Judge Checklist — COS™ Blockchain Compliance Tracker
 
 This checklist provides a reference for verifying the reproducibility and ethics‑first commitments of the COS™ Blockchain Compliance Tracker submission.
@@ -63,9 +62,18 @@ Provides simplified outputs for universal compatibility.
 ## 📊 Reproducibility Workflow
 See appendix files for reproducibility assets:
 - [commands.md](appendix/commands.md) — step‑by‑step workflow  
-- [audit_table.csv](audit_table.csv) — reproducibility ledger  
+- [audit_table.csv](appendix/audit_table.csv) — reproducibility ledger  
 - [screenshots.md](appendix/screenshots.md) — screenshot evidence  
+- [jsonld_examples.md](appendix/jsonld_examples.md) — structured JSON‑LD compliance notes  
 - [judge_checklist.md](appendix/judge_checklist.md) — this checklist  
+
+Judges should confirm:
+- Local SHA‑256 hash matches demo outputs  
+- TxID and block details match Sepolia Etherscan verification  
+- Offline fallback demo shows reproducibility without blockchain submission  
+- Audit table entries correspond to verified transactions  
+- **JSON‑LD structured examples in `appendix/jsonld_examples.md` match audit table and Sepolia evidence**  
+- **Screenshot6.png shows JSON‑LD compliance note aligned with audit_table.csv and Sepolia verification**
 
 ---
 
@@ -91,14 +99,14 @@ node src/reputation_score.js
 
 ## 🎥 Demo Video
 The demo video illustrates the flow:  
-**Governance Event → TxID → Etherscan Verification → DKG Note → Reputation Score → Dashboard View**
+**Governance Event → TxID → Etherscan Verification → Audit Table → JSON‑LD Note → Reputation Score → Dashboard View**
 
 ---
 
 ## ⚖️ Ethics‑First Commitments
 - See `/docs/ethics_statement.md` for transparency, accountability, and sustainability principles  
 - License: CC BY 4.0  
-- Reproducibility assets: `audit_table.csv`, `commands.md`, `screenshots.md`, `judge_checklist.md`  
+- Reproducibility assets: `audit_table.csv`, `commands.md`, `screenshots.md`, `jsonld_examples.md`, `judge_checklist.md`  
 
 ---
 
@@ -108,7 +116,6 @@ The demo video illustrates the flow:
 - Roadmap: `/docs/roadmap.md`  
 - Governance Framework: `/docs/governance_framework.md`  
 - Challenge Alignment: `/docs/challenge_alignment.md`
-
 
 ---
 

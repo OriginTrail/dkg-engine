@@ -49,16 +49,18 @@ PRIVATE_KEY=0xYOUR_PRIVATE_KEY
 ## 📂 Reproducibility Assets
 
 - [commands.md](appendix/commands.md) — step‑by‑step workflow  
-- [audit_table.csv](audit_table.csv) — reproducibility ledger  
+- [audit_table.csv](appendix/audit_table.csv) — reproducibility ledger  
 - [screenshots.md](appendix/screenshots.md) — visual evidence  
-- [judge_instructions.md](judge_instructions.md) — detailed guide for judges  
+- [judge_instructions.md](docs/judge_instructions.md) — detailed guide for judges  
 - [judge_checklist.md](appendix/judge_checklist.md) — quick verification checklist  
+- [jsonld_examples.md](appendix/jsonld_examples.md) — structured JSON‑LD compliance notes for agent behavior  
 
 ---
 
 ## 📖 Documentation
 
-See `/docs` for methodology, governance framework, roadmap, impact, and references.
+See `/docs` for methodology, governance framework, roadmap, impact, and references.  
+Judges should also review `docs/judge_instructions.md` and `appendix/jsonld_examples.md` for reproducibility and structured JSON‑LD examples.
 
 ---
 
@@ -76,7 +78,7 @@ Judges can:
 - Run offline fallback demo without Sepolia ETH  
 - Capture reproducibility screenshots  
 - Confirm audit table entries  
+- Review JSON‑LD structured examples in `appendix/jsonld_examples.md`  
 - Watch the demo video (link to be added)  
-
 
 ---

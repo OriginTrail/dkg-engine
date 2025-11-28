@@ -37,6 +37,11 @@ apps/cos-compliance-tracker/appendix/screenshots/
 
 ---
 
+## 6. JSON‑LD Structured Compliance Note
+![VS Code window showing JSON‑LD compliance note](screenshots/screenshot6.png)
+
+
+---
 ## ✅ Judge Reminder
 Judges should confirm that:
 - Local hash matches the `hash` field in demo outputs  
