@@ -113,13 +113,6 @@ This ensures interoperability, machine readability, and alignment with DKG agent
 
 ---
 
-## 🎥 Video Demo
-A ≤5 minute video walkthrough will be provided separately, showing:  
-- Problem statement & motivation  
-- Architecture overview  
-- Demo scripts (`demo.js`, `demo_plain.js`)  
-- Audit table & screenshots  
-- JSON‑LD agent behavior  
-- Impact & scalability
+▶ Watch the full demo video in the [README Demo Video section](../readme.md).
 
 ---
