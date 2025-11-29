@@ -3,7 +3,8 @@
 # Commands & Workflow Checklist — COS™ Blockchain Compliance Tracker
 
 This document outlines the reproducibility workflow for generating SHA‑256 hashes, submitting demo transactions, verifying TxIDs, and capturing screenshots.  
-A demo video link will be added here before final submission.
+▶ For the full demo walkthrough, see the [Demo Video section in README.md](../readme.md).
+
 
 ---
 
@@ -118,7 +119,7 @@ By following this workflow, judges can:
 - Capture reproducibility screenshots  
 - Confirm audit table entries  
 - Follow [judge_checklist.md](appendix/judge_checklist.md) for quick verification  
-- Watch the demo video (link to be added)
+- Watch the demo video 
 
 
 ---
