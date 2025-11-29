@@ -97,7 +97,7 @@ node src/reputation_score.js
 
 ---
 
-## 🎥 Demo Video
+▶ For the full demo walkthrough, see the [Demo Video section in README.md](../readme.md).
 The demo video illustrates the flow:  
 **Governance Event → TxID → Etherscan Verification → Audit Table → JSON‑LD Note → Reputation Score → Dashboard View**
 
