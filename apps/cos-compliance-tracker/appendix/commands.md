@@ -104,14 +104,8 @@ Follow the structure:
 
 ---
 
-## 6. Demo Video (to be added)
+▶ For the full demo walkthrough, see the [Demo Video section in README.md](../readme.md).
 
-A short video walkthrough will be linked here before final submission, showing:  
-- Hash generation  
-- Demo transaction run  
-- Etherscan verification  
-- Offline fallback demo  
-- Audit table entry and screenshots
 
 ---
 
