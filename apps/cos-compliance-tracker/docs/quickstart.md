@@ -98,13 +98,7 @@ Reproducibility is preserved via local hash generation and screenshots.
 
 ---
 
-### Demo Video (to be added)
-A short video walkthrough will be linked here before final submission, showing:
-- Hash generation  
-- Demo transaction run  
-- Etherscan verification  
-- Offline fallback demo  
-- Audit table entry and screenshots
+▶ Watch the full demo video in the [README Demo Video section](../readme.md).
 
 
 ---
