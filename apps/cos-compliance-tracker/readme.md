@@ -66,7 +66,18 @@ Judges should also review `docs/judge_instructions.md` and `appendix/jsonld_exam
 
 ## 🎥 Demo Video
 
-A short walkthrough video will be linked here before final submission.
+Watch the full hackathon demo presentation here:  
+[![COS™ Blockchain Compliance Tracker Demo](https://img.youtube.com/vi/k7qsVRmjihw/0.jpg)](https://youtu.be/k7qsVRmjihw)
+
+This 5‑minute video covers:
+- Introduction and problem statement
+- Architecture overview
+- Live demo (`demo.js` and `demo_plain.js`)
+- Sepolia Etherscan verification
+- Reproducibility assets (`audit_table.csv`, `screenshots.md`, JSON‑LD examples)
+- Impact: Transparency • Accountability • Sustainability
+- Closing checklist for judges
+
 
 ---
 
