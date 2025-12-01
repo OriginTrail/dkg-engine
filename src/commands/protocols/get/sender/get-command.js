@@ -209,7 +209,6 @@ class GetCommand extends Command {
                 blockchain,
                 contract,
                 knowledgeCollectionId,
-                knowledgeAssetId,
                 repository,
             );
             promises.push(metadataPromise);
