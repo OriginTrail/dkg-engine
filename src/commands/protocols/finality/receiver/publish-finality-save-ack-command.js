@@ -29,8 +29,8 @@ class PublishFinalitySaveAckCommand extends Command {
         }
 
         this.logger.debug(
-            `[PUBLISH] Saving finality acknowledgment for UAL: ${ualWithState}, ` +
-                `publishOperationId: ${publishOperationId}, from peer: ${remotePeerId}`,
+            `[PUBLISH] Saving finality acknowledgment for operationId: ${operationId}, ` +
+                `publishOperationId: ${publishOperationId}, UAL: ${ualWithState}, from peer: ${remotePeerId}`,
         );
 
         await this.operationIdService.updateOperationIdStatus(
@@ -55,8 +55,8 @@ class PublishFinalitySaveAckCommand extends Command {
             };
 
             this.logger.info(
-                `[PUBLISH] Finality acknowledgment saved successfully for UAL: ${ualWithState}, ` +
-                    `publishOperationId: ${publishOperationId}`,
+                `[PUBLISH] Finality acknowledgment saved successfully for operationId: ${operationId}, ` +
+                    `publishOperationId: ${publishOperationId}, UAL: ${ualWithState}`,
             );
         } catch (err) {
             success = false;
@@ -66,8 +66,8 @@ class PublishFinalitySaveAckCommand extends Command {
             };
 
             this.logger.warn(
-                `[PUBLISH] Failed to save finality acknowledgment for UAL: ${ualWithState}, ` +
-                    `publishOperationId: ${publishOperationId}. Error: ${err.message}`,
+                `[PUBLISH] Failed to save finality acknowledgment for operationId: ${operationId}, ` +
+                    `publishOperationId: ${publishOperationId}, UAL: ${ualWithState}. Error: ${err.message}`,
             );
         }
 

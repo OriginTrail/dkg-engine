@@ -74,7 +74,9 @@ class HandleStoreRequestCommand extends HandleProtocolMessageCommand {
         if (isOperationV0) {
             const { contract, tokenId } = commandData;
             const ual = this.ualService.deriveUAL(blockchain, contract, tokenId);
-            this.logger.debug(`[PUBLISH] Creating V6 knowledge collection for UAL: ${ual}`);
+            this.logger.debug(
+                `[PUBLISH] Creating V6 knowledge collection for operationId: ${operationId}, UAL: ${ual}`,
+            );
             await this.tripleStoreService.createV6KnowledgeCollection(dataset, ual);
         } else {
             this.logger.debug(
