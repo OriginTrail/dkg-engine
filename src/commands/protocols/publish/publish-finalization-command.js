@@ -64,6 +64,18 @@ class PublishFinalizationCommand extends Command {
             return Command.empty();
         }
 
+        this.logger.info(
+            `[PUBLISH] Retrieved blockchain transaction for operationId: ${operationId}, ` +
+                `txHash: ${txHash}, from: ${transaction.from}, to: ${transaction.to}, ` +
+                `contract: ${contractAddress}, blockNumber: ${blockNumber}, blockchain: ${blockchain}`,
+        );
+
+        this.logger.debug(
+            `[PUBLISH] Transaction event data for operationId: ${operationId}, ` +
+                `tokenId: ${id}, merkleRoot: ${merkleRoot}, byteSize: ${byteSize}, ` +
+                `blockTimestamp: ${blockTimestamp}`,
+        );
+
         const metadata = {
             publisherKey: transaction.from.toLowerCase(),
             blockNumber,

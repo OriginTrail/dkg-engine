@@ -243,6 +243,12 @@ class PublishReplicationCommand extends Command {
         let s;
         let vs;
         const identityId = await this.blockchainModuleManager.getIdentityId(blockchain);
+
+        this.logger.debug(
+            `[PUBLISH] Retrieved blockchain identity for operationId: ${operationId}, ` +
+                `identityId: ${identityId}, blockchain: ${blockchain}, datasetRoot: ${datasetRoot}`,
+        );
+
         if (nodePartOfShard) {
             ({ v, r, s, vs } = await this.signatureService.signMessage(blockchain, datasetRoot));
             await this.signatureService.addSignatureToStorage(
