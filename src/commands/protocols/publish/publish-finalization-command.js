@@ -55,12 +55,6 @@ class PublishFinalizationCommand extends Command {
                 ERROR_TYPE.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_BLOCKCHAIN_ERROR,
                 true,
             );
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.FAILED,
-                operationId,
-                blockchain,
-                publishOperationId,
-            );
             return Command.empty();
         }
 
@@ -87,12 +81,6 @@ class PublishFinalizationCommand extends Command {
                 ERROR_TYPE.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_NO_CACHED_DATA,
                 true,
             );
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.FAILED,
-                operationId,
-                blockchain,
-                publishOperationId,
-            );
             return Command.empty();
         }
 
@@ -107,12 +95,6 @@ class PublishFinalizationCommand extends Command {
                 `Failed to validate publish data for UAL: ${ual}. Error: ${error.message}`,
                 ERROR_TYPE.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_VALIDATION_ERROR,
                 true,
-            );
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.FAILED,
-                operationId,
-                blockchain,
-                publishOperationId,
             );
             return Command.empty();
         }
@@ -141,12 +123,6 @@ class PublishFinalizationCommand extends Command {
                 ERROR_TYPE.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_TRIPLE_STORE_ERROR,
                 true,
             );
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.FAILED,
-                operationId,
-                blockchain,
-                publishOperationId,
-            );
             return Command.empty();
         }
 
@@ -171,12 +147,6 @@ class PublishFinalizationCommand extends Command {
                     `Failed to save finality acknowledgment for UAL: ${ual}, publishOperationId: ${publishOperationId}. Error: ${error.message}`,
                     ERROR_TYPE.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_ACK_ERROR,
                     true,
-                );
-                this.operationIdService.emitChangeEvent(
-                    OPERATION_ID_STATUS.FAILED,
-                    operationId,
-                    blockchain,
-                    publishOperationId,
                 );
                 return Command.empty();
             }
@@ -212,12 +182,6 @@ class PublishFinalizationCommand extends Command {
                     `Failed to send finality message to publisher node: ${publisherPeerId} for UAL: ${ual}. Error: ${error.message}`,
                     ERROR_TYPE.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_NETWORK_ERROR,
                     true,
-                );
-                this.operationIdService.emitChangeEvent(
-                    OPERATION_ID_STATUS.FAILED,
-                    operationId,
-                    blockchain,
-                    publishOperationId,
                 );
                 return Command.empty();
             }
