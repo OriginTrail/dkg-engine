@@ -410,7 +410,6 @@ export const ERROR_TYPE = {
         PUBLISH_VALIDATE_ASSERTION_METADATA_ERROR: 'PublishValidateAssertionMetadataError',
         PUBLISH_ERROR: 'PublishError',
     },
-    STORE_ASSERTION_ERROR: 'StoreAssertionError',
     UPDATE: {
         UPDATE_INIT_ERROR: 'UpdateInitError',
         UPDATE_REQUEST_ERROR: 'UpdateRequestError',
@@ -475,6 +474,11 @@ export const ERROR_TYPE = {
     },
     PUBLISH_FINALIZATION: {
         PUBLISH_FINALIZATION_NO_CACHED_DATA: 'PublishFinalizationNoCachedData',
+        PUBLISH_FINALIZATION_BLOCKCHAIN_ERROR: 'PublishFinalizationBlockchainError',
+        PUBLISH_FINALIZATION_VALIDATION_ERROR: 'PublishFinalizationValidationError',
+        PUBLISH_FINALIZATION_TRIPLE_STORE_ERROR: 'PublishFinalizationTripleStoreError',
+        PUBLISH_FINALIZATION_ACK_ERROR: 'PublishFinalizationAckError',
+        PUBLISH_FINALIZATION_NETWORK_ERROR: 'PublishFinalizationNetworkError',
     },
     UPDATE_FINALIZATION: {
         UPDATE_FINALIZATION_NO_CACHED_DATA: 'UpdateFinalizationNoCachedData',

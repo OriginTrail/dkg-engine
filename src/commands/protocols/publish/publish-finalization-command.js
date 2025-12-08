@@ -17,7 +17,7 @@ class PublishFinalizationCommand extends Command {
         this.fileService = ctx.fileService;
         this.messagingService = ctx.messagingService;
         this.operationService = ctx.finalityService;
-        this.errorType = ERROR_TYPE.STORE_ASSERTION_ERROR;
+        this.errorType = ERROR_TYPE.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_TRIPLE_STORE_ERROR;
         this.tripleStoreService = ctx.tripleStoreService;
         this.operationIdService = ctx.operationIdService;
         this.networkModuleManager = ctx.networkModuleManager;
@@ -39,6 +39,7 @@ class PublishFinalizationCommand extends Command {
             blockchain,
             publishOperationId,
         );
+
         let transaction;
         let blockTimestamp;
         try {
@@ -47,7 +48,13 @@ class PublishFinalizationCommand extends Command {
                 this.blockchainModuleManager.getBlockTimestamp(blockchain, blockNumber),
             ]);
         } catch (error) {
-            this.logger.error(`Failed to get transaction or block timestamp: ${error.message}`);
+            await this.handleError(
+                operationId,
+                blockchain,
+                `Failed to get transaction or block timestamp for txHash: ${txHash}, blockNumber: ${blockNumber}. Error: ${error.message}`,
+                ERROR_TYPE.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_BLOCKCHAIN_ERROR,
+                true,
+            );
             this.operationIdService.emitChangeEvent(
                 OPERATION_ID_STATUS.FAILED,
                 operationId,
@@ -56,12 +63,14 @@ class PublishFinalizationCommand extends Command {
             );
             return Command.empty();
         }
+
         const metadata = {
             publisherKey: transaction.from.toLowerCase(),
             blockNumber,
             txHash,
             blockTimestamp,
         };
+
         let publisherPeerId;
         let cachedMerkleRoot;
         let assertion;
@@ -71,7 +80,13 @@ class PublishFinalizationCommand extends Command {
             assertion = result.assertion;
             publisherPeerId = result.remotePeerId;
         } catch (error) {
-            this.logger.error(`Failed to read cached publish data: ${error.message}`); // TODO: Make this log more descriptive
+            await this.handleError(
+                operationId,
+                blockchain,
+                `Failed to read cached publish data for publishOperationId: ${publishOperationId}. Error: ${error.message}`,
+                ERROR_TYPE.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_NO_CACHED_DATA,
+                true,
+            );
             this.operationIdService.emitChangeEvent(
                 OPERATION_ID_STATUS.FAILED,
                 operationId,
@@ -85,8 +100,14 @@ class PublishFinalizationCommand extends Command {
 
         try {
             await this.validatePublishData(merkleRoot, cachedMerkleRoot, byteSize, assertion, ual);
-        } catch (e) {
-            this.logger.error(`Failed to validate publish data: ${e.message}`);
+        } catch (error) {
+            await this.handleError(
+                operationId,
+                blockchain,
+                `Failed to validate publish data for UAL: ${ual}. Error: ${error.message}`,
+                ERROR_TYPE.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_VALIDATION_ERROR,
+                true,
+            );
             this.operationIdService.emitChangeEvent(
                 OPERATION_ID_STATUS.FAILED,
                 operationId,
@@ -96,13 +117,13 @@ class PublishFinalizationCommand extends Command {
             return Command.empty();
         }
 
-        try {
-            await this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_STORE_ASSERTION_START,
-                operationId,
-                blockchain,
-            );
+        await this.operationIdService.emitChangeEvent(
+            OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_STORE_ASSERTION_START,
+            operationId,
+            blockchain,
+        );
 
+        try {
             const totalTriples = await this.tripleStoreService.insertKnowledgeCollection(
                 TRIPLE_STORE_REPOSITORIES.DKG,
                 ual,
@@ -112,25 +133,59 @@ class PublishFinalizationCommand extends Command {
 
             await this.repositoryModuleManager.incrementInsertedTriples(totalTriples ?? 0);
             this.logger.info(`Number of triples added to the database +${totalTriples}`);
-
-            await this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_STORE_ASSERTION_END,
+        } catch (error) {
+            await this.handleError(
                 operationId,
                 blockchain,
+                `Failed to insert knowledge collection for UAL: ${ual}. Error: ${error.message}`,
+                ERROR_TYPE.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_TRIPLE_STORE_ERROR,
+                true,
             );
+            this.operationIdService.emitChangeEvent(
+                OPERATION_ID_STATUS.FAILED,
+                operationId,
+                blockchain,
+                publishOperationId,
+            );
+            return Command.empty();
+        }
 
-            const myPeerId = this.networkModuleManager.getPeerId().toB58String();
-            if (publisherPeerId === myPeerId) {
+        await this.operationIdService.emitChangeEvent(
+            OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_STORE_ASSERTION_END,
+            operationId,
+            blockchain,
+        );
+
+        const myPeerId = this.networkModuleManager.getPeerId().toB58String();
+        if (publisherPeerId === myPeerId) {
+            try {
                 await this.repositoryModuleManager.saveFinalityAck(
                     publishOperationId,
                     ual,
                     publisherPeerId,
                 );
+            } catch (error) {
+                await this.handleError(
+                    operationId,
+                    blockchain,
+                    `Failed to save finality acknowledgment for UAL: ${ual}, publishOperationId: ${publishOperationId}. Error: ${error.message}`,
+                    ERROR_TYPE.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_ACK_ERROR,
+                    true,
+                );
+                this.operationIdService.emitChangeEvent(
+                    OPERATION_ID_STATUS.FAILED,
+                    operationId,
+                    blockchain,
+                    publishOperationId,
+                );
+                return Command.empty();
+            }
 
-                for (const status of this.operationService.completedStatuses) {
-                    this.operationIdService.emitChangeEvent(status, operationId, blockchain);
-                }
-            } else {
+            for (const status of this.operationService.completedStatuses) {
+                this.operationIdService.emitChangeEvent(status, operationId, blockchain);
+            }
+        } else {
+            try {
                 const networkProtocols = this.operationService.getNetworkProtocols();
                 const node = { id: publisherPeerId, protocol: networkProtocols[0] };
 
@@ -150,16 +205,22 @@ class PublishFinalizationCommand extends Command {
                     blockchain,
                     operationId,
                 );
+            } catch (error) {
+                await this.handleError(
+                    operationId,
+                    blockchain,
+                    `Failed to send finality message to publisher node: ${publisherPeerId} for UAL: ${ual}. Error: ${error.message}`,
+                    ERROR_TYPE.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_NETWORK_ERROR,
+                    true,
+                );
+                this.operationIdService.emitChangeEvent(
+                    OPERATION_ID_STATUS.FAILED,
+                    operationId,
+                    blockchain,
+                    publishOperationId,
+                );
+                return Command.empty();
             }
-        } catch (e) {
-            this.logger.error(`Command error (${this.errorType}): ${e.message}`);
-
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.FAILED,
-                operationId,
-                blockchain,
-                publishOperationId,
-            );
         }
 
         return Command.empty();
@@ -185,29 +246,40 @@ class PublishFinalizationCommand extends Command {
 
     async readWithRetries(publishOperationId) {
         let attempt = 0;
+        let lastError;
+        const datasetPath = this.fileService.getPendingStorageDocumentPath(publishOperationId);
 
         while (attempt < MAX_RETRIES_READ_CACHED_PUBLISH_DATA) {
             try {
-                const datasetPath =
-                    this.fileService.getPendingStorageDocumentPath(publishOperationId);
                 // eslint-disable-next-line no-await-in-loop
                 const cachedData = await this.fileService.readFile(datasetPath, true);
                 return cachedData;
             } catch (error) {
+                lastError = error;
                 attempt += 1;
 
-                // eslint-disable-next-line no-await-in-loop
-                await new Promise((resolve) => {
-                    setTimeout(resolve, RETRY_DELAY_READ_CACHED_PUBLISH_DATA);
-                });
+                this.logger.warn(
+                    `Attempt ${attempt}/${MAX_RETRIES_READ_CACHED_PUBLISH_DATA} to read cached publish data failed. ` +
+                        `publishOperationId: ${publishOperationId}, path: ${datasetPath}. Error: ${error.message}`,
+                );
+
+                if (attempt < MAX_RETRIES_READ_CACHED_PUBLISH_DATA) {
+                    // eslint-disable-next-line no-await-in-loop
+                    await new Promise((resolve) => {
+                        setTimeout(resolve, RETRY_DELAY_READ_CACHED_PUBLISH_DATA);
+                    });
+                }
             }
         }
-        // TODO: Mark this operation as failed
-        throw new Error('Failed to read cached publish data');
+
+        throw new Error(
+            `Failed to read cached publish data after ${MAX_RETRIES_READ_CACHED_PUBLISH_DATA} attempts. ` +
+                `Path: ${datasetPath}. Last error: ${lastError?.message}`,
+        );
     }
 
     /**
-     * Builds default readCachedPublishDataCommand
+     * Builds default publishFinalizationCommand
      * @param map
      * @returns {{add, data: *, delay: *, deadline: *}}
      */
