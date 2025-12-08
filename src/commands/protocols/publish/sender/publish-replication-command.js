@@ -113,6 +113,10 @@ class PublishReplicationCommand extends Command {
                 // eslint-disable-next-line no-param-reassign
                 command.data = updatedData;
                 if (nodePartOfShard) {
+                    this.logger.debug(
+                        `Node is part of shard for operationId: ${operationId}, ` +
+                            `processing local response`,
+                    );
                     await this.operationService.processResponse(
                         { ...command, data: updatedData },
                         OPERATION_REQUEST_STATUS.COMPLETED,
@@ -140,10 +144,18 @@ class PublishReplicationCommand extends Command {
             };
 
             // Run all message sending operations in parallel
+            this.logger.debug(
+                `Starting replication to ${shardNodes.length} remote node(s) for operationId: ${operationId}`,
+            );
             await Promise.all(
                 shardNodes.map((node) =>
                     this.sendAndHandleMessage(node, operationId, message, command, blockchain),
                 ),
+            );
+
+            this.logger.info(
+                `Publish replication completed for operationId: ${operationId}, ` +
+                    `datasetRoot: ${datasetRoot}`,
             );
         } catch (e) {
             await this.handleError(operationId, blockchain, e.message, this.errorType, true);
@@ -159,6 +171,10 @@ class PublishReplicationCommand extends Command {
     }
 
     async sendAndHandleMessage(node, operationId, message, command, blockchain) {
+        this.logger.trace(
+            `Sending replication message to node: ${node.id} for operationId: ${operationId}`,
+        );
+
         const response = await this.messagingService.sendProtocolMessage(
             node,
             operationId,
@@ -168,6 +184,7 @@ class PublishReplicationCommand extends Command {
         );
         const responseData = response.data;
         if (response.header.messageType === NETWORK_MESSAGE_TYPES.RESPONSES.ACK) {
+            this.logger.debug(`Received ACK from node: ${node.id} for operationId: ${operationId}`);
             // eslint-disable-next-line no-await-in-loop
             await this.signatureService.addSignatureToStorage(
                 NETWORK_SIGNATURES_FOLDER,
@@ -185,6 +202,9 @@ class PublishReplicationCommand extends Command {
                 responseData,
             );
         } else {
+            this.logger.debug(
+                `Received NACK from node: ${node.id} for operationId: ${operationId}`,
+            );
             // eslint-disable-next-line no-await-in-loop
             await this.operationService.processResponse(
                 command,

@@ -33,6 +33,12 @@ class PublishFinalizationCommand extends Command {
         const { id, publishOperationId, merkleRoot, byteSize } = eventData;
         const { blockchain, contractAddress } = event;
         const operationId = this.operationIdService.generateId();
+
+        this.logger.debug(
+            `Starting publish finalization for publishOperationId: ${publishOperationId}, ` +
+                `blockchain: ${blockchain}, txHash: ${txHash}`,
+        );
+
         this.operationIdService.emitChangeEvent(
             OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_START,
             operationId,
@@ -86,6 +92,8 @@ class PublishFinalizationCommand extends Command {
 
         const ual = this.ualService.deriveUAL(blockchain, contractAddress, id);
 
+        this.logger.debug(`Validating publish data for UAL: ${ual}`);
+
         try {
             await this.validatePublishData(merkleRoot, cachedMerkleRoot, byteSize, assertion, ual);
         } catch (error) {
@@ -134,6 +142,9 @@ class PublishFinalizationCommand extends Command {
 
         const myPeerId = this.networkModuleManager.getPeerId().toB58String();
         if (publisherPeerId === myPeerId) {
+            this.logger.debug(
+                `Node is the publisher for UAL: ${ual}, saving finality acknowledgment locally`,
+            );
             try {
                 await this.repositoryModuleManager.saveFinalityAck(
                     publishOperationId,
@@ -151,10 +162,18 @@ class PublishFinalizationCommand extends Command {
                 return Command.empty();
             }
 
+            this.logger.info(
+                `Publish finalization completed successfully for UAL: ${ual}, ` +
+                    `publishOperationId: ${publishOperationId}`,
+            );
+
             for (const status of this.operationService.completedStatuses) {
                 this.operationIdService.emitChangeEvent(status, operationId, blockchain);
             }
         } else {
+            this.logger.debug(
+                `Sending finality acknowledgment to publisher node: ${publisherPeerId} for UAL: ${ual}`,
+            );
             try {
                 const networkProtocols = this.operationService.getNetworkProtocols();
                 const node = { id: publisherPeerId, protocol: networkProtocols[0] };
@@ -174,6 +193,11 @@ class PublishFinalizationCommand extends Command {
                     this.operationService,
                     blockchain,
                     operationId,
+                );
+
+                this.logger.info(
+                    `Publish finalization completed successfully for UAL: ${ual}, ` +
+                        `publishOperationId: ${publishOperationId}, notified publisher: ${publisherPeerId}`,
                 );
             } catch (error) {
                 await this.handleError(

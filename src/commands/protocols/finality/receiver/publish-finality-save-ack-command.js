@@ -27,6 +27,12 @@ class PublishFinalitySaveAckCommand extends Command {
         if (state) {
             ualWithState = `${ual}:${state}`;
         }
+
+        this.logger.debug(
+            `Saving finality acknowledgment for UAL: ${ualWithState}, ` +
+                `publishOperationId: ${publishOperationId}, from peer: ${remotePeerId}`,
+        );
+
         await this.operationIdService.updateOperationIdStatus(
             operationId,
             blockchain,
@@ -47,12 +53,22 @@ class PublishFinalitySaveAckCommand extends Command {
                 messageType: NETWORK_MESSAGE_TYPES.RESPONSES.ACK,
                 messageData: { message: `Acknowledged storing of ${ualWithState}.` },
             };
+
+            this.logger.info(
+                `Finality acknowledgment saved successfully for UAL: ${ualWithState}, ` +
+                    `publishOperationId: ${publishOperationId}`,
+            );
         } catch (err) {
             success = false;
             response = {
                 messageType: NETWORK_MESSAGE_TYPES.RESPONSES.NACK,
                 messageData: { errorMessage: `Failed to acknowledge storing of ${ualWithState}.` },
             };
+
+            this.logger.warn(
+                `Failed to save finality acknowledgment for UAL: ${ualWithState}, ` +
+                    `publishOperationId: ${publishOperationId}. Error: ${err.message}`,
+            );
         }
 
         await this.operationService.markOperationAsCompleted(operationId, blockchain, success, [
