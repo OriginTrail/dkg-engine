@@ -35,7 +35,7 @@ class PublishFinalizationCommand extends Command {
         const operationId = this.operationIdService.generateId();
 
         this.logger.debug(
-            `Starting publish finalization for publishOperationId: ${publishOperationId}, ` +
+            `[PUBLISH] Starting publish finalization for publishOperationId: ${publishOperationId}, ` +
                 `blockchain: ${blockchain}, txHash: ${txHash}`,
         );
 
@@ -92,7 +92,7 @@ class PublishFinalizationCommand extends Command {
 
         const ual = this.ualService.deriveUAL(blockchain, contractAddress, id);
 
-        this.logger.debug(`Validating publish data for UAL: ${ual}`);
+        this.logger.debug(`[PUBLISH] Validating publish data for UAL: ${ual}`);
 
         try {
             await this.validatePublishData(merkleRoot, cachedMerkleRoot, byteSize, assertion, ual);
@@ -122,7 +122,7 @@ class PublishFinalizationCommand extends Command {
             );
 
             await this.repositoryModuleManager.incrementInsertedTriples(totalTriples ?? 0);
-            this.logger.info(`Number of triples added to the database +${totalTriples}`);
+            this.logger.info(`[PUBLISH] Number of triples added to the database +${totalTriples}`);
         } catch (error) {
             await this.handleError(
                 operationId,
@@ -143,7 +143,7 @@ class PublishFinalizationCommand extends Command {
         const myPeerId = this.networkModuleManager.getPeerId().toB58String();
         if (publisherPeerId === myPeerId) {
             this.logger.debug(
-                `Node is the publisher for UAL: ${ual}, saving finality acknowledgment locally`,
+                `[PUBLISH] Node is the publisher for UAL: ${ual}, saving finality acknowledgment locally`,
             );
             try {
                 await this.repositoryModuleManager.saveFinalityAck(
@@ -163,7 +163,7 @@ class PublishFinalizationCommand extends Command {
             }
 
             this.logger.info(
-                `Publish finalization completed successfully for UAL: ${ual}, ` +
+                `[PUBLISH] Publish finalization completed successfully for UAL: ${ual}, ` +
                     `publishOperationId: ${publishOperationId}`,
             );
 
@@ -172,7 +172,7 @@ class PublishFinalizationCommand extends Command {
             }
         } else {
             this.logger.debug(
-                `Sending finality acknowledgment to publisher node: ${publisherPeerId} for UAL: ${ual}`,
+                `[PUBLISH] Sending finality acknowledgment to publisher node: ${publisherPeerId} for UAL: ${ual}`,
             );
             try {
                 const networkProtocols = this.operationService.getNetworkProtocols();
@@ -196,7 +196,7 @@ class PublishFinalizationCommand extends Command {
                 );
 
                 this.logger.info(
-                    `Publish finalization completed successfully for UAL: ${ual}, ` +
+                    `[PUBLISH] Publish finalization completed successfully for UAL: ${ual}, ` +
                         `publishOperationId: ${publishOperationId}, notified publisher: ${publisherPeerId}`,
                 );
             } catch (error) {
@@ -247,7 +247,7 @@ class PublishFinalizationCommand extends Command {
                 attempt += 1;
 
                 this.logger.warn(
-                    `Attempt ${attempt}/${MAX_RETRIES_READ_CACHED_PUBLISH_DATA} to read cached publish data failed. ` +
+                    `[PUBLISH] Attempt ${attempt}/${MAX_RETRIES_READ_CACHED_PUBLISH_DATA} to read cached publish data failed. ` +
                         `publishOperationId: ${publishOperationId}, path: ${datasetPath}. Error: ${error.message}`,
                 );
 

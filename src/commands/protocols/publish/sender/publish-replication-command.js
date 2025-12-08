@@ -29,7 +29,7 @@ class PublishReplicationCommand extends Command {
         const { operationId, blockchain, datasetRoot, minimumNumberOfNodeReplications, batchSize } =
             command.data;
         this.logger.debug(
-            `Searching for shard for operationId: ${operationId}, dataset root: ${datasetRoot}`,
+            `[PUBLISH] Searching for shard for operationId: ${operationId}, dataset root: ${datasetRoot}`,
         );
         try {
             await this.operationIdService.updateOperationIdStatus(
@@ -59,13 +59,13 @@ class PublishReplicationCommand extends Command {
             }
 
             this.logger.debug(
-                `Found ${
+                `[PUBLISH] Found ${
                     shardNodes.length + (nodePartOfShard ? 1 : 0)
                 } node(s) for operationId: ${operationId}`,
             );
 
             this.logger.trace(
-                `Found shard: ${JSON.stringify(
+                `[PUBLISH] Found shard: ${JSON.stringify(
                     shardNodes.map((node) => node.id),
                     null,
                     2,
@@ -114,7 +114,7 @@ class PublishReplicationCommand extends Command {
                 command.data = updatedData;
                 if (nodePartOfShard) {
                     this.logger.debug(
-                        `Node is part of shard for operationId: ${operationId}, ` +
+                        `[PUBLISH] Node is part of shard for operationId: ${operationId}, ` +
                             `processing local response`,
                     );
                     await this.operationService.processResponse(
@@ -145,7 +145,7 @@ class PublishReplicationCommand extends Command {
 
             // Run all message sending operations in parallel
             this.logger.debug(
-                `Starting replication to ${shardNodes.length} remote node(s) for operationId: ${operationId}`,
+                `[PUBLISH] Starting replication to ${shardNodes.length} remote node(s) for operationId: ${operationId}`,
             );
             await Promise.all(
                 shardNodes.map((node) =>
@@ -154,7 +154,7 @@ class PublishReplicationCommand extends Command {
             );
 
             this.logger.info(
-                `Publish replication completed for operationId: ${operationId}, ` +
+                `[PUBLISH] Publish replication completed for operationId: ${operationId}, ` +
                     `datasetRoot: ${datasetRoot}`,
             );
         } catch (e) {
@@ -172,7 +172,7 @@ class PublishReplicationCommand extends Command {
 
     async sendAndHandleMessage(node, operationId, message, command, blockchain) {
         this.logger.trace(
-            `Sending replication message to node: ${node.id} for operationId: ${operationId}`,
+            `[PUBLISH] Sending replication message to node: ${node.id} for operationId: ${operationId}`,
         );
 
         const response = await this.messagingService.sendProtocolMessage(
@@ -184,7 +184,9 @@ class PublishReplicationCommand extends Command {
         );
         const responseData = response.data;
         if (response.header.messageType === NETWORK_MESSAGE_TYPES.RESPONSES.ACK) {
-            this.logger.debug(`Received ACK from node: ${node.id} for operationId: ${operationId}`);
+            this.logger.debug(
+                `[PUBLISH] Received ACK from node: ${node.id} for operationId: ${operationId}`,
+            );
             // eslint-disable-next-line no-await-in-loop
             await this.signatureService.addSignatureToStorage(
                 NETWORK_SIGNATURES_FOLDER,
@@ -203,7 +205,7 @@ class PublishReplicationCommand extends Command {
             );
         } else {
             this.logger.debug(
-                `Received NACK from node: ${node.id} for operationId: ${operationId}`,
+                `[PUBLISH] Received NACK from node: ${node.id} for operationId: ${operationId}`,
             );
             // eslint-disable-next-line no-await-in-loop
             await this.operationService.processResponse(

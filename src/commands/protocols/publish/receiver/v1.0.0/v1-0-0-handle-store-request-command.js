@@ -30,7 +30,7 @@ class HandleStoreRequestCommand extends HandleProtocolMessageCommand {
         const { blockchain, operationId, datasetRoot, remotePeerId, isOperationV0 } = commandData;
 
         this.logger.debug(
-            `Handling store request from peer: ${remotePeerId}, ` +
+            `[PUBLISH] Handling store request from peer: ${remotePeerId}, ` +
                 `operationId: ${operationId}, datasetRoot: ${datasetRoot}`,
         );
 
@@ -58,13 +58,13 @@ class HandleStoreRequestCommand extends HandleProtocolMessageCommand {
 
         if (validationResult.messageType === NETWORK_MESSAGE_TYPES.RESPONSES.NACK) {
             this.logger.debug(
-                `Validation failed for store request, operationId: ${operationId}, ` +
+                `[PUBLISH] Validation failed for store request, operationId: ${operationId}, ` +
                     `datasetRoot: ${datasetRoot}`,
             );
             return validationResult;
         }
 
-        this.logger.trace(`Validation passed for operationId: ${operationId}`);
+        this.logger.trace(`[PUBLISH] Validation passed for operationId: ${operationId}`);
 
         await this.operationIdService.emitChangeEvent(
             OPERATION_ID_STATUS.PUBLISH.PUBLISH_LOCAL_STORE_REMOTE_CACHE_DATASET_START,
@@ -74,11 +74,11 @@ class HandleStoreRequestCommand extends HandleProtocolMessageCommand {
         if (isOperationV0) {
             const { contract, tokenId } = commandData;
             const ual = this.ualService.deriveUAL(blockchain, contract, tokenId);
-            this.logger.debug(`Creating V6 knowledge collection for UAL: ${ual}`);
+            this.logger.debug(`[PUBLISH] Creating V6 knowledge collection for UAL: ${ual}`);
             await this.tripleStoreService.createV6KnowledgeCollection(dataset, ual);
         } else {
             this.logger.debug(
-                `Caching dataset for operationId: ${operationId}, datasetRoot: ${datasetRoot}`,
+                `[PUBLISH] Caching dataset for operationId: ${operationId}, datasetRoot: ${datasetRoot}`,
             );
             await this.pendingStorageService.cacheDataset(
                 operationId,
@@ -104,7 +104,7 @@ class HandleStoreRequestCommand extends HandleProtocolMessageCommand {
         );
 
         this.logger.info(
-            `Store request handled successfully for operationId: ${operationId}, ` +
+            `[PUBLISH] Store request handled successfully for operationId: ${operationId}, ` +
                 `datasetRoot: ${datasetRoot}, peer: ${remotePeerId}`,
         );
 
