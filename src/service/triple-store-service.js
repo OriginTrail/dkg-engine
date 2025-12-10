@@ -57,6 +57,12 @@ class TripleStoreService {
                 `to the Triple Store's ${repository} repository.`,
         );
 
+        const totalInsertLabel = `[TripleStoreService.insertKnowledgeCollection TOTAL] ${repository} ${knowledgeCollectionUAL}`;
+        const attemptInsertLabel = (attempt) =>
+            `[TripleStoreService.insertKnowledgeCollection ATTEMPT ${attempt}] ${repository} ${knowledgeCollectionUAL}`;
+
+        this.logger.startTimer(totalInsertLabel);
+
         const publicAssertion = triples.public ?? triples;
 
         const filteredPublic = [];
@@ -272,6 +278,8 @@ class TripleStoreService {
         let success = false;
 
         while (attempts < retries && !success) {
+            const attemptTimerLabel = attemptInsertLabel(attempts + 1);
+            this.logger.startTimer(attemptTimerLabel);
             try {
                 await this.tripleStoreModuleManager.queryVoid(
                     this.repositoryImplementations[repository],
@@ -336,14 +344,18 @@ class TripleStoreService {
                         ),
                     ]);
 
+                    this.logger.endTimer(totalInsertLabel);
                     throw new Error(
                         `Failed to store Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
                             `to the Triple Store's ${repository} repository after maximum retries. Error ${error}`,
                     );
                 }
+            } finally {
+                this.logger.endTimer(attemptTimerLabel);
             }
         }
 
+        this.logger.endTimer(totalInsertLabel);
         return totalNumberOfTriplesInserted;
     }
 

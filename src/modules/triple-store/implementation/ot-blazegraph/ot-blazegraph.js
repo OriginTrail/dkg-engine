@@ -177,12 +177,19 @@ class OtBlazegraph extends OtTripleStore {
     }
 
     async queryVoid(repository, query, timeout) {
-        return axios.post(this.repositories[repository].sparqlEndpoint, query, {
-            headers: {
-                'Content-Type': 'application/sparql-update; charset=UTF-8',
-                'X-BIGDATA-MAX-QUERY-MILLIS': timeout,
-            },
-        });
+        const snippet = query?.slice(0, 80)?.replace(/\s+/g, ' ') || '';
+        const label = `[OtBlazegraph.queryVoid] ${repository} ${snippet}`;
+        if (this.logger?.startTimer) this.logger.startTimer(label);
+        try {
+            return await axios.post(this.repositories[repository].sparqlEndpoint, query, {
+                headers: {
+                    'Content-Type': 'application/sparql-update; charset=UTF-8',
+                    'X-BIGDATA-MAX-QUERY-MILLIS': timeout,
+                },
+            });
+        } finally {
+            if (this.logger?.endTimer) this.logger.endTimer(label);
+        }
     }
 
     async deleteRepository(repository) {
