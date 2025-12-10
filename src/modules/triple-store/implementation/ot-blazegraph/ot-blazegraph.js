@@ -30,7 +30,8 @@ class OtBlazegraph extends OtTripleStore {
                     `com.bigdata.rdf.store.AbstractTripleStore.quads=true\n` +
                     `com.bigdata.namespace.${name}.lex.com.bigdata.btree.BTree.branchingFactor=400\n` +
                     `com.bigdata.rdf.store.AbstractTripleStore.geoSpatial=false\n` +
-                    `com.bigdata.journal.Journal.groupCommit=false\n` +
+                    `com.bigdata.journal.Journal.groupCommit=true\n` +
+                    `com.bigdata.journal.Journal.groupCommitSleepTime=1\n` +
                     `com.bigdata.rdf.sail.isolatableIndices=false\n` +
                     `com.bigdata.rdf.store.AbstractTripleStore.enableRawRecordsSupport=false\n` +
                     `com.bigdata.rdf.store.AbstractTripleStore.Options.inlineTextLiterals=true\n` +
