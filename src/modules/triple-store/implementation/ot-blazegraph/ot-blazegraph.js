@@ -181,12 +181,29 @@ class OtBlazegraph extends OtTripleStore {
         const label = `[OtBlazegraph.queryVoid] ${repository} ${snippet}`;
         if (this.logger?.startTimer) this.logger.startTimer(label);
         try {
-            return await axios.post(this.repositories[repository].sparqlEndpoint, query, {
+            this.logger.debug(`[OtBlazegraph.queryVoid] Sending update to ${repository}`);
+            const response = await axios.post(this.repositories[repository].sparqlEndpoint, query, {
                 headers: {
                     'Content-Type': 'application/sparql-update; charset=UTF-8',
                     'X-BIGDATA-MAX-QUERY-MILLIS': timeout,
                 },
             });
+            this.logger.debug(
+                `[OtBlazegraph.queryVoid] Update succeeded for ${repository} (status: ${response.status})`,
+            );
+            return response;
+        } catch (error) {
+            const status = error?.response?.status;
+            const dataSnippet =
+                typeof error?.response?.data === 'string'
+                    ? error.response.data.slice(0, 200)
+                    : '';
+            this.logger.error(
+                `[OtBlazegraph.queryVoid] Update failed for ${repository} (status: ${status}): ${error.message}${
+                    dataSnippet ? ` | data: ${dataSnippet}` : ''
+                } | query: ${snippet || '<empty>'}`,
+            );
+            throw error;
         } finally {
             if (this.logger?.endTimer) this.logger.endTimer(label);
         }
