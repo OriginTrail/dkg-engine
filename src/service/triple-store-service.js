@@ -281,12 +281,33 @@ class TripleStoreService {
             const attemptTimerLabel = attemptInsertLabel(attempts + 1);
             this.logger.startTimer(attemptTimerLabel);
             try {
-                await this.tripleStoreModuleManager.queryVoid(
-                    this.repositoryImplementations[repository],
-                    repository,
-                    insertQuery,
-                    this.config.modules.tripleStore.timeout.insert,
-                );
+                const queryLabel = `[TripleStoreService.insertKnowledgeCollection QUERY] ${repository} ${knowledgeCollectionUAL}`;
+                this.logger.startTimer(queryLabel);
+                try {
+                    await this.tripleStoreModuleManager.queryVoid(
+                        this.repositoryImplementations[repository],
+                        repository,
+                        insertQuery,
+                        this.config.modules.tripleStore.timeout.insert,
+                    );
+                    this.logger.debug(
+                        `queryVoid succeeded for repository: ${repository}, UAL: ${knowledgeCollectionUAL}`,
+                    );
+                } catch (queryError) {
+                    const status = queryError?.response?.status;
+                    const dataSnippet =
+                        typeof queryError?.response?.data === 'string'
+                            ? queryError.response.data.slice(0, 200)
+                            : '';
+                    this.logger.error(
+                        `queryVoid failed for repository: ${repository}, UAL: ${knowledgeCollectionUAL}, status: ${status}. ${queryError.message}${
+                            dataSnippet ? ` | data: ${dataSnippet}` : ''
+                        }`,
+                    );
+                    throw queryError;
+                } finally {
+                    this.logger.endTimer(queryLabel);
+                }
                 if (paranetUAL) {
                     await this.tripleStoreModuleManager.createParanetKnoledgeCollectionConnection(
                         this.repositoryImplementations[repository],
