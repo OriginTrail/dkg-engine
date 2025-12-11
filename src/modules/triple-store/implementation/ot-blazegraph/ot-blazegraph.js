@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { writeFile } from 'fs/promises';
 import OtTripleStore from '../ot-triple-store.js';
 import { MEDIA_TYPES } from '../../../../constants/constants.js';
 
@@ -30,8 +31,7 @@ class OtBlazegraph extends OtTripleStore {
                     `com.bigdata.rdf.store.AbstractTripleStore.quads=true\n` +
                     `com.bigdata.namespace.${name}.lex.com.bigdata.btree.BTree.branchingFactor=400\n` +
                     `com.bigdata.rdf.store.AbstractTripleStore.geoSpatial=false\n` +
-                    `com.bigdata.journal.Journal.groupCommit=true\n` +
-                    `com.bigdata.journal.Journal.groupCommitSleepTime=1\n` +
+                    `com.bigdata.journal.Journal.groupCommit=false\n` +
                     `com.bigdata.rdf.sail.isolatableIndices=false\n` +
                     `com.bigdata.rdf.store.AbstractTripleStore.enableRawRecordsSupport=false\n` +
                     `com.bigdata.rdf.store.AbstractTripleStore.Options.inlineTextLiterals=true\n` +
@@ -190,8 +190,18 @@ class OtBlazegraph extends OtTripleStore {
                 },
             });
             this.logger.debug(
-                `[OtBlazegraph.queryVoid] Update succeeded for ${repository} (status: ${response.status})`,
+                `[OtBlazegraph.queryVoid] Update result for ${repository} (status: ${response.status})`,
             );
+            this.logger.debug(response);
+            
+            await writeFile(`${Date.now()}.txt`, JSON.stringify(response, null, 2));
+            
+            if (response.status !== 200) {
+                this.logger.debug(
+                    `[OtBlazegraph.queryVoid] Response not 200 for ${repository} (status: ${response.status}), response: ${response.data}`,
+                );
+                
+            }
             return response;
         } catch (error) {
             const status = error?.response?.status;

@@ -1,5 +1,6 @@
 /* eslint-disable no-await-in-loop */
 import { setTimeout } from 'timers/promises';
+import { writeFile } from 'fs/promises';
 import { kcTools } from 'assertion-tools';
 import {
     BASE_NAMED_GRAPHS,
@@ -279,9 +280,16 @@ class TripleStoreService {
 
         while (attempts < retries && !success) {
             const attemptTimerLabel = attemptInsertLabel(attempts + 1);
+            this.logger.debug(
+                `INSERT ATTEMPT: ${attempts} of ${retries}, UAL: ${knowledgeCollectionUAL}`,
+            );
             this.logger.startTimer(attemptTimerLabel);
             try {
                 const queryLabel = `[TripleStoreService.insertKnowledgeCollection QUERY] ${repository} ${knowledgeCollectionUAL}`;
+                this.logger.debug(queryLabel);
+                
+                await writeFile(`insert_query_${knowledgeCollectionUAL}_attempt_${attempts}.txt`, insertQuery);
+                
                 this.logger.startTimer(queryLabel);
                 try {
                     await this.tripleStoreModuleManager.queryVoid(
