@@ -192,7 +192,7 @@ class OtBlazegraph extends OtTripleStore {
             this.logger.debug(
                 `[OtBlazegraph.queryVoid] Update result for ${repository} (status: ${response.status})`,
             );
-            this.logger.debug(response);
+            this.logger.debug('[OtBlazegraph.queryVoid] Response: ' + JSON.stringify(response, null, 2));
             
             await writeFile(`response_${Date.now()}.txt`, JSON.stringify(response, null, 2));
             
