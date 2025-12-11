@@ -288,7 +288,7 @@ class TripleStoreService {
                 const queryLabel = `[TripleStoreService.insertKnowledgeCollection QUERY] ${repository} ${knowledgeCollectionUAL}`;
                 this.logger.debug(queryLabel);
                 
-                await writeFile(`insert_query_${knowledgeCollectionUAL}_attempt_${attempts}.txt`, insertQuery);
+                await writeFile(`insert_query_${Date.now()}_attempt_${attempts}.txt`, insertQuery);
                 
                 this.logger.startTimer(queryLabel);
                 try {
