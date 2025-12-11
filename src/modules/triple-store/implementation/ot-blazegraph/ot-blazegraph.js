@@ -204,6 +204,7 @@ class OtBlazegraph extends OtTripleStore {
             }
             return response;
         } catch (error) {
+            this.logger.debug('[OtBlazegraph.queryVoid] Error: ' + JSON.stringify(error, null, 2));
             const status = error?.response?.status;
             const dataSnippet =
                 typeof error?.response?.data === 'string'
