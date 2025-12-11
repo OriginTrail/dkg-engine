@@ -17,15 +17,59 @@ class PendingStorageService {
             `Caching ${datasetRoot} dataset root, operation id: ${operationId} in file in pending storage`,
         );
 
-        await this.fileService.writeContentsToFile(
-            this.fileService.getPendingStorageCachePath(),
-            operationId,
-            JSON.stringify({
-                merkleRoot: datasetRoot,
-                assertion: dataset,
-                remotePeerId,
-            }),
+        // Detailed logging of what's being cached
+        const datasetType = typeof dataset;
+        const isDatasetNull = dataset === null;
+        const isDatasetUndefined = dataset === undefined;
+        const datasetSize = dataset ? JSON.stringify(dataset).length : 0;
+        const isArray = Array.isArray(dataset);
+
+        this.logger.debug(
+            `[pending-storage-debug] Caching dataset. OperationId: ${operationId}, datasetRoot: ${datasetRoot}, remotePeerId: ${remotePeerId}, dataset type: ${datasetType}, isNull: ${isDatasetNull}, isUndefined: ${isDatasetUndefined}, isArray: ${isArray}, size: ${datasetSize} bytes`,
         );
+
+        if (dataset && typeof dataset === 'object') {
+            const datasetKeys = Object.keys(dataset);
+            this.logger.debug(
+                `[pending-storage-debug] Dataset structure. OperationId: ${operationId}, keys: [${datasetKeys.join(
+                    ', ',
+                )}]`,
+            );
+
+            // Log sample of dataset content for debugging
+            if (isArray && dataset.length > 0) {
+                this.logger.debug(
+                    `[pending-storage-debug] Dataset is array with ${
+                        dataset.length
+                    } items. OperationId: ${operationId}, first item type: ${typeof dataset[0]}`,
+                );
+            }
+        }
+
+        const dataToCache = {
+            merkleRoot: datasetRoot,
+            assertion: dataset,
+            remotePeerId,
+        };
+
+        const serializedData = JSON.stringify(dataToCache);
+        const cachePath = this.fileService.getPendingStorageCachePath();
+
+        this.logger.debug(
+            `[pending-storage-debug] Writing to pending storage. OperationId: ${operationId}, path: ${cachePath}, serialized size: ${serializedData.length} bytes`,
+        );
+
+        try {
+            await this.fileService.writeContentsToFile(cachePath, operationId, serializedData);
+            this.logger.debug(
+                `[pending-storage-debug] Successfully cached dataset. OperationId: ${operationId}`,
+            );
+        } catch (error) {
+            this.logger.error(
+                `[pending-storage-debug] Failed to cache dataset. OperationId: ${operationId}, error: ${error.message}`,
+            );
+            throw error;
+        }
     }
 
     async getCachedDataset(operationId) {
@@ -33,12 +77,36 @@ class PendingStorageService {
 
         const filePath = this.fileService.getPendingStorageDocumentPath(operationId);
 
+        this.logger.debug(
+            `[pending-storage-debug] Reading cached dataset. OperationId: ${operationId}, path: ${filePath}`,
+        );
+
         try {
             const fileContents = await this.fileService.readFile(filePath, true);
+
+            // Log what we read
+            const hasAssertion = fileContents?.assertion !== undefined;
+            const assertionType = typeof fileContents?.assertion;
+            const assertionSize = hasAssertion ? JSON.stringify(fileContents.assertion).length : 0;
+            const isAssertionNull = fileContents?.assertion === null;
+            const merkleRoot = fileContents?.merkleRoot;
+
+            this.logger.debug(
+                `[pending-storage-debug] Read cached dataset. OperationId: ${operationId}, has assertion: ${hasAssertion}, assertion type: ${assertionType}, isNull: ${isAssertionNull}, assertion size: ${assertionSize} bytes, merkleRoot: ${merkleRoot}`,
+            );
+
+            if (isAssertionNull) {
+                this.logger.warn(
+                    `[pending-storage-debug] Assertion is NULL in cached file! OperationId: ${operationId}, full file contents keys: [${Object.keys(
+                        fileContents || {},
+                    ).join(', ')}]`,
+                );
+            }
+
             return fileContents.assertion;
         } catch (error) {
             this.logger.error(
-                `Failed to retrieve or parse cached dataset for ${operationId}: ${error.message}`,
+                `[pending-storage-debug] Failed to retrieve or parse cached dataset. OperationId: ${operationId}, path: ${filePath}, error: ${error.message}, stack: ${error.stack}`,
             );
             throw error;
         }

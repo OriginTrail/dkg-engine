@@ -1,5 +1,6 @@
 /* eslint-disable no-await-in-loop */
 import { setTimeout } from 'timers/promises';
+import { writeFile } from 'fs/promises';
 import { kcTools } from 'assertion-tools';
 import {
     BASE_NAMED_GRAPHS,
@@ -56,6 +57,12 @@ class TripleStoreService {
             `Inserting Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
                 `to the Triple Store's ${repository} repository.`,
         );
+
+        const totalInsertLabel = `[TripleStoreService.insertKnowledgeCollection TOTAL] ${repository} ${knowledgeCollectionUAL}`;
+        const attemptInsertLabel = (attempt) =>
+            `[TripleStoreService.insertKnowledgeCollection ATTEMPT ${attempt}] ${repository} ${knowledgeCollectionUAL}`;
+
+        this.logger.startTimer(totalInsertLabel);
 
         const publicAssertion = triples.public ?? triples;
 
@@ -272,13 +279,43 @@ class TripleStoreService {
         let success = false;
 
         while (attempts < retries && !success) {
+            const attemptTimerLabel = attemptInsertLabel(attempts + 1);
+            this.logger.debug(
+                `INSERT ATTEMPT: ${attempts} of ${retries}, UAL: ${knowledgeCollectionUAL}`,
+            );
+            this.logger.startTimer(attemptTimerLabel);
             try {
-                await this.tripleStoreModuleManager.queryVoid(
-                    this.repositoryImplementations[repository],
-                    repository,
-                    insertQuery,
-                    this.config.modules.tripleStore.timeout.insert,
-                );
+                const queryLabel = `[TripleStoreService.insertKnowledgeCollection QUERY] ${repository} ${knowledgeCollectionUAL}`;
+                this.logger.debug(queryLabel);
+                
+                await writeFile(`insert_query_${Date.now()}_attempt_${attempts}.txt`, insertQuery);
+                
+                this.logger.startTimer(queryLabel);
+                try {
+                    await this.tripleStoreModuleManager.queryVoid(
+                        this.repositoryImplementations[repository],
+                        repository,
+                        insertQuery,
+                        this.config.modules.tripleStore.timeout.insert,
+                    );
+                    this.logger.debug(
+                        `queryVoid succeeded for repository: ${repository}, UAL: ${knowledgeCollectionUAL}`,
+                    );
+                } catch (queryError) {
+                    const status = queryError?.response?.status;
+                    const dataSnippet =
+                        typeof queryError?.response?.data === 'string'
+                            ? queryError.response.data.slice(0, 200)
+                            : '';
+                    this.logger.error(
+                        `queryVoid failed for repository: ${repository}, UAL: ${knowledgeCollectionUAL}, status: ${status}. ${queryError.message}${
+                            dataSnippet ? ` | data: ${dataSnippet}` : ''
+                        }`,
+                    );
+                    throw queryError;
+                } finally {
+                    this.logger.endTimer(queryLabel);
+                }
                 if (paranetUAL) {
                     await this.tripleStoreModuleManager.createParanetKnoledgeCollectionConnection(
                         this.repositoryImplementations[repository],
@@ -336,14 +373,18 @@ class TripleStoreService {
                         ),
                     ]);
 
+                    this.logger.endTimer(totalInsertLabel);
                     throw new Error(
                         `Failed to store Knowledge Collection with the UAL: ${knowledgeCollectionUAL} ` +
                             `to the Triple Store's ${repository} repository after maximum retries. Error ${error}`,
                     );
                 }
+            } finally {
+                this.logger.endTimer(attemptTimerLabel);
             }
         }
 
+        this.logger.endTimer(totalInsertLabel);
         return totalNumberOfTriplesInserted;
     }
 

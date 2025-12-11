@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { writeFile } from 'fs/promises';
 import OtTripleStore from '../ot-triple-store.js';
 import { MEDIA_TYPES } from '../../../../constants/constants.js';
 
@@ -177,12 +178,60 @@ class OtBlazegraph extends OtTripleStore {
     }
 
     async queryVoid(repository, query, timeout) {
-        return axios.post(this.repositories[repository].sparqlEndpoint, query, {
-            headers: {
-                'Content-Type': 'application/sparql-update; charset=UTF-8',
-                'X-BIGDATA-MAX-QUERY-MILLIS': timeout,
-            },
-        });
+        const snippet = query?.slice(0, 80)?.replace(/\s+/g, ' ') || '';
+        const label = `[OtBlazegraph.queryVoid] ${repository} ${snippet}`;
+        if (this.logger?.startTimer) this.logger.startTimer(label);
+        try {
+            this.logger.debug(`[OtBlazegraph.queryVoid] Sending update to ${repository}`);
+            const response = await axios.post(this.repositories[repository].sparqlEndpoint, query, {
+                headers: {
+                    'Content-Type': 'application/sparql-update; charset=UTF-8',
+                    'X-BIGDATA-MAX-QUERY-MILLIS': timeout,
+                },
+            });
+            this.logger.debug(
+                `[OtBlazegraph.queryVoid] Update result for ${repository} (status: ${response.status})`,
+            );
+            const responseData = {
+                status: response.status,
+                statusText: response.statusText,
+                headers: response.headers,
+                data: response.data,
+                config: {
+                    url: response.config?.url,
+                    method: response.config?.method,
+                    timeout: response.config?.timeout,
+                },
+            };
+            this.logger.debug('[OtBlazegraph.queryVoid] Response: ' + JSON.stringify(responseData, null, 2));
+            
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
+            await writeFile(`response_${response.status}_${dateStr}.txt`, JSON.stringify(responseData, null, 2));
+            
+            if (response.status !== 200) {
+                this.logger.debug(
+                    `[OtBlazegraph.queryVoid] Response not 200 for ${repository} (status: ${response.status}), response: ${response.data}`,
+                );
+                
+            }
+            return response;
+        } catch (error) {
+            this.logger.debug('[OtBlazegraph.queryVoid] Error: ' + JSON.stringify(error, null, 2));
+            const status = error?.response?.status;
+            const dataSnippet =
+                typeof error?.response?.data === 'string'
+                    ? error.response.data.slice(0, 200)
+                    : '';
+            this.logger.error(
+                `[OtBlazegraph.queryVoid] Update failed for ${repository} (status: ${status}): ${error.message}${
+                    dataSnippet ? ` | data: ${dataSnippet}` : ''
+                } | query: ${snippet || '<empty>'}`,
+            );
+            throw error;
+        } finally {
+            if (this.logger?.endTimer) this.logger.endTimer(label);
+        }
     }
 
     async deleteRepository(repository) {

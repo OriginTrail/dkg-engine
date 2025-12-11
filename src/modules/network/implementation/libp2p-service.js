@@ -205,15 +205,29 @@ class Libp2pService {
         this.node.handle(protocol, async (handlerProps) => {
             const { stream } = handlerProps;
             const peerIdString = handlerProps.connection.remotePeer.toB58String();
+            const handleStartTime = Date.now();
+
+            this.logger.debug(
+                `[libp2p-debug] Incoming connection from peer: ${peerIdString}, protocol: ${protocol}, awaiting message...`,
+            );
+
             const { message, valid, busy } = await this._readMessageFromStream(
                 stream,
                 this.isRequestValid.bind(this),
                 peerIdString,
             );
 
+            const readDuration = Date.now() - handleStartTime;
+            this.logger.debug(
+                `[libp2p-debug] Message read complete from peer: ${peerIdString}, protocol: ${protocol}, operationId: ${message.header.operationId}, valid: ${valid}, busy: ${busy}, read duration: ${readDuration}ms`,
+            );
+
             this.updateSessionStream(message.header.operationId, peerIdString, stream);
 
             if (!valid) {
+                this.logger.warn(
+                    `[libp2p-debug] Sending NACK for invalid message from peer: ${peerIdString}, protocol: ${protocol}, operationId: ${message.header.operationId}`,
+                );
                 await this.sendMessageResponse(
                     protocol,
                     peerIdString,
@@ -223,6 +237,9 @@ class Libp2pService {
                 );
                 this.removeCachedSession(message.header.operationId, peerIdString);
             } else if (busy) {
+                this.logger.warn(
+                    `[libp2p-debug] Sending BUSY response to peer: ${peerIdString}, protocol: ${protocol}, operationId: ${message.header.operationId}`,
+                );
                 await this.sendMessageResponse(
                     protocol,
                     peerIdString,
@@ -232,9 +249,25 @@ class Libp2pService {
                 );
                 this.removeCachedSession(message.header.operationId, peerIdString);
             } else {
+                // Extract identifiers for logging
+                const { blockchain, contract, tokenId, datasetRoot } = message.data || {};
+                const ual =
+                    blockchain && contract && tokenId
+                        ? `did:dkg:${blockchain}/${contract}/${tokenId}`
+                        : 'N/A';
+
                 this.logger.debug(
-                    `Receiving message from ${peerIdString} to ${this.config.id}: protocol: ${protocol}, messageType: ${message.header.messageType};`,
+                    `Receiving message from ${peerIdString} to ${this.config.id}: protocol: ${protocol}, messageType: ${message.header.messageType}, operationId: ${message.header.operationId}, UAL: ${ual}, datasetRoot: ${datasetRoot}`,
                 );
+
+                // Log dataset presence before passing to handler
+                if (message.data?.dataset !== undefined) {
+                    const datasetSize = JSON.stringify(message.data.dataset).length;
+                    this.logger.debug(
+                        `[libp2p-debug] Passing message with dataset to handler. Peer: ${peerIdString}, operationId: ${message.header.operationId}, UAL: ${ual}, datasetRoot: ${datasetRoot}, dataset size: ${datasetSize} bytes`,
+                    );
+                }
+
                 await handler(message, peerIdString);
             }
         });
@@ -420,8 +453,34 @@ class Libp2pService {
     }
 
     async _sendMessageToStream(stream, message) {
+        const sendStartTime = Date.now();
         const stringifiedHeader = JSON.stringify(message.header);
         const stringifiedData = JSON.stringify(message.data);
+
+        // Extract identifiers for logging
+        const { blockchain, contract, tokenId, datasetRoot } = message.data || {};
+        const ual =
+            blockchain && contract && tokenId
+                ? `did:dkg:${blockchain}/${contract}/${tokenId}`
+                : 'N/A';
+
+        this.logger.debug(
+            `[libp2p-debug] Preparing to send message. OperationId: ${message.header.operationId}, UAL: ${ual}, datasetRoot: ${datasetRoot}, messageType: ${message.header.messageType}, header size: ${stringifiedHeader.length} bytes, data size: ${stringifiedData.length} bytes`,
+        );
+
+        // Log data structure being sent
+        if (message.data?.dataset !== undefined) {
+            const datasetSize = JSON.stringify(message.data.dataset).length;
+            const datasetType = typeof message.data.dataset;
+            const isArray = Array.isArray(message.data.dataset);
+            this.logger.debug(
+                `[libp2p-debug] Sending dataset. OperationId: ${
+                    message.header.operationId
+                }, UAL: ${ual}, datasetRoot: ${datasetRoot}, dataset size: ${datasetSize} bytes, type: ${datasetType}, isArray: ${isArray}, length: ${
+                    isArray ? message.data.dataset.length : 'N/A'
+                }`,
+            );
+        }
 
         const chunks = [stringifiedHeader];
         const chunkSize = BYTES_IN_MEGABYTE; // 1 MB
@@ -431,15 +490,39 @@ class Libp2pService {
             chunks.push(stringifiedData.slice(i, i + chunkSize));
         }
 
-        await pipe(
-            chunks,
-            // turn strings into buffers
-            (source) => map(source, (string) => Buffer.from(string)),
-            // Encode with length prefix (so receiving side knows how much data is coming)
-            encode(),
-            // Write to the stream (the sink)
-            stream.sink,
+        this.logger.debug(
+            `[libp2p-debug] Sending message in ${chunks.length} chunks (1 header + ${
+                chunks.length - 1
+            } data chunks). OperationId: ${
+                message.header.operationId
+            }, UAL: ${ual}, datasetRoot: ${datasetRoot}`,
         );
+
+        try {
+            await pipe(
+                chunks,
+                // turn strings into buffers
+                (source) => map(source, (string) => Buffer.from(string)),
+                // Encode with length prefix (so receiving side knows how much data is coming)
+                encode(),
+                // Write to the stream (the sink)
+                stream.sink,
+            );
+
+            const sendDuration = Date.now() - sendStartTime;
+            this.logger.debug(
+                `[libp2p-debug] Message sent successfully. OperationId: ${
+                    message.header.operationId
+                }, UAL: ${ual}, datasetRoot: ${datasetRoot}, duration: ${sendDuration}ms, total bytes: ${
+                    stringifiedHeader.length + stringifiedData.length
+                }`,
+            );
+        } catch (error) {
+            this.logger.error(
+                `[libp2p-debug] Failed to send message to stream. OperationId: ${message.header.operationId}, UAL: ${ual}, datasetRoot: ${datasetRoot}, error: ${error.message}`,
+            );
+            throw error;
+        }
     }
 
     async _readMessageFromStream(stream, isMessageValid, peerIdString) {
@@ -457,22 +540,46 @@ class Libp2pService {
 
     async readMessageSink(source, isMessageValid, peerIdString) {
         const message = { header: { operationId: '' }, data: {} };
+        const readStartTime = Date.now();
+
         // we expect first buffer to be header
         const stringifiedHeader = (await source.next()).value;
 
+        this.logger.debug(
+            `[libp2p-debug] Reading message from peer: ${peerIdString}, header raw length: ${
+                stringifiedHeader?.length ?? 0
+            } bytes`,
+        );
+
         if (!stringifiedHeader?.length) {
+            this.logger.warn(
+                `[libp2p-debug] Empty or missing header from peer: ${peerIdString}. Raw value: ${JSON.stringify(
+                    stringifiedHeader,
+                )}`,
+            );
             return { message, valid: false, busy: false };
         }
 
         try {
             message.header = JSON.parse(stringifiedHeader);
+            this.logger.debug(
+                `[libp2p-debug] Parsed header from peer: ${peerIdString}, operationId: ${message.header.operationId}, messageType: ${message.header.messageType}`,
+            );
         } catch (error) {
+            this.logger.error(
+                `[libp2p-debug] Failed to parse header JSON from peer: ${peerIdString}. Error: ${
+                    error.message
+                }. Raw header (first 500 chars): ${stringifiedHeader?.substring(0, 500)}`,
+            );
             // Return the same format as invalid request case
             return { message, valid: false, busy: false };
         }
 
         // validate request / response
         if (!(await isMessageValid(message.header, peerIdString))) {
+            this.logger.warn(
+                `[libp2p-debug] Message validation failed from peer: ${peerIdString}, operationId: ${message.header.operationId}, messageType: ${message.header.messageType}`,
+            );
             return { message, valid: false };
         }
 
@@ -481,18 +588,86 @@ class Libp2pService {
             message.header.messageType === NETWORK_MESSAGE_TYPES.REQUESTS.PROTOCOL_INIT &&
             this.isBusy()
         ) {
+            this.logger.debug(
+                `[libp2p-debug] Node is busy, returning busy response for peer: ${peerIdString}, operationId: ${message.header.operationId}`,
+            );
             return { message, valid: true, busy: true };
         }
 
         let stringifiedData = '';
+        let chunkCount = 0;
+        let totalBytesReceived = 0;
         // read data the data
 
         try {
             for await (const chunk of source) {
+                chunkCount += 1;
+                const chunkLength = chunk?.length ?? 0;
+                totalBytesReceived += chunkLength;
+                this.logger.trace(
+                    `[libp2p-debug] Received chunk ${chunkCount} from peer: ${peerIdString}, operationId: ${message.header.operationId}, chunk size: ${chunkLength} bytes, total so far: ${totalBytesReceived} bytes`,
+                );
                 stringifiedData += chunk;
             }
+
+            this.logger.debug(
+                `[libp2p-debug] Finished receiving data from peer: ${peerIdString}, operationId: ${
+                    message.header.operationId
+                }, total chunks: ${chunkCount}, total bytes: ${totalBytesReceived}, read duration: ${
+                    Date.now() - readStartTime
+                }ms`,
+            );
+
+            const parseStartTime = Date.now();
             message.data = JSON.parse(stringifiedData);
+            const parseDuration = Date.now() - parseStartTime;
+
+            // Extract identifiers for logging
+            const { blockchain, contract, tokenId, datasetRoot } = message.data || {};
+            const ual =
+                blockchain && contract && tokenId
+                    ? `did:dkg:${blockchain}/${contract}/${tokenId}`
+                    : 'N/A';
+
+            // Log data structure info
+            const dataKeys = Object.keys(message.data);
+            const datasetSize = message.data.dataset
+                ? JSON.stringify(message.data.dataset).length
+                : 0;
+            this.logger.debug(
+                `[libp2p-debug] Parsed data from peer: ${peerIdString}, operationId: ${
+                    message.header.operationId
+                }, UAL: ${ual}, datasetRoot: ${datasetRoot}, data keys: [${dataKeys.join(
+                    ', ',
+                )}], dataset size: ${datasetSize} bytes, parse duration: ${parseDuration}ms`,
+            );
+
+            // Validate dataset structure if present
+            if (message.data.dataset !== undefined) {
+                const datasetType = typeof message.data.dataset;
+                const isArray = Array.isArray(message.data.dataset);
+                const datasetLength = isArray ? message.data.dataset.length : 'N/A';
+                this.logger.debug(
+                    `[libp2p-debug] Dataset info from peer: ${peerIdString}, operationId: ${message.header.operationId}, UAL: ${ual}, datasetRoot: ${datasetRoot}, type: ${datasetType}, isArray: ${isArray}, length: ${datasetLength}`,
+                );
+
+                if (message.data.dataset === null) {
+                    this.logger.warn(
+                        `[libp2p-debug] Dataset is NULL from peer: ${peerIdString}, operationId: ${message.header.operationId}, UAL: ${ual}, datasetRoot: ${datasetRoot}`,
+                    );
+                }
+            }
         } catch (error) {
+            this.logger.error(
+                `[libp2p-debug] Failed to parse data JSON from peer: ${peerIdString}, operationId: ${
+                    message.header.operationId
+                }. Error: ${
+                    error.message
+                }. Total bytes received: ${totalBytesReceived}, chunks: ${chunkCount}. Raw data (first 1000 chars): ${stringifiedData?.substring(
+                    0,
+                    1000,
+                )}`,
+            );
             // If data parsing fails, return invalid message response
             return { message, valid: false, busy: false };
         }
