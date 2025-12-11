@@ -69,7 +69,7 @@ class PublishService extends OperationService {
         // }
 
         // 2. Check if all responses have been received
-        if (totalResponses === numberOfFoundNodes) {
+        // if  {
             // 2.1 If minimum replication is reached, mark the operation as completed
             if (completedNumber >= minAckResponses) {
                 await this.markOperationAsCompleted(
@@ -82,7 +82,7 @@ class PublishService extends OperationService {
                 this.logResponsesSummary(completedNumber, failedNumber);
             }
             // 2.2 Otherwise, mark as failed
-            else {
+            else if (totalResponses === numberOfFoundNodes) {
                 await this.markOperationAsFailed(
                     operationId,
                     blockchain,
@@ -95,7 +95,7 @@ class PublishService extends OperationService {
                 );
                 this.logResponsesSummary(completedNumber, failedNumber);
             }
-        }
+        // }
         //  else {
         //     // 3. Not all responses have arrived yet.
         //     const potentialCompletedNumber = completedNumber + leftoverNodes.length;
