@@ -107,12 +107,43 @@ class OperationIdService {
     async cacheOperationIdDataToMemory(operationId, data) {
         this.logger.debug(`Caching data for operation id: ${operationId} in memory`);
 
+        // Log data structure being cached
+        const dataKeys = data ? Object.keys(data) : [];
+        const dataSize = data ? JSON.stringify(data).length : 0;
+        const hasDataset = data?.dataset !== undefined;
+        const datasetSize = hasDataset ? JSON.stringify(data.dataset).length : 0;
+
+        this.logger.debug(
+            `[cache-debug] Caching to memory. OperationId: ${operationId}, data keys: [${dataKeys.join(
+                ', ',
+            )}], total size: ${dataSize} bytes, has dataset: ${hasDataset}, dataset size: ${datasetSize} bytes`,
+        );
+
+        if (hasDataset) {
+            const datasetType = typeof data.dataset;
+            const isDatasetNull = data.dataset === null;
+            const datasetPublicSize = data.dataset?.public
+                ? JSON.stringify(data.dataset.public).length
+                : 0;
+            const datasetPrivateSize = data.dataset?.private
+                ? JSON.stringify(data.dataset.private).length
+                : 0;
+            this.logger.debug(
+                `[cache-debug] Dataset details for operationId: ${operationId}, type: ${datasetType}, isNull: ${isDatasetNull}, public size: ${datasetPublicSize} bytes, private size: ${datasetPrivateSize} bytes`,
+            );
+        }
+
         this.memoryCachedHandlersData[operationId] = { data, timestamp: Date.now() };
     }
 
     async cacheOperationIdDataToFile(operationId, data) {
         this.logger.debug(`Caching data for operation id: ${operationId} in file`);
         const operationIdCachePath = this.fileService.getOperationIdCachePath();
+
+        const dataSize = data ? JSON.stringify(data).length : 0;
+        this.logger.debug(
+            `[cache-debug] Caching to file. OperationId: ${operationId}, path: ${operationIdCachePath}, size: ${dataSize} bytes`,
+        );
 
         await this.fileService.writeContentsToFile(
             operationIdCachePath,
@@ -124,16 +155,66 @@ class OperationIdService {
     async getCachedOperationIdData(operationId) {
         if (this.memoryCachedHandlersData[operationId]) {
             this.logger.debug(`Reading operation id: ${operationId} cached data from memory`);
-            return this.memoryCachedHandlersData[operationId].data;
+
+            const cachedEntry = this.memoryCachedHandlersData[operationId];
+            const { data, timestamp } = cachedEntry;
+            const cacheAge = Date.now() - timestamp;
+
+            // Log what we're returning from cache
+            const dataKeys = data ? Object.keys(data) : [];
+            const hasDataset = data?.dataset !== undefined;
+            const datasetSize = hasDataset ? JSON.stringify(data.dataset).length : 0;
+            const isDatasetNull = hasDataset && data.dataset === null;
+            const isDatasetPublicNull = hasDataset && data.dataset?.public === null;
+            const isDatasetPublicUndefined = hasDataset && data.dataset?.public === undefined;
+
+            this.logger.debug(
+                `[cache-debug] Memory cache HIT. OperationId: ${operationId}, cache age: ${cacheAge}ms, data keys: [${dataKeys.join(
+                    ', ',
+                )}], has dataset: ${hasDataset}, dataset size: ${datasetSize} bytes`,
+            );
+
+            if (hasDataset) {
+                this.logger.debug(
+                    `[cache-debug] Dataset state in cache. OperationId: ${operationId}, isNull: ${isDatasetNull}, public isNull: ${isDatasetPublicNull}, public isUndefined: ${isDatasetPublicUndefined}`,
+                );
+            }
+
+            return data;
         }
 
         this.logger.debug(
-            `Didn't manage to get cached ${operationId} data from memory, trying file`,
+            `[cache-debug] Memory cache MISS for operationId: ${operationId}, trying file`,
         );
         const documentPath = this.fileService.getOperationIdDocumentPath(operationId);
         let data;
         if (await this.fileService.pathExists(documentPath)) {
-            data = await this.fileService.readFile(documentPath, true);
+            this.logger.debug(
+                `[cache-debug] File cache exists for operationId: ${operationId}, path: ${documentPath}`,
+            );
+            try {
+                data = await this.fileService.readFile(documentPath, true);
+
+                // Log what we read from file
+                const dataKeys = data ? Object.keys(data) : [];
+                const hasDataset = data?.dataset !== undefined;
+                const datasetSize = hasDataset ? JSON.stringify(data.dataset).length : 0;
+
+                this.logger.debug(
+                    `[cache-debug] File cache read success. OperationId: ${operationId}, data keys: [${dataKeys.join(
+                        ', ',
+                    )}], has dataset: ${hasDataset}, dataset size: ${datasetSize} bytes`,
+                );
+            } catch (error) {
+                this.logger.error(
+                    `[cache-debug] File cache read FAILED. OperationId: ${operationId}, path: ${documentPath}, error: ${error.message}`,
+                );
+                throw error;
+            }
+        } else {
+            this.logger.warn(
+                `[cache-debug] File cache MISS (file does not exist). OperationId: ${operationId}, path: ${documentPath}`,
+            );
         }
         return data;
     }

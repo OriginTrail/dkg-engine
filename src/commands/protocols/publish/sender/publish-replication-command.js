@@ -132,12 +132,49 @@ class PublishReplicationCommand extends Command {
                 );
                 return Command.empty();
             }
-            const { dataset } = await this.operationIdService.getCachedOperationIdData(operationId);
+            const cachedData = await this.operationIdService.getCachedOperationIdData(operationId);
+
+            // Log what we retrieved from cache
+            const hasCachedData = cachedData !== undefined && cachedData !== null;
+            const hasDataset = cachedData?.dataset !== undefined;
+            const isDatasetNull = cachedData?.dataset === null;
+            const hasPublicDataset = cachedData?.dataset?.public !== undefined;
+            const isPublicDatasetNull = cachedData?.dataset?.public === null;
+            const publicDatasetSize =
+                hasPublicDataset && !isPublicDatasetNull
+                    ? JSON.stringify(cachedData.dataset.public).length
+                    : 0;
+
+            this.logger.debug(
+                `[publish-sender-debug] Retrieved cached data for sending. OperationId: ${operationId}, hasCachedData: ${hasCachedData}, hasDataset: ${hasDataset}, isDatasetNull: ${isDatasetNull}, hasPublicDataset: ${hasPublicDataset}, isPublicDatasetNull: ${isPublicDatasetNull}, publicDatasetSize: ${publicDatasetSize} bytes`,
+            );
+
+            if (!hasDataset || isDatasetNull) {
+                this.logger.error(
+                    `[publish-sender-debug] DATASET ISSUE BEFORE SENDING! OperationId: ${operationId}, hasDataset: ${hasDataset}, isDatasetNull: ${isDatasetNull}`,
+                );
+            }
+
+            if (!hasPublicDataset || isPublicDatasetNull) {
+                this.logger.error(
+                    `[publish-sender-debug] PUBLIC DATASET ISSUE BEFORE SENDING! OperationId: ${operationId}, hasPublicDataset: ${hasPublicDataset}, isPublicDatasetNull: ${isPublicDatasetNull}. Dataset keys: [${
+                        cachedData?.dataset ? Object.keys(cachedData.dataset).join(', ') : 'N/A'
+                    }]`,
+                );
+            }
+
+            const { dataset } = cachedData;
             const message = {
                 dataset: dataset.public,
                 datasetRoot,
                 blockchain,
             };
+
+            this.logger.debug(
+                `[publish-sender-debug] Prepared message for sending. OperationId: ${operationId}, datasetRoot: ${datasetRoot}, blockchain: ${blockchain}, message.dataset size: ${
+                    message.dataset ? JSON.stringify(message.dataset).length : 0
+                } bytes, sending to ${shardNodes.length} nodes`,
+            );
 
             // Run all message sending operations in parallel
             await Promise.all(
@@ -159,6 +196,14 @@ class PublishReplicationCommand extends Command {
     }
 
     async sendAndHandleMessage(node, operationId, message, command, blockchain) {
+        const messageDatasetSize = message.dataset ? JSON.stringify(message.dataset).length : 0;
+        const { datasetRoot } = message;
+
+        this.logger.debug(
+            `[publish-sender-debug] Sending message to node. OperationId: ${operationId}, datasetRoot: ${datasetRoot}, blockchain: ${blockchain}, targetNode: ${node.id}, protocol: ${node.protocol}, datasetSize: ${messageDatasetSize} bytes`,
+        );
+
+        const sendStartTime = Date.now();
         const response = await this.messagingService.sendProtocolMessage(
             node,
             operationId,
@@ -166,8 +211,19 @@ class PublishReplicationCommand extends Command {
             NETWORK_MESSAGE_TYPES.REQUESTS.PROTOCOL_REQUEST,
             NETWORK_MESSAGE_TIMEOUT_MILLS.PUBLISH.REQUEST,
         );
+        const sendDuration = Date.now() - sendStartTime;
+
         const responseData = response.data;
+        const responseType = response.header?.messageType;
+
+        this.logger.debug(
+            `[publish-sender-debug] Received response from node. OperationId: ${operationId}, datasetRoot: ${datasetRoot}, targetNode: ${node.id}, responseType: ${responseType}, duration: ${sendDuration}ms`,
+        );
+
         if (response.header.messageType === NETWORK_MESSAGE_TYPES.RESPONSES.ACK) {
+            this.logger.debug(
+                `[publish-sender-debug] ACK received. OperationId: ${operationId}, datasetRoot: ${datasetRoot}, targetNode: ${node.id}, identityId: ${responseData.identityId}`,
+            );
             // eslint-disable-next-line no-await-in-loop
             await this.signatureService.addSignatureToStorage(
                 NETWORK_SIGNATURES_FOLDER,
@@ -185,6 +241,9 @@ class PublishReplicationCommand extends Command {
                 responseData,
             );
         } else {
+            this.logger.warn(
+                `[publish-sender-debug] Non-ACK response received. OperationId: ${operationId}, datasetRoot: ${datasetRoot}, targetNode: ${node.id}, responseType: ${responseType}, errorMessage: ${responseData?.errorMessage}`,
+            );
             // eslint-disable-next-line no-await-in-loop
             await this.operationService.processResponse(
                 command,
