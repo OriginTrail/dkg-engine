@@ -194,7 +194,7 @@ class OtBlazegraph extends OtTripleStore {
             );
             this.logger.debug(response);
             
-            await writeFile(`${Date.now()}.txt`, JSON.stringify(response, null, 2));
+            await writeFile(`response_${Date.now()}.txt`, JSON.stringify(response, null, 2));
             
             if (response.status !== 200) {
                 this.logger.debug(
