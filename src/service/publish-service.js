@@ -69,32 +69,42 @@ class PublishService extends OperationService {
         // }
 
         // 2. Check if all responses have been received
-        if (totalResponses === numberOfFoundNodes) {
-            // 2.1 If minimum replication is reached, mark the operation as completed
-            if (completedNumber >= minAckResponses) {
-                await this.markOperationAsCompleted(
-                    operationId,
-                    blockchain,
-                    null,
-                    this.completedStatuses,
-                );
-                await this.repositoryModuleManager.updateMinAcksReached(operationId, true);
-                this.logResponsesSummary(completedNumber, failedNumber);
-            }
-            // 2.2 Otherwise, mark as failed
-            else {
-                await this.markOperationAsFailed(
-                    operationId,
-                    blockchain,
-                    'Not replicated to enough nodes!',
-                    this.errorType,
-                );
-                this.operationIdService.emitChangeEvent(
-                    OPERATION_ID_STATUS.PUBLISH.PUBLISH_FAILED,
-                    operationId,
-                );
-                this.logResponsesSummary(completedNumber, failedNumber);
-            }
+        // 2.1 If minimum replication is reached, mark the operation as completed
+
+        const record = await this.operationIdService.getOperationIdRecord(operationId);
+        if (record?.minAcksReached) return;
+
+        if (completedNumber >= minAckResponses) {
+            this.logger.info(
+                `[PUBLISH] Minimum replication reached for operationId: ${operationId}, ` +
+                    `datasetRoot: ${datasetRoot}, completed: ${completedNumber}/${minAckResponses}`,
+            );
+            await this.markOperationAsCompleted(
+                operationId,
+                blockchain,
+                null,
+                this.completedStatuses,
+            );
+            await this.repositoryModuleManager.updateMinAcksReached(operationId, true);
+            this.logResponsesSummary(completedNumber, failedNumber);
+        }
+        // 2.2 Otherwise, mark as failed
+        else if (totalResponses === numberOfFoundNodes) {
+            this.logger.warn(
+                `[PUBLISH] Failed for operationId: ${operationId}, ` +
+                    `only ${completedNumber}/${minAckResponses} nodes responded successfully`,
+            );
+            await this.markOperationAsFailed(
+                operationId,
+                blockchain,
+                'Not replicated to enough nodes!',
+                this.errorType,
+            );
+            this.operationIdService.emitChangeEvent(
+                OPERATION_ID_STATUS.PUBLISH.PUBLISH_FAILED,
+                operationId,
+            );
+            this.logResponsesSummary(completedNumber, failedNumber);
         }
         //  else {
         //     // 3. Not all responses have arrived yet.

@@ -33,6 +33,8 @@ class PublishFinalizationCommand extends Command {
         const { id, publishOperationId, merkleRoot, byteSize } = eventData;
         const { blockchain, contractAddress } = event;
         const operationId = this.operationIdService.generateId();
+        const ual = this.ualService.deriveUAL(blockchain, contractAddress, id);
+
         this.operationIdService.emitChangeEvent(
             OPERATION_ID_STATUS.PUBLISH_FINALIZATION.PUBLISH_FINALIZATION_START,
             operationId,
@@ -70,8 +72,10 @@ class PublishFinalizationCommand extends Command {
             cachedMerkleRoot = result.merkleRoot;
             assertion = result.assertion;
             publisherPeerId = result.remotePeerId;
-        } catch (error) {
-            this.logger.error(`Failed to read cached publish data: ${error.message}`); // TODO: Make this log more descriptive
+        } catch (_error) {
+            this.logger.warn(
+                `[Cache] Failed to read cached publish data for UAL ${ual} (publishOperationId: ${publishOperationId}, txHash: ${txHash}, operationId: ${operationId})`,
+            );
             this.operationIdService.emitChangeEvent(
                 OPERATION_ID_STATUS.FAILED,
                 operationId,
@@ -80,8 +84,6 @@ class PublishFinalizationCommand extends Command {
             );
             return Command.empty();
         }
-
-        const ual = this.ualService.deriveUAL(blockchain, contractAddress, id);
 
         try {
             await this.validatePublishData(merkleRoot, cachedMerkleRoot, byteSize, assertion, ual);
@@ -185,23 +187,24 @@ class PublishFinalizationCommand extends Command {
 
     async readWithRetries(publishOperationId) {
         let attempt = 0;
+        const datasetPath = this.fileService.getPendingStorageDocumentPath(publishOperationId);
 
         while (attempt < MAX_RETRIES_READ_CACHED_PUBLISH_DATA) {
             try {
-                const datasetPath =
-                    this.fileService.getPendingStorageDocumentPath(publishOperationId);
                 // eslint-disable-next-line no-await-in-loop
                 const cachedData = await this.fileService.readFile(datasetPath, true);
                 return cachedData;
             } catch (error) {
                 attempt += 1;
-
                 // eslint-disable-next-line no-await-in-loop
                 await new Promise((resolve) => {
                     setTimeout(resolve, RETRY_DELAY_READ_CACHED_PUBLISH_DATA);
                 });
             }
         }
+        this.logger.warn(
+            `[Cache] Exhausted retries reading cached publish data (publishOperationId: ${publishOperationId}, path: ${datasetPath}).`,
+        );
         // TODO: Mark this operation as failed
         throw new Error('Failed to read cached publish data');
     }
