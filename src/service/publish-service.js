@@ -69,16 +69,15 @@ class PublishService extends OperationService {
         // }
 
         // 2. Check if all responses have been received
-            // 2.1 If minimum replication is reached, mark the operation as completed
+        // 2.1 If minimum replication is reached, mark the operation as completed
 
         const record = await this.operationIdService.getOperationIdRecord(operationId);
         if (record?.minAcksReached) return;
 
-        
         if (completedNumber >= minAckResponses) {
             this.logger.info(
                 `[PUBLISH] Minimum replication reached for operationId: ${operationId}, ` +
-                `datasetRoot: ${datasetRoot}, completed: ${completedNumber}/${minAckResponses}`,
+                    `datasetRoot: ${datasetRoot}, completed: ${completedNumber}/${minAckResponses}`,
             );
             await this.markOperationAsCompleted(
                 operationId,
@@ -89,11 +88,11 @@ class PublishService extends OperationService {
             await this.repositoryModuleManager.updateMinAcksReached(operationId, true);
             this.logResponsesSummary(completedNumber, failedNumber);
         }
-            // 2.2 Otherwise, mark as failed
-        else if (totalResponses === numberOfFoundNodes)  {
+        // 2.2 Otherwise, mark as failed
+        else if (totalResponses === numberOfFoundNodes) {
             this.logger.warn(
                 `[PUBLISH] Failed for operationId: ${operationId}, ` +
-                `only ${completedNumber}/${minAckResponses} nodes responded successfully`,
+                    `only ${completedNumber}/${minAckResponses} nodes responded successfully`,
             );
             await this.markOperationAsFailed(
                 operationId,

@@ -178,7 +178,7 @@ class OtBlazegraph extends OtTripleStore {
 
     async queryVoid(repository, query, timeout) {
         try {
-            return axios.post(this.repositories[repository].sparqlEndpoint, query, {
+            return await axios.post(this.repositories[repository].sparqlEndpoint, query, {
                 headers: {
                     'Content-Type': 'application/sparql-update; charset=UTF-8',
                     'X-BIGDATA-MAX-QUERY-MILLIS': timeout,
@@ -187,13 +187,11 @@ class OtBlazegraph extends OtTripleStore {
         } catch (error) {
             const status = error?.response?.status;
             const dataSnippet =
-                typeof error?.response?.data === 'string'
-                    ? error.response.data.slice(0, 200)
-                    : '';
+                typeof error?.response?.data === 'string' ? error.response.data.slice(0, 200) : '';
             this.logger.error(
-                `[OtBlazegraph.queryVoid] Update failed for ${repository} (status: ${status}): ${error.message}${
-                    dataSnippet ? ` | data: ${dataSnippet}` : ''
-                } | query: ${snippet || '<empty>'}`,
+                `[OtBlazegraph.queryVoid] Update failed for ${repository} (status: ${status}): ${
+                    error.message
+                }${dataSnippet ? ` | data: ${dataSnippet}` : ''}`,
             );
             throw error;
         }
