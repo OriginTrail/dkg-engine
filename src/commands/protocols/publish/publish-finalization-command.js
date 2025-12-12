@@ -72,9 +72,9 @@ class PublishFinalizationCommand extends Command {
             cachedMerkleRoot = result.merkleRoot;
             assertion = result.assertion;
             publisherPeerId = result.remotePeerId;
-        } catch (error) {
-            this.logger.error(
-                `[Cache] Failed to read cached publish data for UAL ${ual} (publishOperationId: ${publishOperationId}, txHash: ${txHash}, operationId: ${operationId}): ${error.message}`,
+        } catch (_error) {
+            this.logger.warn(
+                `[Cache] Failed to read cached publish data for UAL ${ual} (publishOperationId: ${publishOperationId}, txHash: ${txHash}, operationId: ${operationId})`,
             );
             this.operationIdService.emitChangeEvent(
                 OPERATION_ID_STATUS.FAILED,
@@ -202,7 +202,7 @@ class PublishFinalizationCommand extends Command {
                 });
             }
         }
-        this.logger.error(
+        this.logger.warn(
             `[Cache] Exhausted retries reading cached publish data (publishOperationId: ${publishOperationId}, path: ${datasetPath}).`,
         );
         // TODO: Mark this operation as failed
