@@ -79,11 +79,14 @@ class PublishService extends OperationService {
                 `[PUBLISH] Minimum replication reached for operationId: ${operationId}, ` +
                     `datasetRoot: ${datasetRoot}, completed: ${completedNumber}/${minAckResponses}`,
             );
+            const cachedData =
+                (await this.operationIdService.getCachedOperationIdData(operationId)) || null;
             await this.markOperationAsCompleted(
                 operationId,
                 blockchain,
-                null,
+                cachedData,
                 this.completedStatuses,
+                { reuseExistingCache: true },
             );
             await this.repositoryModuleManager.updateMinAcksReached(operationId, true);
             this.logResponsesSummary(completedNumber, failedNumber);
