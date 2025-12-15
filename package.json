@@ -1,6 +1,6 @@
 {
     "name": "origintrail_node",
-    "version": "8.2.3",
+    "version": "8.2.4",
     "description": "OTNode V8",
     "main": "index.js",
     "type": "module",
@@ -31,10 +31,7 @@
         "type": "git",
         "url": "git+https://github.com/OriginTrail/ot-node.git"
     },
-    "keywords": [
-        "ot-node",
-        "v8"
-    ],
+    "keywords": ["ot-node", "v8"],
     "author": "TraceLabs",
     "license": "ISC",
     "bugs": {
