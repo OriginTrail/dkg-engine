@@ -24,8 +24,18 @@ class OperationIdCleanerCommand extends Command {
      * @param command
      */
     async execute() {
-        const memoryBytes = this.operationIdService.getOperationIdMemoryCacheSizeBytes();
-        const fileBytes = await this.operationIdService.getOperationIdFileCacheSizeBytes();
+        let memoryBytes = 0;
+        let fileBytes = 0;
+        try {
+            memoryBytes = this.operationIdService.getOperationIdMemoryCacheSizeBytes();
+        } catch (error) {
+            this.logger.warn(`Unable to read memory cache footprint: ${error.message}`);
+        }
+        try {
+            fileBytes = await this.operationIdService.getOperationIdFileCacheSizeBytes();
+        } catch (error) {
+            this.logger.warn(`Unable to read file cache footprint: ${error.message}`);
+        }
         const bytesInMegabyte = 1024 * 1024;
         this.logger.debug(
             `Operation cache footprint before cleanup: memory=${(

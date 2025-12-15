@@ -165,13 +165,16 @@ class OperationIdService {
         if (!cacheFolderExists) return 0;
 
         const fileList = await this.fileService.readDirectory(cacheFolderPath);
-        let total = 0;
-        for (const fileName of fileList) {
-            // eslint-disable-next-line no-await-in-loop
-            const stats = await this.fileService.stat(path.join(cacheFolderPath, fileName));
-            total += stats.size;
-        }
-        return total;
+        const sizeResults = await Promise.allSettled(
+            fileList.map((fileName) =>
+                this.fileService
+                    .stat(path.join(cacheFolderPath, fileName))
+                    .then((stats) => stats.size),
+            ),
+        );
+        return sizeResults
+            .filter((res) => res.status === 'fulfilled')
+            .reduce((acc, res) => acc + res.value, 0);
     }
 
     async removeExpiredOperationIdMemoryCache(expiredTimeout) {

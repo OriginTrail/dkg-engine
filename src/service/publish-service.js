@@ -86,6 +86,7 @@ class PublishService extends OperationService {
                 blockchain,
                 cachedData,
                 this.completedStatuses,
+                { reuseExistingCache: true },
             );
             await this.repositoryModuleManager.updateMinAcksReached(operationId, true);
             this.logResponsesSummary(completedNumber, failedNumber);
