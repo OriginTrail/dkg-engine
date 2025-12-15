@@ -723,6 +723,11 @@ export const EXPECTED_TRANSACTION_ERRORS = {
  */
 export const OPERATION_ID_COMMAND_CLEANUP_TIME_MILLS = 24 * 60 * 60 * 1000;
 /**
+ * @constant {number} OPERATION_ID_MEMORY_CLEANUP_TIME_MILLS -
+ * operation id memory cleanup interval time 1h
+ */
+export const OPERATION_ID_MEMORY_CLEANUP_TIME_MILLS = 60 * 60 * 1000;
+/**
  * @constant {number} FINALIZED_COMMAND_CLEANUP_TIME_MILLS - Command cleanup interval time
  * finalized commands command cleanup interval time 24h
  */
