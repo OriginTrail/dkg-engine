@@ -61,6 +61,12 @@ class OperationService {
     async markOperationAsCompleted(operationId, blockchain, responseData, endStatuses) {
         this.logger.info(`Finalizing ${this.operationName} for operationId: ${operationId}`);
 
+        await this.repositoryModuleManager.updateOperationStatus(
+            this.operationName,
+            operationId,
+            OPERATION_STATUS.COMPLETED,
+        );
+
         if (responseData === null) {
             await this.operationIdService.removeOperationIdCache(operationId);
         } else {
@@ -68,11 +74,6 @@ class OperationService {
             await this.operationIdService.cacheOperationIdDataToFile(operationId, responseData);
         }
 
-        await this.repositoryModuleManager.updateOperationStatus(
-            this.operationName,
-            operationId,
-            OPERATION_STATUS.COMPLETED,
-        );
         for (let i = 0; i < endStatuses.length; i += 1) {
             const status = endStatuses[i];
             const response = {

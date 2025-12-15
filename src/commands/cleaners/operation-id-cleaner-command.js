@@ -3,6 +3,7 @@ import {
     BYTES_IN_KILOBYTE,
     OPERATION_ID_FILES_FOR_REMOVAL_MAX_NUMBER,
     OPERATION_ID_COMMAND_CLEANUP_TIME_MILLS,
+    OPERATION_ID_MEMORY_CLEANUP_TIME_MILLS,
     OPERATION_ID_STATUS,
     COMMAND_PRIORITY,
 } from '../../constants/constants.js';
@@ -30,7 +31,7 @@ class OperationIdCleanerCommand extends Command {
             OPERATION_ID_STATUS.FAILED,
         ]);
         let removed = await this.operationIdService.removeExpiredOperationIdMemoryCache(
-            OPERATION_ID_COMMAND_CLEANUP_TIME_MILLS,
+            OPERATION_ID_MEMORY_CLEANUP_TIME_MILLS,
         );
         if (removed) {
             this.logger.debug(
@@ -68,7 +69,7 @@ class OperationIdCleanerCommand extends Command {
     default(map) {
         const command = {
             name: 'operationIdCleanerCommand',
-            period: OPERATION_ID_COMMAND_CLEANUP_TIME_MILLS,
+            period: OPERATION_ID_MEMORY_CLEANUP_TIME_MILLS,
             data: {},
             transactional: false,
             priority: COMMAND_PRIORITY.LOWEST,
