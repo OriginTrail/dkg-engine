@@ -24,6 +24,15 @@ class OperationIdCleanerCommand extends Command {
      * @param command
      */
     async execute() {
+        const memoryBytes = this.operationIdService.getOperationIdMemoryCacheSizeBytes();
+        const fileBytes = await this.operationIdService.getOperationIdFileCacheSizeBytes();
+        const bytesInMegabyte = 1024 * 1024;
+        this.logger.debug(
+            `Operation cache footprint before cleanup: memory=${(
+                memoryBytes / bytesInMegabyte
+            ).toFixed(2)}MB, files=${(fileBytes / bytesInMegabyte).toFixed(2)}MB`,
+        );
+
         this.logger.debug('Starting command for removal of expired cache files');
         const timeToBeDeleted = Date.now() - OPERATION_ID_COMMAND_CLEANUP_TIME_MILLS;
         await this.repositoryModuleManager.removeOperationIdRecord(timeToBeDeleted, [

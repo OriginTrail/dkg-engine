@@ -150,6 +150,30 @@ class OperationIdService {
         delete this.memoryCachedHandlersData[operationId];
     }
 
+    getOperationIdMemoryCacheSizeBytes() {
+        let total = 0;
+        for (const operationId in this.memoryCachedHandlersData) {
+            const { data } = this.memoryCachedHandlersData[operationId];
+            total += Buffer.from(JSON.stringify(data)).byteLength;
+        }
+        return total;
+    }
+
+    async getOperationIdFileCacheSizeBytes() {
+        const cacheFolderPath = this.fileService.getOperationIdCachePath();
+        const cacheFolderExists = await this.fileService.pathExists(cacheFolderPath);
+        if (!cacheFolderExists) return 0;
+
+        const fileList = await this.fileService.readDirectory(cacheFolderPath);
+        let total = 0;
+        for (const fileName of fileList) {
+            // eslint-disable-next-line no-await-in-loop
+            const stats = await this.fileService.stat(path.join(cacheFolderPath, fileName));
+            total += stats.size;
+        }
+        return total;
+    }
+
     async removeExpiredOperationIdMemoryCache(expiredTimeout) {
         const now = Date.now();
         let deleted = 0;
