@@ -3,6 +3,7 @@ import {
     BYTES_IN_KILOBYTE,
     OPERATION_ID_FILES_FOR_REMOVAL_MAX_NUMBER,
     OPERATION_ID_COMMAND_CLEANUP_TIME_MILLS,
+    OPERATION_ID_MEMORY_CLEANUP_TIME_MILLS,
     OPERATION_ID_STATUS,
     COMMAND_PRIORITY,
 } from '../../constants/constants.js';
@@ -23,6 +24,25 @@ class OperationIdCleanerCommand extends Command {
      * @param command
      */
     async execute() {
+        let memoryBytes = 0;
+        let fileBytes = 0;
+        try {
+            memoryBytes = this.operationIdService.getOperationIdMemoryCacheSizeBytes();
+        } catch (error) {
+            this.logger.warn(`Unable to read memory cache footprint: ${error.message}`);
+        }
+        try {
+            fileBytes = await this.operationIdService.getOperationIdFileCacheSizeBytes();
+        } catch (error) {
+            this.logger.warn(`Unable to read file cache footprint: ${error.message}`);
+        }
+        const bytesInMegabyte = 1024 * 1024;
+        this.logger.debug(
+            `Operation cache footprint before cleanup: memory=${(
+                memoryBytes / bytesInMegabyte
+            ).toFixed(2)}MB, files=${(fileBytes / bytesInMegabyte).toFixed(2)}MB`,
+        );
+
         this.logger.debug('Starting command for removal of expired cache files');
         const timeToBeDeleted = Date.now() - OPERATION_ID_COMMAND_CLEANUP_TIME_MILLS;
         await this.repositoryModuleManager.removeOperationIdRecord(timeToBeDeleted, [
@@ -30,7 +50,7 @@ class OperationIdCleanerCommand extends Command {
             OPERATION_ID_STATUS.FAILED,
         ]);
         let removed = await this.operationIdService.removeExpiredOperationIdMemoryCache(
-            OPERATION_ID_COMMAND_CLEANUP_TIME_MILLS,
+            OPERATION_ID_MEMORY_CLEANUP_TIME_MILLS,
         );
         if (removed) {
             this.logger.debug(
@@ -68,7 +88,7 @@ class OperationIdCleanerCommand extends Command {
     default(map) {
         const command = {
             name: 'operationIdCleanerCommand',
-            period: OPERATION_ID_COMMAND_CLEANUP_TIME_MILLS,
+            period: OPERATION_ID_MEMORY_CLEANUP_TIME_MILLS,
             data: {},
             transactional: false,
             priority: COMMAND_PRIORITY.LOWEST,
