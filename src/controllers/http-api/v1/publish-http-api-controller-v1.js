@@ -5,6 +5,7 @@ import {
     OPERATION_STATUS,
     LOCAL_STORE_TYPES,
     COMMAND_PRIORITY,
+    PUBLISH_MIN_NUM_OF_NODE_REPLICATIONS,
 } from '../../../constants/constants.js';
 
 class PublishController extends BaseController {
@@ -16,6 +17,7 @@ class PublishController extends BaseController {
         this.repositoryModuleManager = ctx.repositoryModuleManager;
         this.pendingStorageService = ctx.pendingStorageService;
         this.networkModuleManager = ctx.networkModuleManager;
+        this.blockchainModuleManager = ctx.blockchainModuleManager;
     }
 
     async handleRequest(req, res) {
@@ -62,6 +64,37 @@ class PublishController extends BaseController {
                 datasetRoot,
             });
 
+            let effectiveMinReplications = minimumNumberOfNodeReplications;
+            let chainMinNumber = null;
+            try {
+                const chainMin = await this.blockchainModuleManager.getMinimumRequiredSignatures(
+                    blockchain,
+                );
+                chainMinNumber = Number(chainMin);
+            } catch (err) {
+                this.logger.warn(
+                    `Failed to fetch on-chain minimumRequiredSignatures for ${blockchain}: ${err.message}`,
+                );
+            }
+
+            const userMinNumber = Number(effectiveMinReplications);
+            const resolvedUserMin =
+                !Number.isNaN(userMinNumber) && userMinNumber > 0
+                    ? userMinNumber
+                    : PUBLISH_MIN_NUM_OF_NODE_REPLICATIONS;
+
+            if (!Number.isNaN(chainMinNumber) && chainMinNumber > 0) {
+                effectiveMinReplications = Math.max(chainMinNumber, resolvedUserMin);
+            } else {
+                effectiveMinReplications = resolvedUserMin;
+            }
+
+            if (effectiveMinReplications === 0) {
+                this.logger.error(
+                    `Effective minimum replications resolved to 0 for operationId: ${operationId}, blockchain: ${blockchain}. This should never happen.`,
+                );
+            }
+
             const publisherNodePeerId = this.networkModuleManager.getPeerId().toB58String();
             await this.pendingStorageService.cacheDataset(
                 operationId,
@@ -80,7 +113,7 @@ class PublishController extends BaseController {
                     blockchain,
                     operationId,
                     storeType: LOCAL_STORE_TYPES.TRIPLE,
-                    minimumNumberOfNodeReplications,
+                    minimumNumberOfNodeReplications: effectiveMinReplications,
                 },
                 transactional: false,
                 priority: COMMAND_PRIORITY.HIGHEST,

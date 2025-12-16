@@ -211,6 +211,10 @@ class BlockchainModuleManager extends BaseModuleManager {
         return this.callImplementationFunction(blockchain, 'getMaximumStake');
     }
 
+    async getMinimumRequiredSignatures(blockchain) {
+        return this.callImplementationFunction(blockchain, 'getMinimumRequiredSignatures');
+    }
+
     async getLatestBlock(blockchain) {
         return this.callImplementationFunction(blockchain, 'getLatestBlock');
     }
