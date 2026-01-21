@@ -149,12 +149,29 @@ Given(
         try {
             await nodeInstance.start(); // This will skip startNetworkModule
 
+            // Configure blockchain options for the DKG client
+            const clientBlockchainOptions = {};
+            for (const blockchainId of Object.keys(this.state.localBlockchains)) {
+                const blockchain = this.state.localBlockchains[blockchainId];
+                const wallets = blockchain.getWallets();
+                clientBlockchainOptions[blockchainId] = {
+                    blockchain: {
+                        name: blockchainId,
+                        publicKey: wallets[0].address,
+                        privateKey: wallets[0].privateKey,
+                        rpc: `http://localhost:${blockchain.port}`,
+                        hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+                    },
+                };
+            }
+
             const client = new DkgClientHelper({
                 endpoint: 'http://localhost',
                 port: rpcPort,
                 useSSL: false,
                 timeout: 25,
                 loglevel: 'trace',
+                ...clientBlockchainOptions,
             });
 
             this.state.bootstraps.push({
