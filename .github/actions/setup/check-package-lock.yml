@@ -1,0 +1,42 @@
+name: Check Package Lock File
+
+concurrency:
+  group: check-package-lock-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - "**" # Run on push to any branch
+  pull_request:
+    branches:
+      - "**" # Run on PR to any branch
+
+jobs:
+  verify-package-lock:
+    name: Verify package-lock.json exists
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check if package-lock.json exists
+        run: |
+          if [ ! -f "package-lock.json" ]; then
+            echo "ERROR: package-lock.json file is missing from the repository"
+            echo "This file is required to ensure consistent dependency versions across all environments"
+            echo "Please ensure package-lock.json is committed with your changes"
+            exit 1
+          fi
+          echo "SUCCESS: package-lock.json file is present"
+
+      - name: Verify package-lock.json is not empty
+        run: |
+          if [ ! -s "package-lock.json" ]; then
+            echo "ERROR: package-lock.json file exists but is empty"
+            echo "Please run 'npm install' to regenerate the lock file"
+            exit 1
+          fi
+          echo "SUCCESS: package-lock.json file is valid and not empty"
