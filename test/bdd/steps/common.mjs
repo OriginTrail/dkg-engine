@@ -145,23 +145,33 @@ Given(
         fs.rmSync(appDataPath, { recursive: true, force: true });
 
         const nodeInstance = new MockOTNode(nodeConfiguration);
-        await nodeInstance.start(); // This will skip startNetworkModule
+        
+        try {
+            await nodeInstance.start(); // This will skip startNetworkModule
 
-        const client = new DkgClientHelper({
-            endpoint: 'http://localhost',
-            port: rpcPort,
-            useSSL: false,
-            timeout: 25,
-            loglevel: 'trace',
-        });
+            const client = new DkgClientHelper({
+                endpoint: 'http://localhost',
+                port: rpcPort,
+                useSSL: false,
+                timeout: 25,
+                loglevel: 'trace',
+            });
 
-        this.state.bootstraps.push({
-            client,
-            otNodeInstance: nodeInstance,
-            configuration: nodeConfiguration,
-            nodeRpcUrl: `http://localhost:${rpcPort}`,
-            fileService: nodeInstance.fileService,
-        });
+            this.state.bootstraps.push({
+                client,
+                otNodeInstance: nodeInstance,
+                configuration: nodeConfiguration,
+                nodeRpcUrl: `http://localhost:${rpcPort}`,
+                fileService: nodeInstance.fileService,
+            });
+        } catch (error) {
+            // Ensure node is stopped if there's an error after starting
+            this.logger.error(`Error during bootstrap initialization: ${error.message}`);
+            if (nodeInstance.stop) {
+                await nodeInstance.stop();
+            }
+            throw error;
+        }
     }
 );
 //
