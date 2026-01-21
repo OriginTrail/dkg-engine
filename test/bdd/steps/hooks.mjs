@@ -26,17 +26,20 @@ Before(function beforeMethod(testCase) {
     this.logger.log('📁 Scenario logs:', logDir);
 });
 
-After(async function afterMethod(testCase) {
+After({ timeout: 30000 }, async function afterMethod(testCase) {
     const tripleStoreConfiguration = [];
     const databaseNames = [];
-    const promises = [];
+    const cleanupPromises = [];
 
+    // Stop all nodes first and wait for them to shut down
+    const stopPromises = [];
+    
     for (const key in this.state.nodes) {
         const node = this.state.nodes[key];
         if (node.forkedNode) {
             node.forkedNode.kill();
         } else if (node.otNodeInstance?.stop) {
-            promises.push(node.otNodeInstance.stop());
+            stopPromises.push(node.otNodeInstance.stop());
         }
 
         tripleStoreConfiguration.push({
@@ -44,14 +47,14 @@ After(async function afterMethod(testCase) {
         });
         databaseNames.push(node.configuration.operationalDatabase.databaseName);
         const dataFolderPath = node.fileService.getDataFolderPath();
-        promises.push(node.fileService.removeFolder(dataFolderPath));
+        cleanupPromises.push(node.fileService.removeFolder(dataFolderPath));
     }
 
     for (const node of this.state.bootstraps) {
         if (node.forkedNode) {
             node.forkedNode.kill();
         } else if (node.otNodeInstance?.stop) {
-            promises.push(node.otNodeInstance.stop());
+            stopPromises.push(node.otNodeInstance.stop());
         }
 
         tripleStoreConfiguration.push({
@@ -59,12 +62,20 @@ After(async function afterMethod(testCase) {
         });
         databaseNames.push(node.configuration.operationalDatabase.databaseName);
         const dataFolderPath = node.fileService.getDataFolderPath();
-        promises.push(node.fileService.removeFolder(dataFolderPath));
+        cleanupPromises.push(node.fileService.removeFolder(dataFolderPath));
     }
+
+    // Wait for all nodes to stop before continuing
+    this.logger.log('⏸️ Stopping all nodes...');
+    await Promise.all(stopPromises);
+    this.logger.log('✅ All nodes stopped');
+    
+    // Give a moment for ports to be fully released
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     for (const localBlockchain in this.state.localBlockchains) {
         this.logger.info(`🛑 Stopping local blockchain ${localBlockchain}`);
-        promises.push(this.state.localBlockchains[localBlockchain].stop());
+        cleanupPromises.push(this.state.localBlockchains[localBlockchain].stop());
         this.state.localBlockchains[localBlockchain] = null;
     }
 
@@ -77,7 +88,7 @@ After(async function afterMethod(testCase) {
 
     for (const db of databaseNames) {
         const sql = `DROP DATABASE IF EXISTS \`${db}\`;`;
-        promises.push(con.promise().query(sql));
+        cleanupPromises.push(con.promise().query(sql));
     }
 
     for (const config of tripleStoreConfiguration) {
@@ -86,7 +97,7 @@ After(async function afterMethod(testCase) {
             continue;
         }
         
-        promises.push((async () => {
+        cleanupPromises.push((async () => {
             try {
                 const tripleStoreModuleManager = new TripleStoreModuleManager({
                     config,
@@ -107,7 +118,7 @@ After(async function afterMethod(testCase) {
         })());
     }
 
-    await Promise.all(promises);
+    await Promise.all(cleanupPromises);
     con.end();
 
     this.logger.log('\n✅ Completed scenario:', testCase.pickle.name);
