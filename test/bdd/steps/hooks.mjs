@@ -10,7 +10,7 @@ process.env.NODE_ENV = NODE_ENVIRONMENTS.TEST;
 
 BeforeAll(() => {});
 
-Before(function beforeMethod(testCase, done) {
+Before(function beforeMethod(testCase) {
     this.logger = console;
     this.logger.log('\n🟡 Starting scenario:', testCase.pickle.name);
     // Initialize variables
@@ -24,10 +24,9 @@ Before(function beforeMethod(testCase, done) {
     fs.mkdirSync(logDir, { recursive: true });
     this.state.scenarionLogDir = logDir;
     this.logger.log('📁 Scenario logs:', logDir);
-    done();
 });
 
-After(async function afterMethod(testCase, done) {
+After(async function afterMethod(testCase) {
     const tripleStoreConfiguration = [];
     const databaseNames = [];
     const promises = [];
@@ -105,7 +104,6 @@ After(async function afterMethod(testCase, done) {
     this.logger.log(`📄 Location: ${testCase.gherkinDocument.uri}:${testCase.gherkinDocument.feature.location.line}`);
     this.logger.log(`🟢 Status: ${testCase.result.status}`);
     this.logger.log(`⏱ Duration: ${testCase.result.duration} milliseconds\n`);
-    done();
 });
 
 AfterAll(async () => {});
