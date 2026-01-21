@@ -64,14 +64,7 @@ Given(
                 if (response.error) {
                     assert.fail(`Error while initializing node${nodeIndex}: ${response.error}`);
                 } else {
-                    // todo if started
-                    const client = new DkgClientHelper({
-                        endpoint: 'http://localhost',
-                        port: rpcPort,
-                        maxNumberOfRetries: 5,
-                        frequency: 2,
-                        contentType: 'all',
-                    });
+                    // Build blockchain options BEFORE creating the client
                     let clientBlockchainOptions = {};
                     Object.keys(this.state.localBlockchains).forEach((blockchainId, index) => {
                         const blockchain = this.state.localBlockchains[blockchainId];
@@ -85,6 +78,25 @@ Given(
                                 hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
                             },
                         };
+                    });
+
+                    // Get the first blockchain for the DKG client config
+                    const firstBlockchainId = Object.keys(this.state.localBlockchains)[0];
+                    const firstBlockchain = this.state.localBlockchains[firstBlockchainId];
+                    const firstWallet = firstBlockchain.getWallets()[0];
+
+                    const client = new DkgClientHelper({
+                        endpoint: 'http://localhost',
+                        port: rpcPort,
+                        maxNumberOfRetries: 5,
+                        frequency: 2,
+                        contentType: 'all',
+                        blockchain: {
+                            name: firstBlockchainId,
+                            publicKey: firstWallet.address,
+                            privateKey: firstWallet.privateKey,
+                            rpc: `http://localhost:${firstBlockchain.port}`,
+                        },
                     });
 
                     this.state.nodes[nodeIndex] = {
