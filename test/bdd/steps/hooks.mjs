@@ -81,18 +81,28 @@ After(async function afterMethod(testCase) {
     }
 
     for (const config of tripleStoreConfiguration) {
+        // Skip if tripleStore module is not defined
+        if (!config?.modules?.tripleStore) {
+            continue;
+        }
+        
         promises.push((async () => {
-            const tripleStoreModuleManager = new TripleStoreModuleManager({
-                config,
-                logger: this.logger,
-            });
-            await tripleStoreModuleManager.initialize();
-            for (const impl of tripleStoreModuleManager.getImplementationNames()) {
-                const { tripleStoreConfig } = tripleStoreModuleManager.getImplementation(impl);
-                for (const repo of Object.keys(tripleStoreConfig.repositories)) {
-                    this.logger.log('🗑 Removing triple store repository:', repo);
-                    await tripleStoreModuleManager.deleteRepository(impl, repo);
+            try {
+                const tripleStoreModuleManager = new TripleStoreModuleManager({
+                    config,
+                    logger: this.logger,
+                });
+                await tripleStoreModuleManager.initialize();
+                for (const impl of tripleStoreModuleManager.getImplementationNames()) {
+                    const { tripleStoreConfig } = tripleStoreModuleManager.getImplementation(impl);
+                    for (const repo of Object.keys(tripleStoreConfig.repositories)) {
+                        this.logger.log('🗑 Removing triple store repository:', repo);
+                        await tripleStoreModuleManager.deleteRepository(impl, repo);
+                    }
                 }
+            } catch (error) {
+                // Log but don't fail cleanup if tripleStore cleanup fails
+                this.logger.warn(`⚠️ Could not clean up tripleStore: ${error.message}`);
             }
         })());
     }
