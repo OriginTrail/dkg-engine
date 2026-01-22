@@ -1,5 +1,8 @@
 name: Check Package Lock File
 
+permissions:
+  contents: read
+
 concurrency:
   group: check-package-lock-${{ github.ref }}
   cancel-in-progress: true
@@ -7,7 +10,7 @@ concurrency:
 on:
   push:
     branches:
-      - "**" # Run on push to any branch
+      - main # Run on push to main branch only
   pull_request:
     branches:
       - "**" # Run on PR to any branch
@@ -40,3 +43,11 @@ jobs:
             exit 1
           fi
           echo "SUCCESS: package-lock.json file is valid and not empty"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate package-lock.json is valid and in sync
+        run: npm ci --dry-run --ignore-scripts
