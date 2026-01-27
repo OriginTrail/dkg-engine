@@ -131,6 +131,5 @@ AfterAll(async () => {});
 
 process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    // Don't abort in test environment, just log the error
-    // process.abort();
+    process.abort();
 });
