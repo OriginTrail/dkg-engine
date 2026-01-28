@@ -1,4 +1,5 @@
 import { CLAIM_REWARDS_BATCH_SIZE, CLAIM_REWARDS_INTERVAL } from '../constants/constants.js';
+import cleanupBlockchainIntervals from './blockchain-interval-cleanup.js';
 
 class ClaimRewardsService {
     constructor(ctx) {
@@ -92,18 +93,14 @@ class ClaimRewardsService {
         }
     }
 
-    // Add cleanup method to stop intervals
     cleanup() {
-        this.logger.info('[CLAIM] Starting ClaimRewardsService cleanup');
-        for (const blockchainId of this.blockchainModuleManager.getImplementationNames()) {
-            const intervalKey = `${blockchainId}Interval`;
-            if (this[intervalKey]) {
-                this.logger.debug(`[CLAIM] Clearing interval for blockchain ${blockchainId}`);
-                clearInterval(this[intervalKey]);
-                this[intervalKey] = null;
-            }
-        }
-        this.logger.info('[CLAIM] ClaimRewardsService cleanup completed');
+        cleanupBlockchainIntervals({
+            service: this,
+            blockchainModuleManager: this.blockchainModuleManager,
+            logger: this.logger,
+            serviceName: 'ClaimRewardsService',
+            logPrefix: '[CLAIM]',
+        });
     }
 
     async claimRewards(blockchainId) {

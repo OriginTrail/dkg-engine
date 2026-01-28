@@ -21,12 +21,6 @@ export default class MockOTNode extends OTNode {
                 await httpClientModuleManager.close();
             }
 
-            // Stop blockchain event listeners
-            const blockchainEventsService = this.container?.resolve('blockchainEventsService');
-            if (blockchainEventsService?.stopListening) {
-                await blockchainEventsService.stopListening();
-            }
-
             // Cleanup proofing service intervals
             const proofingService = this.container?.resolve('proofingService');
             if (proofingService?.cleanup) {
