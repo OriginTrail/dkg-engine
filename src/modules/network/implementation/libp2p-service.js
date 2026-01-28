@@ -116,6 +116,14 @@ class Libp2pService {
         this.logger.info(`Network ID is ${this.config.id}, connection port is ${port}`);
     }
 
+    async stop() {
+        if (this.node) {
+            this.logger.info('Stopping libp2p node...');
+            await this.node.stop();
+            this.logger.info('Libp2p node stopped');
+        }
+    }
+
     async onPeerConnected(listener) {
         this.node.connectionManager.on('peer:connect', listener);
     }

@@ -21,6 +21,12 @@ export default class MockOTNode extends OTNode {
                 await httpClientModuleManager.close();
             }
 
+            // Stop network module (libp2p)
+            const networkModuleManager = this.container?.resolve('networkModuleManager');
+            if (networkModuleManager?.stop) {
+                await networkModuleManager.stop();
+            }
+
             // Cleanup proofing service intervals
             const proofingService = this.container?.resolve('proofingService');
             if (proofingService?.cleanup) {
