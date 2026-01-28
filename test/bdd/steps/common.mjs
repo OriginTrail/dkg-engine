@@ -11,6 +11,24 @@ import MockOTNode from '../../utilities/MockOTNode.mjs';
 
 const stepsUtils = new StepsUtils();
 
+/**
+ * Extracts the first blockchain configuration for use with DkgClientHelper.
+ * @param {Object} localBlockchains - The localBlockchains state object
+ * @returns {Object} Blockchain config with name, publicKey, privateKey, and rpc
+ */
+function getFirstBlockchainConfig(localBlockchains) {
+    const firstBlockchainId = Object.keys(localBlockchains)[0];
+    const firstBlockchain = localBlockchains[firstBlockchainId];
+    const firstWallet = firstBlockchain.getWallets()[0];
+
+    return {
+        name: firstBlockchainId,
+        publicKey: firstWallet.address,
+        privateKey: firstWallet.privateKey,
+        rpc: `http://localhost:${firstBlockchain.port}`,
+    };
+}
+
 Given(
     /^I setup (\d+)[ additional]* node[s]*$/,
     { timeout: 30000 },
@@ -80,23 +98,13 @@ Given(
                         };
                     });
 
-                    // Get the first blockchain for the DKG client config
-                    const firstBlockchainId = Object.keys(this.state.localBlockchains)[0];
-                    const firstBlockchain = this.state.localBlockchains[firstBlockchainId];
-                    const firstWallet = firstBlockchain.getWallets()[0];
-
                     const client = new DkgClientHelper({
                         endpoint: 'http://localhost',
                         port: rpcPort,
                         maxNumberOfRetries: 5,
                         frequency: 2,
                         contentType: 'all',
-                        blockchain: {
-                            name: firstBlockchainId,
-                            publicKey: firstWallet.address,
-                            privateKey: firstWallet.privateKey,
-                            rpc: `http://localhost:${firstBlockchain.port}`,
-                        },
+                        blockchain: getFirstBlockchainConfig(this.state.localBlockchains),
                     });
 
                     this.state.nodes[nodeIndex] = {
@@ -161,23 +169,13 @@ Given(
         try {
             await nodeInstance.start(); // This will skip startNetworkModule
 
-            // Get the first blockchain for the DKG client config
-            const firstBlockchainId = Object.keys(this.state.localBlockchains)[0];
-            const firstBlockchain = this.state.localBlockchains[firstBlockchainId];
-            const firstWallet = firstBlockchain.getWallets()[0];
-
             const client = new DkgClientHelper({
                 endpoint: 'http://localhost',
                 port: rpcPort,
                 useSSL: false,
                 timeout: 25,
                 loglevel: 'trace',
-                blockchain: {
-                    name: firstBlockchainId,
-                    publicKey: firstWallet.address,
-                    privateKey: firstWallet.privateKey,
-                    rpc: `http://localhost:${firstBlockchain.port}`,
-                },
+                blockchain: getFirstBlockchainConfig(this.state.localBlockchains),
             });
 
             this.state.bootstraps.push({
