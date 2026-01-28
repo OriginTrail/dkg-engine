@@ -130,6 +130,15 @@ After({ timeout: 30000 }, async function afterMethod(testCase) {
 AfterAll(async () => {});
 
 process.on('unhandledRejection', (reason, promise) => {
+    // Ignore expected libp2p errors in test environment
+    // These occur because MockOTNode skips network module startup,
+    // but forked nodes still try peer discovery
+    const ignoredErrorCodes = ['ERR_LOOKUP_FAILED', 'ERR_NOT_FOUND'];
+    if (reason?.code && ignoredErrorCodes.includes(reason.code)) {
+        console.warn(`⚠️ Ignoring expected test environment error: ${reason.code}`);
+        return;
+    }
+
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
     process.abort();
 });
