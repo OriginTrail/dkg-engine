@@ -92,6 +92,20 @@ class ClaimRewardsService {
         }
     }
 
+    // Add cleanup method to stop intervals
+    cleanup() {
+        this.logger.info('[CLAIM] Starting ClaimRewardsService cleanup');
+        for (const blockchainId of this.blockchainModuleManager.getImplementationNames()) {
+            const intervalKey = `${blockchainId}Interval`;
+            if (this[intervalKey]) {
+                this.logger.debug(`[CLAIM] Clearing interval for blockchain ${blockchainId}`);
+                clearInterval(this[intervalKey]);
+                this[intervalKey] = null;
+            }
+        }
+        this.logger.info('[CLAIM] ClaimRewardsService cleanup completed');
+    }
+
     async claimRewards(blockchainId) {
         const identityId = await this.blockchainModuleManager.getIdentityId(blockchainId);
         const nodeDelegatorAddresses = await this.blockchainModuleManager.getDelegators(

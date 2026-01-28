@@ -27,6 +27,24 @@ export default class MockOTNode extends OTNode {
                 await blockchainEventsService.stopListening();
             }
 
+            // Cleanup proofing service intervals
+            const proofingService = this.container?.resolve('proofingService');
+            if (proofingService?.cleanup) {
+                proofingService.cleanup();
+            }
+
+            // Cleanup claim rewards service intervals
+            const claimRewardsService = this.container?.resolve('claimRewardsService');
+            if (claimRewardsService?.cleanup) {
+                claimRewardsService.cleanup();
+            }
+
+            // Cleanup sync service intervals
+            const syncService = this.container?.resolve('syncService');
+            if (syncService?.cleanup) {
+                syncService.cleanup();
+            }
+
             this.logger.info('[Mock] Node stopped successfully');
         } catch (error) {
             this.logger.error(`[Mock] Error stopping node: ${error.message}`);
