@@ -9,6 +9,7 @@ import {
     TRIPLES_VISIBILITY,
     PROOFING_MAX_ATTEMPTS,
 } from '../constants/constants.js';
+import cleanupBlockchainIntervals from './blockchain-interval-cleanup.js';
 
 class ProofingService {
     constructor(ctx) {
@@ -485,18 +486,14 @@ class ProofingService {
         return `${blockchainId}-${epoch}-${activeProofPeriodStartBlock}`;
     }
 
-    // Add cleanup method to stop intervals
     cleanup() {
-        this.logger.info('[PROOFING] Starting ProofingService cleanup');
-        for (const blockchainId of this.blockchainModuleManager.getImplementationNames()) {
-            const intervalKey = `${blockchainId}Interval`;
-            if (this[intervalKey]) {
-                this.logger.debug(`Clearing interval for blockchain ${blockchainId}`);
-                clearInterval(this[intervalKey]);
-                this[intervalKey] = null;
-            }
-        }
-        this.logger.info('[PROOFING] ProofingService cleanup completed');
+        cleanupBlockchainIntervals({
+            service: this,
+            blockchainModuleManager: this.blockchainModuleManager,
+            logger: this.logger,
+            serviceName: 'ProofingService',
+            logPrefix: '[PROOFING]',
+        });
     }
 }
 

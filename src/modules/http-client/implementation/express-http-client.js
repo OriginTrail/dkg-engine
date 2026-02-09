@@ -53,9 +53,28 @@ class ExpressHttpClient {
             );
             this.httpsServer.listen(this.config.port);
         } else {
-            this.app.listen(this.config.port);
+            this.server = this.app.listen(this.config.port);
         }
         this.logger.info(`Node listening on port: ${this.config.port}`);
+    }
+
+    async close() {
+        return new Promise((resolve, reject) => {
+            const serverToClose = this.httpsServer || this.server;
+            if (serverToClose) {
+                serverToClose.close((err) => {
+                    if (err) {
+                        this.logger.error(`Error closing HTTP server: ${err.message}`);
+                        reject(err);
+                    } else {
+                        this.logger.info('HTTP server closed successfully');
+                        resolve();
+                    }
+                });
+            } else {
+                resolve();
+            }
+        });
     }
 
     selectMiddlewares(options) {

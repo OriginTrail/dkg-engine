@@ -66,6 +66,12 @@ class HttpClientModuleManager extends BaseModuleManager {
             return this.getImplementation().module.initializeAfterMiddlewares(this.authService);
         }
     }
+
+    async close() {
+        if (this.initialized && this.getImplementation().module.close) {
+            return this.getImplementation().module.close();
+        }
+    }
 }
 
 export default HttpClientModuleManager;

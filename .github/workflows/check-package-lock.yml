@@ -1,0 +1,90 @@
+name: Check Package Lock File
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-package-lock-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - "**"
+
+jobs:
+  verify-package-lock:
+    name: Verify package-lock.json
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if package.json was changed
+        id: check-changes
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+          fi
+
+          if git diff --name-only "$BASE_SHA" HEAD | grep -q '^package\.json$'; then
+            echo "package_json_changed=true" >> "$GITHUB_OUTPUT"
+            echo "package.json was changed in this PR"
+          else
+            echo "package_json_changed=false" >> "$GITHUB_OUTPUT"
+            echo "package.json was NOT changed, skipping lock file validation"
+          fi
+
+      - name: Check if package-lock.json exists
+        run: |
+          if [ ! -f "package-lock.json" ]; then
+            echo "ERROR: package-lock.json file is missing from the repository"
+            echo "This file is required to ensure consistent dependency versions across all environments"
+            echo "Please ensure package-lock.json is committed with your changes"
+            exit 1
+          fi
+          echo "SUCCESS: package-lock.json file is present"
+
+      - name: Verify package-lock.json is not empty
+        run: |
+          if [ ! -s "package-lock.json" ]; then
+            echo "ERROR: package-lock.json file exists but is empty"
+            echo "Please run 'npm install' to regenerate the lock file"
+            exit 1
+          fi
+          echo "SUCCESS: package-lock.json file is valid and not empty"
+
+      - name: Check package-lock.json was updated
+        if: steps.check-changes.outputs.package_json_changed == 'true'
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+          fi
+
+          if ! git diff --name-only "$BASE_SHA" HEAD | grep -q '^package-lock\.json$'; then
+            echo "ERROR: package.json was modified but package-lock.json was not updated"
+            echo "Please run 'npm install' and commit the updated package-lock.json"
+            exit 1
+          fi
+          echo "SUCCESS: package-lock.json was updated alongside package.json"
+
+      - name: Setup Node.js
+        if: steps.check-changes.outputs.package_json_changed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate package-lock.json is in sync
+        if: steps.check-changes.outputs.package_json_changed == 'true'
+        run: npm ci --dry-run --ignore-scripts

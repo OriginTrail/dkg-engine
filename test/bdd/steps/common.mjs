@@ -11,6 +11,24 @@ import MockOTNode from '../../utilities/MockOTNode.mjs';
 
 const stepsUtils = new StepsUtils();
 
+/**
+ * Extracts the first blockchain configuration for use with DkgClientHelper.
+ * @param {Object} localBlockchains - The localBlockchains state object
+ * @returns {Object} Blockchain config with name, publicKey, privateKey, and rpc
+ */
+function getFirstBlockchainConfig(localBlockchains) {
+    const firstBlockchainId = Object.keys(localBlockchains)[0];
+    const firstBlockchain = localBlockchains[firstBlockchainId];
+    const firstWallet = firstBlockchain.getWallets()[0];
+
+    return {
+        name: firstBlockchainId,
+        publicKey: firstWallet.address,
+        privateKey: firstWallet.privateKey,
+        rpc: `http://localhost:${firstBlockchain.port}`,
+    };
+}
+
 Given(
     /^I setup (\d+)[ additional]* node[s]*$/,
     { timeout: 30000 },
@@ -64,14 +82,7 @@ Given(
                 if (response.error) {
                     assert.fail(`Error while initializing node${nodeIndex}: ${response.error}`);
                 } else {
-                    // todo if started
-                    const client = new DkgClientHelper({
-                        endpoint: 'http://localhost',
-                        port: rpcPort,
-                        maxNumberOfRetries: 5,
-                        frequency: 2,
-                        contentType: 'all',
-                    });
+                    // Build blockchain options BEFORE creating the client
                     let clientBlockchainOptions = {};
                     Object.keys(this.state.localBlockchains).forEach((blockchainId, index) => {
                         const blockchain = this.state.localBlockchains[blockchainId];
@@ -85,6 +96,15 @@ Given(
                                 hubContract: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
                             },
                         };
+                    });
+
+                    const client = new DkgClientHelper({
+                        endpoint: 'http://localhost',
+                        port: rpcPort,
+                        maxNumberOfRetries: 5,
+                        frequency: 2,
+                        contentType: 'all',
+                        blockchain: getFirstBlockchainConfig(this.state.localBlockchains),
                     });
 
                     this.state.nodes[nodeIndex] = {
@@ -145,23 +165,34 @@ Given(
         fs.rmSync(appDataPath, { recursive: true, force: true });
 
         const nodeInstance = new MockOTNode(nodeConfiguration);
-        await nodeInstance.start(); // This will skip startNetworkModule
+        
+        try {
+            await nodeInstance.start(); // This will skip startNetworkModule
 
-        const client = new DkgClientHelper({
-            endpoint: 'http://localhost',
-            port: rpcPort,
-            useSSL: false,
-            timeout: 25,
-            loglevel: 'trace',
-        });
+            const client = new DkgClientHelper({
+                endpoint: 'http://localhost',
+                port: rpcPort,
+                useSSL: false,
+                timeout: 25,
+                loglevel: 'trace',
+                blockchain: getFirstBlockchainConfig(this.state.localBlockchains),
+            });
 
-        this.state.bootstraps.push({
-            client,
-            otNodeInstance: nodeInstance,
-            configuration: nodeConfiguration,
-            nodeRpcUrl: `http://localhost:${rpcPort}`,
-            fileService: nodeInstance.fileService,
-        });
+            this.state.bootstraps.push({
+                client,
+                otNodeInstance: nodeInstance,
+                configuration: nodeConfiguration,
+                nodeRpcUrl: `http://localhost:${rpcPort}`,
+                fileService: nodeInstance.fileService,
+            });
+        } catch (error) {
+            // Ensure node is stopped if there's an error after starting
+            this.logger.error(`Error during bootstrap initialization: ${error.message}`);
+            if (nodeInstance.stop) {
+                await nodeInstance.stop();
+            }
+            throw error;
+        }
     }
 );
 //
