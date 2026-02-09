@@ -10,20 +10,39 @@ concurrency:
 on:
   push:
     branches:
-      - main # Run on push to main branch only
+      - main
   pull_request:
     branches:
-      - "**" # Run on PR to any branch
+      - "**"
 
 jobs:
   verify-package-lock:
-    name: Verify package-lock.json exists
+    name: Verify package-lock.json
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if package.json was changed
+        id: check-changes
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+          fi
+
+          if git diff --name-only "$BASE_SHA" HEAD | grep -q '^package\.json$'; then
+            echo "package_json_changed=true" >> "$GITHUB_OUTPUT"
+            echo "package.json was changed in this PR"
+          else
+            echo "package_json_changed=false" >> "$GITHUB_OUTPUT"
+            echo "package.json was NOT changed, skipping lock file validation"
+          fi
 
       - name: Check if package-lock.json exists
         run: |
@@ -44,10 +63,28 @@ jobs:
           fi
           echo "SUCCESS: package-lock.json file is valid and not empty"
 
+      - name: Check package-lock.json was updated
+        if: steps.check-changes.outputs.package_json_changed == 'true'
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+          fi
+
+          if ! git diff --name-only "$BASE_SHA" HEAD | grep -q '^package-lock\.json$'; then
+            echo "ERROR: package.json was modified but package-lock.json was not updated"
+            echo "Please run 'npm install' and commit the updated package-lock.json"
+            exit 1
+          fi
+          echo "SUCCESS: package-lock.json was updated alongside package.json"
+
       - name: Setup Node.js
+        if: steps.check-changes.outputs.package_json_changed == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Validate package-lock.json is valid and in sync
+      - name: Validate package-lock.json is in sync
+        if: steps.check-changes.outputs.package_json_changed == 'true'
         run: npm ci --dry-run --ignore-scripts
