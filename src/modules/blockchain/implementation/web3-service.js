@@ -1024,6 +1024,15 @@ class Web3Service {
         return Number(ethers.utils.formatEther(maximumStake));
     }
 
+    async getMinimumRequiredSignatures() {
+        return this.callContractFunction(
+            this.contracts.ParametersStorage,
+            'minimumRequiredSignatures',
+            [],
+            CONTRACTS.PARAMETERS_STORAGE,
+        );
+    }
+
     async getShardingTableHead() {
         return this.callContractFunction(this.contracts.ShardingTableStorage, 'head', []);
     }
