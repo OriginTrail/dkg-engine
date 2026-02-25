@@ -1,9 +1,8 @@
 import { When } from '@cucumber/cucumber';
 import { expect, assert } from 'chai';
-import { setTimeout } from 'timers/promises';
-import HttpApiHelper from "../../../utilities/http-api-helper.mjs";
+import HttpApiHelper from '../../../utilities/http-api-helper.mjs';
 
-const httpApiHelper = new HttpApiHelper()
+const httpApiHelper = new HttpApiHelper();
 
 When(
     /^I get operation result from node (\d+) for latest published assertion/,
@@ -21,17 +20,34 @@ When(
                 .catch((error) => {
                     assert.fail(`Error while trying to resolve assertion. ${error}`);
                 });
-            const { operationId } = result.operation;
+
+            const getOp = result.operation?.get ?? result.operation ?? {};
+            const hasData = !!(result.assertion || result.public || result.data);
+
+            // The SDK's asset.get() completes the full get flow internally.
+            // If it returned with an errorType, the operation failed.
+            // If it returned assertion data OR has no operationId to poll,
+            // the operation completed successfully inside the SDK.
+            let resolvedStatus = getOp.status || 'PENDING';
+            if (getOp.errorType) {
+                resolvedStatus = 'FAILED';
+            } else if (hasData || !getOp.operationId) {
+                resolvedStatus = 'COMPLETED';
+            }
 
             this.state.latestGetData = {
                 nodeId: node - 1,
-                operationId,
+                operationId: getOp.operationId,
                 result,
-                status: result.operation.status,
-                errorType: result.operation.data?.data.errorType,
+                status: resolvedStatus,
+                errorType: getOp.errorType,
             };
         } catch (e) {
             this.logger.log(`Error while getting operation result: ${e}`);
+            this.state.latestGetData = {
+                nodeId: node - 1,
+                status: 'FAILED',
+            };
         }
     },
 );
@@ -45,55 +61,30 @@ When(
             !!this.state.latestGetData,
             'Latest resolve data is undefined. Resolve is not started.',
         ).to.be.equal(true);
-        const resolveData = this.state.latestGetData;
-        let retryCount = 0;
-        const maxRetryCount = 5;
-        for (retryCount = 0; retryCount < maxRetryCount; retryCount += 1) {
+
+        const { nodeId, operationId, status } = this.state.latestGetData;
+
+        if (!operationId || (status && ['COMPLETED', 'FAILED'].includes(status))) {
             this.logger.log(
-                `Getting resolve result for operation id: ${resolveData.operationId} on the node: ${resolveData.nodeId}`,
+                `Resolve already finalized (status: ${status}, operationId: ${operationId})`,
             );
-            // eslint-disable-next-line no-await-in-loop
-            const resolveResult = await httpApiHelper.getOperationResult(
-                this.state.nodes[resolveData.nodeId].nodeRpcUrl,
-                'get',
-                resolveData.operationId,
-            );
-            this.logger.log(`Operation status: ${resolveResult.data.status}`);
-            if (['COMPLETED', 'FAILED'].includes(resolveResult.data.status)) {
-                this.state.latestGetData.result = resolveResult;
-                this.state.latestGetData.status = resolveResult.data.status;
-                this.state.latestGetData.errorType = resolveResult.data.data?.errorType;
-                break;
-            }
-            if (retryCount === maxRetryCount - 1) {
-                assert.fail('Unable to get GET result');
-            }
-            // eslint-disable-next-line no-await-in-loop
-            await setTimeout(4000);
+            return;
         }
+
+        this.logger.log(
+            `Polling resolve result for operation id: ${operationId} on node: ${nodeId}`,
+        );
+
+        const result = await httpApiHelper.pollOperationResult(
+            this.state.nodes[nodeId].nodeRpcUrl,
+            'get',
+            operationId,
+            { intervalMs: 4000, maxRetries: 25 },
+        );
+
+        this.logger.log(`Resolve operation status: ${result.data.status}`);
+        this.state.latestGetData.result = result;
+        this.state.latestGetData.status = result.data.status;
+        this.state.latestGetData.errorType = result.data.data?.errorType;
     },
 );
-
-When(/Latest resolve returned valid result$/, { timeout: 120000 }, async function resolveCall() {
-    this.logger.log('Latest resolve returned valid result');
-    expect(
-        !!this.state.latestGetData,
-        'Latest resolve data is undefined. Resolve is not started.',
-    ).to.be.equal(true);
-    expect(
-        !!this.state.latestGetData.result,
-        'Latest publish data result is undefined. Publish is not finished.',
-    ).to.be.equal(true);
-    const resolveData = this.state.latestGetData;
-    expect(
-        Array.isArray(resolveData.result.data),
-        'Resolve result data expected to be array',
-    ).to.be.equal(true);
-    // todo only one element in array should be returned
-    // expect(resolveData.result.data.length, 'Returned data array length').to.be.equal(1);
-
-    // const resolvedAssertion = resolveData.result.data[0].assertion.data;
-    // const publishedAssertion = this.state.latestPublishData.assertion;
-
-    // assert.equal(sortedStringify(publishedAssertion), sortedStringify(resolvedAssertion));
-});

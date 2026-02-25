@@ -28,36 +28,25 @@ jobs:
       - name: Run linter
         run: npm run lint
 
- # unit-tests:
- #   runs-on: ubuntu-latest
- #   services:
- #     graphdb:
-  #      image: khaller/graphdb-free:latest
-  #      ports:
-  #        - 7200:7200
-  #    steps:
-  #      - name: Checkout repository
-   #     uses: actions/checkout@v3
-
-    #  - name: Set up environment
-    #    uses: ./.github/actions/setup
-
-  #     - name: Run unit tests
-  #       run: npm run test:unit
-
-  bdd-tests:
+  bdd-smoke:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     services:
-        mysql:
-          image: mysql:5.7
-          env:
-            MYSQL_DATABASE: operationaldb
-            MYSQL_USER: node
-            MYSQL_PASSWORD: password
-            MYSQL_ROOT_PASSWORD: password
-          ports:
-            - 3306:3306
-          options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_DATABASE: operationaldb
+          MYSQL_USER: node
+          MYSQL_PASSWORD: password
+          MYSQL_ROOT_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=3
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -65,15 +54,92 @@ jobs:
       - name: Set up environment
         uses: ./.github/actions/setup
 
-      - name: Run Blazegraph
+      - name: Start Blazegraph
         run: /usr/bin/java -Djava.awt.headless=true -jar blazegraph.jar &
 
-      - name: Run BDD tests
-        run: npm run test:bdd
+      - name: Wait for Blazegraph
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:9999/blazegraph/status > /dev/null; then
+              echo "Blazegraph is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Blazegraph did not start in time"
+          exit 1
+
+      - name: Run BDD smoke tests
+        run: |
+          npx cucumber-js \
+            --config cucumber.js \
+            --tags "@smoke" \
+            --format progress \
+            test/bdd/ \
+            --import test/bdd/steps/ \
+            --exit
 
       - name: Upload log files
         if: '!cancelled()'
         uses: actions/upload-artifact@v4
         with:
-          name: bdd-test-logs
+          name: bdd-smoke-logs
+          path: ./test/bdd/log/
+
+  bdd-full:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_DATABASE: operationaldb
+          MYSQL_USER: node
+          MYSQL_PASSWORD: password
+          MYSQL_ROOT_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up environment
+        uses: ./.github/actions/setup
+
+      - name: Start Blazegraph
+        run: /usr/bin/java -Djava.awt.headless=true -jar blazegraph.jar &
+
+      - name: Wait for Blazegraph
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:9999/blazegraph/status > /dev/null; then
+              echo "Blazegraph is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Blazegraph did not start in time"
+          exit 1
+
+      - name: Run full BDD tests
+        run: |
+          npx cucumber-js \
+            --config cucumber.js \
+            --tags "not @ignore" \
+            --format progress \
+            test/bdd/ \
+            --import test/bdd/steps/ \
+            --exit
+
+      - name: Upload log files
+        if: '!cancelled()'
+        uses: actions/upload-artifact@v4
+        with:
+          name: bdd-full-logs
           path: ./test/bdd/log/

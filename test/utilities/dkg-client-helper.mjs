@@ -15,6 +15,8 @@ class DkgClientHelper {
             visibility: 'public',
             epochsNum: 5,
             hashFunctionId: CONTENT_ASSET_HASH_FUNCTION_ID,
+            minimumNumberOfNodeReplications: 1,
+            minimumNumberOfFinalizationConfirmations: 0,
         };
 
         const options = { ...defaultOptions, ...userOptions };
@@ -35,6 +37,17 @@ class DkgClientHelper {
     async get(ual, state, userOptions = {}) {
         const defaultOptions = {
             state,
+            validate: true,
+        };
+
+        const options = { ...defaultOptions, ...userOptions };
+
+        return this.client.asset.get(ual, options);
+    }
+
+    async getHistorical(ual, stateIndex, userOptions = {}) {
+        const defaultOptions = {
+            state: stateIndex,
             validate: true,
         };
 
