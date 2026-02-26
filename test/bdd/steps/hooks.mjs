@@ -57,7 +57,7 @@ Before(async function beforeMethod(testCase) {
     let logDir = process.env.CUCUMBER_ARTIFACTS_DIR || '.';
     logDir += `/test/bdd/log/${slugify(testCase.pickle.name)}`;
     fs.mkdirSync(logDir, { recursive: true });
-    this.state.scenarionLogDir = logDir;
+    this.state.scenarioLogDir = logDir;
     this.logger.log('📁 Scenario logs:', logDir);
 });
 
@@ -159,6 +159,7 @@ After({ timeout: 60000 }, async function afterMethod(testCase) {
 
 AfterAll(async () => {});
 
-process.on('unhandledRejection', () => {
+process.on('unhandledRejection', (reason) => {
+    console.error('Unhandled rejection in test runner:', reason);
     process.abort();
 });

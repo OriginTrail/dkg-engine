@@ -13,7 +13,7 @@ Given(/^the blockchains are set up$/, { timeout: 240_000 }, async function block
             this.logger.log(`Starting local blockchain ${name} on port: ${port}`);
             const blockchainConsole = new console.Console(
                 fs.createWriteStream(
-                    `${this.state.scenarionLogDir}/blockchain-${name.replace(':', '-')}.log`,
+                    `${this.state.scenarioLogDir}/blockchain-${name.replace(':', '-')}.log`,
                 ),
             );
             const localBlockchain = new LocalBlockchain();

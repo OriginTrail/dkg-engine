@@ -66,7 +66,7 @@ Given(
                 this.state.pendingProcesses.push(forkedNode);
 
                 const logFileStream = fs.createWriteStream(
-                    `${this.state.scenarionLogDir}/${nodeName}.log`,
+                    `${this.state.scenarioLogDir}/${nodeName}.log`,
                 );
                 forkedNode.stdout.setEncoding('utf8');
                 forkedNode.stdout.on('data', (data) => logFileStream.write(data));
@@ -232,7 +232,7 @@ Given(
         this.state.pendingProcesses.push(forkedNode);
 
         const logFileStream = fs.createWriteStream(
-            `${this.state.scenarionLogDir}/${nodeName}.log`,
+            `${this.state.scenarioLogDir}/${nodeName}.log`,
         );
         forkedNode.stdout.setEncoding('utf8');
         forkedNode.stdout.on('data', (data) => logFileStream.write(data));

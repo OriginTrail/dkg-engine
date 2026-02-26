@@ -24,16 +24,6 @@ class DkgClientHelper {
         return this.client.asset.create(data, options);
     }
 
-    async update(ual, assertion, userOptions = {}) {
-        const defaultOptions = {
-            hashFunctionId: CONTENT_ASSET_HASH_FUNCTION_ID,
-        };
-
-        const options = { ...defaultOptions, ...userOptions };
-
-        return this.client.asset.update(ual, assertion, options);
-    }
-
     async get(ual, state, userOptions = {}) {
         const defaultOptions = {
             state,
@@ -45,37 +35,8 @@ class DkgClientHelper {
         return this.client.asset.get(ual, options);
     }
 
-    async getHistorical(ual, stateIndex, userOptions = {}) {
-        const defaultOptions = {
-            state: stateIndex,
-            validate: true,
-        };
-
-        const options = { ...defaultOptions, ...userOptions };
-
-        return this.client.asset.get(ual, options);
-    }
-
     async query(query) {
         return this.client.query(query);
-    }
-
-    async getBidSuggestion(publicAssertionId, sizeInBytes, userOptions = {}) {
-        const defaultOptions = {
-            epochsNum: 2,
-        };
-
-        const options = { ...defaultOptions, ...userOptions };
-
-        return this.client.network.getBidSuggestion(publicAssertionId, sizeInBytes, options);
-    }
-
-    async getPublicAssertionId(content) {
-        return this.client.assertion.getPublicAssertionId(content);
-    }
-
-    async getSizeInBytes(content) {
-        return this.client.assertion.getSizeInBytes(content);
     }
 }
 

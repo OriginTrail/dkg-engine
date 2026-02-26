@@ -1,6 +1,5 @@
 import { When } from '@cucumber/cucumber';
 import { expect, assert } from 'chai';
-import { setTimeout } from 'timers/promises';
 import { readFile } from 'fs/promises';
 import HttpApiHelper from '../../../utilities/http-api-helper.mjs';
 
@@ -112,76 +111,3 @@ When('I wait for latest Publish to finalize', { timeout: 120000 }, async functio
     this.state.latestPublishData.errorType = result.data.data?.errorType;
 });
 
-When(
-    /I wait for (\d+) seconds and check operation status/,
-    { timeout: 120000 },
-    async function publishWait(numberOfSeconds) {
-        this.logger.log(`I wait for ${numberOfSeconds} seconds`);
-        expect(
-            !!this.state.latestPublishData,
-            'Latest publish data is undefined. Publish is not started.',
-        ).to.be.equal(true);
-        const { nodeId, operationId } = this.state.latestPublishData;
-        this.logger.log(
-            `Getting publish result for operation id: ${operationId} on the node: ${nodeId}`,
-        );
-        await setTimeout(numberOfSeconds * 1000);
-        this.state.latestPublishData.result = await httpApiHelper.getOperationResult(
-            this.state.nodes[nodeId].nodeRpcUrl,
-            'publish',
-            operationId,
-        );
-    },
-);
-
-When(
-    /^I call Publish on the node (\d+) with ([^"]*) on blockchain ([^"]*) with hashFunctionId (\d+) and scoreFunctionId (\d+)/,
-    { timeout: 120000 },
-    async function publishWithHashAndScore(node, assertionName, blockchain, hashFunctionId, scoreFunctionId) {
-        this.logger.log(`I call publish route on the node ${node} on blockchain ${blockchain}`);
-
-        expect(
-            !!this.state.localBlockchains[blockchain],
-            `Blockchain with name ${blockchain} not found`,
-        ).to.be.equal(true);
-
-        expect(
-            !!assertions[assertionName],
-            `Assertion with name: ${assertionName} not found!`,
-        ).to.be.equal(true);
-
-        expect(
-            !Number.isInteger(hashFunctionId),
-            `hashFunctionId value: ${hashFunctionId} is not an integer!`,
-        ).to.be.equal(true);
-
-        expect(
-            !Number.isInteger(scoreFunctionId),
-            `scoreFunctionId value: ${scoreFunctionId} not an integer!`,
-        ).to.be.equal(true);
-
-        const assertion = assertions[assertionName];
-        const options = {
-            ...this.state.nodes[node - 1].clientBlockchainOptions[blockchain],
-            hashFunctionId,
-            scoreFunctionId,
-        };
-        const result = await this.state.nodes[node - 1].client
-            .publish(assertion, options)
-            .catch((error) => {
-                assert.fail(`Error while trying to publish assertion. ${error}`);
-            });
-
-        const publishOp = result.operation?.publish ?? {};
-        const resolvedStatus = result.UAL ? 'COMPLETED' : (publishOp.status || 'PENDING');
-        this.state.latestPublishData = {
-            nodeId: node - 1,
-            UAL: result.UAL,
-            operationId: publishOp.operationId,
-            assertion: assertions[assertionName],
-            status: resolvedStatus,
-            errorType: publishOp.errorType,
-            result,
-        };
-    },
-);
