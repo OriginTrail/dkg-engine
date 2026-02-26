@@ -27,7 +27,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check if package.json was changed
+      - name: Check if package.json dependencies were changed
         id: check-changes
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -36,12 +36,20 @@ jobs:
             BASE_SHA="${{ github.event.before }}"
           fi
 
-          if git diff --name-only "$BASE_SHA" HEAD | grep -q '^package\.json$'; then
-            echo "package_json_changed=true" >> "$GITHUB_OUTPUT"
-            echo "package.json was changed in this PR"
-          else
+          if ! git diff --name-only "$BASE_SHA" HEAD | grep -q '^package\.json$'; then
             echo "package_json_changed=false" >> "$GITHUB_OUTPUT"
             echo "package.json was NOT changed, skipping lock file validation"
+            exit 0
+          fi
+
+          # Only flag when dependency-related fields changed (not scripts, config, etc.)
+          DEP_DIFF=$(git diff "$BASE_SHA" HEAD -- package.json | grep -E '^\+.*"(dependencies|devDependencies|peerDependencies|optionalDependencies|overrides|engines|resolutions)"' || true)
+          if [ -n "$DEP_DIFF" ]; then
+            echo "package_json_changed=true" >> "$GITHUB_OUTPUT"
+            echo "Dependency-related fields in package.json were changed"
+          else
+            echo "package_json_changed=false" >> "$GITHUB_OUTPUT"
+            echo "package.json changed but only non-dependency fields (scripts, etc.) -- skipping lock file check"
           fi
 
       - name: Check if package-lock.json exists
