@@ -139,3 +139,7 @@ ignition/deployments/chain-31337
 
 # Redis
 dump.rdb
+testnet
+Neuroweb_Testnet.spec.js
+errors_QA_Node.json
+summary_QA_Node.json

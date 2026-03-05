@@ -51,7 +51,7 @@
         "concurrently": "^9.1.2",
         "d3": "^7.8.5",
         "d3-node": "^3.0.0",
-        "dkg.js": "^8.0.8",
+        "dkg.js": "^8.2.2",
         "eslint": "^8.23.0",
         "eslint-config-airbnb": "^19.0.4",
         "eslint-config-prettier": "^8.5.0",
