@@ -137,14 +137,42 @@ class PublishFinalizationCommand extends Command {
                 const node = { id: publisherPeerId, protocol: networkProtocols[0] };
 
                 const message = { ual, publishOperationId, blockchain, operationId };
-                // TODO: Add retry logic maybe
-                const response = await this.messagingService.sendProtocolMessage(
-                    node,
-                    operationId,
-                    message,
-                    NETWORK_MESSAGE_TYPES.REQUESTS.PROTOCOL_REQUEST,
-                    NETWORK_MESSAGE_TIMEOUT_MILLS.FINALITY.REQUEST,
-                );
+
+                const maxFinalityAttempts = 3;
+                const backoffDelays = [0, 5_000, 10_000];
+                let response;
+                let lastError;
+
+                for (let attempt = 0; attempt < maxFinalityAttempts; attempt += 1) {
+                    if (backoffDelays[attempt] > 0) {
+                        // eslint-disable-next-line no-await-in-loop
+                        await new Promise((r) => {
+                            setTimeout(r, backoffDelays[attempt]);
+                        });
+                    }
+                    try {
+                        // eslint-disable-next-line no-await-in-loop
+                        response = await this.messagingService.sendProtocolMessage(
+                            node,
+                            operationId,
+                            message,
+                            NETWORK_MESSAGE_TYPES.REQUESTS.PROTOCOL_REQUEST,
+                            NETWORK_MESSAGE_TIMEOUT_MILLS.FINALITY.REQUEST,
+                        );
+                        lastError = null;
+                        break;
+                    } catch (err) {
+                        lastError = err;
+                        this.logger.warn(
+                            `Finality request to publisher ${publisherPeerId} failed ` +
+                                `(attempt ${attempt + 1}/${maxFinalityAttempts}): ${err.message}`,
+                        );
+                    }
+                }
+
+                if (lastError) {
+                    throw lastError;
+                }
 
                 await this.messagingService.handleProtocolResponse(
                     response,

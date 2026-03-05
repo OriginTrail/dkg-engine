@@ -1,4 +1,4 @@
-import { Mutex } from 'async-mutex';
+import { Semaphore } from 'async-mutex';
 import {
     OPERATION_ID_STATUS,
     ERROR_TYPE,
@@ -11,7 +11,7 @@ import {
 } from '../../../../constants/constants.js';
 import Command from '../../../command.js';
 
-const replicationMutex = new Mutex();
+const replicationSemaphore = new Semaphore(3);
 
 class PublishReplicationCommand extends Command {
     constructor(ctx) {
@@ -144,7 +144,7 @@ class PublishReplicationCommand extends Command {
 
             const replicationBatchSize = minAckResponses + 2;
 
-            await replicationMutex.runExclusive(async () => {
+            await replicationSemaphore.runExclusive(async () => {
                 this.logger.info(
                     `[REPLICATION] Starting for operationId: ${operationId}, ` +
                         `shard: ${shardNodes.length} nodes, batch: ${replicationBatchSize}, min ACKs: ${minAckResponses}`,

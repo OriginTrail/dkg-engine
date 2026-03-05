@@ -608,38 +608,62 @@ class Web3Service {
                         await this.provider.call(tx, tx.blockNumber);
                     }
                 } catch (error) {
+                    if (
+                        error.message
+                            .toLowerCase()
+                            .includes(EXPECTED_TRANSACTION_ERRORS.TIMEOUT_EXCEEDED.toLowerCase())
+                    ) {
+                        const existingReceipt = await this.provider.getTransactionReceipt(tx.hash);
+                        if (existingReceipt) {
+                            this.logger.info(
+                                `Transaction ${functionName} (${tx.hash}) confirmed despite timeout. Block: ${existingReceipt.blockNumber}`,
+                            );
+                            if (existingReceipt.status === 0) {
+                                await this.provider.call(tx, existingReceipt.blockNumber);
+                            }
+                            return existingReceipt;
+                        }
+                        throw error;
+                    }
                     this._decodeWaitForTxError(contractInstance, functionName, error, args);
                 }
                 return result;
             } catch (error) {
                 const errorMessage = error.message.toLowerCase();
 
-                // Check for nonce-related errors
-                if (
+                const isNonceError =
                     errorMessage.includes(
                         EXPECTED_TRANSACTION_ERRORS.NONCE_TOO_LOW.toLowerCase(),
                     ) ||
                     errorMessage.includes(
                         EXPECTED_TRANSACTION_ERRORS.REPLACEMENT_UNDERPRICED.toLowerCase(),
                     ) ||
-                    errorMessage.includes(EXPECTED_TRANSACTION_ERRORS.ALREADY_KNOWN.toLowerCase())
-                ) {
+                    errorMessage.includes(EXPECTED_TRANSACTION_ERRORS.ALREADY_KNOWN.toLowerCase());
+
+                const isTimeoutError = errorMessage.includes(
+                    EXPECTED_TRANSACTION_ERRORS.TIMEOUT_EXCEEDED.toLowerCase(),
+                );
+
+                if (isNonceError || isTimeoutError) {
                     retryCount += 1;
                     if (retryCount < maxRetries) {
-                        // Increase gas price by 20% for nonce errors
                         gasPrice = Math.ceil(gasPrice * 1.2);
                         this.logger.warn(
-                            `Nonce error detected for ${functionName}. Retrying with increased gas price: ${gasPrice} (retry ${retryCount}/${maxRetries})`,
+                            `${
+                                isTimeoutError ? 'Timeout' : 'Nonce'
+                            } error detected for ${functionName} on ${this.getBlockchainId()}. ` +
+                                `Retrying with increased gas price: ${gasPrice} (retry ${retryCount}/${maxRetries})`,
                         );
                         continue;
-                    } else {
-                        this.logger.error(
-                            `Max retries (${maxRetries}) reached for nonce error in ${functionName}. Final gas price: ${gasPrice}`,
-                        );
                     }
+                    this.logger.error(
+                        `Max retries (${maxRetries}) reached for ${
+                            isTimeoutError ? 'timeout' : 'nonce'
+                        } error in ${functionName} on ${this.getBlockchainId()}. ` +
+                            `Final gas price: ${gasPrice}`,
+                    );
                 }
 
-                // If it's not a nonce error or we've exhausted retries, re-throw the error
                 throw error;
             }
         }
