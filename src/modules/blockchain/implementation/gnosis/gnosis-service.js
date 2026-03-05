@@ -54,6 +54,21 @@ class GnosisService extends Web3Service {
         return this.defaultGasPrice;
     }
 
+    buildTransactionGasParams(gasPrice) {
+        const maxFeePerGas = gasPrice;
+        const minPriorityFee = ethers.BigNumber.from(2_000_000_000);
+
+        let maxPriorityFeePerGas = minPriorityFee;
+        if (ethers.BigNumber.isBigNumber(gasPrice)) {
+            const derived = gasPrice.div(5);
+            if (derived.gt(minPriorityFee)) {
+                maxPriorityFeePerGas = derived;
+            }
+        }
+
+        return { maxFeePerGas, maxPriorityFeePerGas };
+    }
+
     async healthCheck() {
         try {
             const blockNumber = await this.getBlockNumber();
