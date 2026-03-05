@@ -77,6 +77,7 @@ class PublishService extends OperationService {
                 `[PUBLISH] Minimum replication reached for operationId: ${operationId}, ` +
                     `datasetRoot: ${datasetRoot}, completed: ${completedNumber}/${minAckResponses}`,
             );
+            await this.repositoryModuleManager.updateMinAcksReached(operationId, true);
             const cachedData =
                 (await this.operationIdService.getCachedOperationIdData(operationId)) || null;
             await this.markOperationAsCompleted(
@@ -86,7 +87,6 @@ class PublishService extends OperationService {
                 this.completedStatuses,
                 { reuseExistingCache: true },
             );
-            await this.repositoryModuleManager.updateMinAcksReached(operationId, true);
             this.logResponsesSummary(completedNumber, failedNumber);
         }
         // 2.2 Otherwise, mark as failed

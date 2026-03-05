@@ -30,6 +30,7 @@ class GetCommand extends Command {
         this.cryptoService = ctx.cryptoService;
         this.messagingService = ctx.messagingService;
         this.tripleStoreModuleManager = ctx.tripleStoreModuleManager;
+        this.pendingStorageService = ctx.pendingStorageService;
     }
 
     async handleError(operationId, blockchain, errorMessage, errorType) {
@@ -261,6 +262,49 @@ class GetCommand extends Command {
             return Command.empty();
         }
         this.logger.debug(`Could not find asset with UAL: ${ual} locally`);
+
+        try {
+            const latestMerkleRoot =
+                await this.blockchainModuleManager.getKnowledgeCollectionLatestMerkleRoot(
+                    blockchain,
+                    contract,
+                    knowledgeCollectionId,
+                );
+            if (latestMerkleRoot) {
+                const publishOpId =
+                    this.pendingStorageService.getOperationIdByMerkleRoot(latestMerkleRoot);
+                if (publishOpId) {
+                    const cachedAssertion = await this.pendingStorageService.getCachedDataset(
+                        publishOpId,
+                    );
+                    if (
+                        cachedAssertion &&
+                        (cachedAssertion.public?.length || cachedAssertion.private?.length)
+                    ) {
+                        const cachedResponseData = { assertion: cachedAssertion };
+
+                        this.logger.info(
+                            `Serving asset ${ual} from pending storage cache (merkleRoot: ${latestMerkleRoot})`,
+                        );
+                        await this.operationService.markOperationAsCompleted(
+                            operationId,
+                            blockchain,
+                            cachedResponseData,
+                            [
+                                OPERATION_ID_STATUS.GET.GET_LOCAL_END,
+                                OPERATION_ID_STATUS.GET.GET_END,
+                                OPERATION_ID_STATUS.COMPLETED,
+                            ],
+                        );
+                        return Command.empty();
+                    }
+                }
+            }
+        } catch (cacheErr) {
+            this.logger.debug(
+                `Pending storage cache fallback failed for ${ual}: ${cacheErr.message}`,
+            );
+        }
 
         await this.operationIdService.emitChangeEvent(
             OPERATION_ID_STATUS.GET.GET_LOCAL_END,

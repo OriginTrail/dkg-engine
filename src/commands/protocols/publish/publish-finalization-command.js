@@ -224,16 +224,21 @@ class PublishFinalizationCommand extends Command {
                 return cachedData;
             } catch (error) {
                 attempt += 1;
-                // eslint-disable-next-line no-await-in-loop
-                await new Promise((resolve) => {
-                    setTimeout(resolve, RETRY_DELAY_READ_CACHED_PUBLISH_DATA);
-                });
+                if (attempt < MAX_RETRIES_READ_CACHED_PUBLISH_DATA) {
+                    this.logger.debug(
+                        `[Cache] Read attempt ${attempt}/${MAX_RETRIES_READ_CACHED_PUBLISH_DATA} ` +
+                            `failed for publishOperationId: ${publishOperationId}, retrying in ${RETRY_DELAY_READ_CACHED_PUBLISH_DATA}ms...`,
+                    );
+                    // eslint-disable-next-line no-await-in-loop
+                    await new Promise((resolve) => {
+                        setTimeout(resolve, RETRY_DELAY_READ_CACHED_PUBLISH_DATA);
+                    });
+                }
             }
         }
         this.logger.warn(
             `[Cache] Exhausted retries reading cached publish data (publishOperationId: ${publishOperationId}, path: ${datasetPath}).`,
         );
-        // TODO: Mark this operation as failed
         throw new Error('Failed to read cached publish data');
     }
 

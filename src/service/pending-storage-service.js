@@ -10,12 +10,15 @@ class PendingStorageService {
         this.fileService = ctx.fileService;
         this.repositoryModuleManager = ctx.repositoryModuleManager; // this is not used
         this.tripleStoreService = ctx.tripleStoreService; // this is not used
+        this._merkleRootIndex = new Map();
     }
 
     async cacheDataset(operationId, datasetRoot, dataset, remotePeerId) {
         this.logger.debug(
             `Caching ${datasetRoot} dataset root, operation id: ${operationId} in file in pending storage`,
         );
+
+        this._merkleRootIndex.set(datasetRoot, operationId);
 
         await this.fileService.writeContentsToFile(
             this.fileService.getPendingStorageCachePath(),
@@ -26,6 +29,10 @@ class PendingStorageService {
                 remotePeerId,
             }),
         );
+    }
+
+    getOperationIdByMerkleRoot(merkleRoot) {
+        return this._merkleRootIndex.get(merkleRoot) ?? null;
     }
 
     async getCachedDataset(operationId) {
