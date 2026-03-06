@@ -101,6 +101,7 @@ class PendingStorageService {
 
                     const createdDate = fileStats.mtime;
                     if (createdDate.getTime() + expirationTimeMillis < now) {
+                        this._removeMerkleRootIndexEntry(file);
                         await this.fileService.removeFile(filePath);
                         this.logger.debug(`Deleted expired file: ${filePath}`);
                         return true;
@@ -162,6 +163,8 @@ class PendingStorageService {
             `Removing cached assertion for ual: ${ual} operation id: ${operationId} from file in ${repository} pending storage`,
         );
 
+        this._removeMerkleRootIndexEntry(operationId);
+
         const pendingAssertionPath = await this.fileService.getPendingStorageDocumentPath(
             operationId,
         );
@@ -181,6 +184,15 @@ class PendingStorageService {
                 `Assertions folder not found in ${repository} pending storage. ` +
                     `Error message: ${error.message}, ${error.stackTrace}`,
             );
+        }
+    }
+
+    _removeMerkleRootIndexEntry(operationId) {
+        for (const [root, opId] of this._merkleRootIndex) {
+            if (opId === operationId) {
+                this._merkleRootIndex.delete(root);
+                break;
+            }
         }
     }
 

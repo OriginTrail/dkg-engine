@@ -690,14 +690,23 @@ class Web3Service {
                 if (isNonceError || isTimeoutError || isExecutionError || isNetworkError) {
                     retryCount += 1;
                     if (retryCount < maxRetries) {
-                        gasPrice = Math.ceil(gasPrice * 1.2);
+                        const shouldBumpGas = isNonceError || isExecutionError;
+                        if (shouldBumpGas) {
+                            gasPrice = ethers.BigNumber.isBigNumber(gasPrice)
+                                ? gasPrice.mul(120).div(100)
+                                : Math.ceil(gasPrice * 1.2);
+                        }
                         let errorType = 'Nonce';
                         if (isTimeoutError) errorType = 'Timeout';
                         else if (isExecutionError) errorType = 'Execution/fee';
                         else if (isNetworkError) errorType = 'Network';
                         this.logger.warn(
                             `${errorType} error detected for ${functionName} on ${this.getBlockchainId()}. ` +
-                                `Retrying with increased gas price: ${gasPrice} (retry ${retryCount}/${maxRetries})`,
+                                `Retrying ${
+                                    shouldBumpGas
+                                        ? `with increased gas price: ${gasPrice}`
+                                        : 'with same gas price'
+                                } (retry ${retryCount}/${maxRetries})`,
                         );
                         continue;
                     }

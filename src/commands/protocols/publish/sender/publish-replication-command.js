@@ -187,13 +187,7 @@ class PublishReplicationCommand extends Command {
                     // eslint-disable-next-line no-await-in-loop
                     await Promise.all(
                         batch.map((node) =>
-                            this.sendAndHandleMessage(
-                                node,
-                                operationId,
-                                message,
-                                command,
-                                blockchain,
-                            ),
+                            this.sendAndHandleMessage(node, operationId, message, command),
                         ),
                     );
                 }
@@ -211,63 +205,69 @@ class PublishReplicationCommand extends Command {
         return Command.empty();
     }
 
-    async sendAndHandleMessage(node, operationId, message, command, blockchain) {
-        let response = await this.messagingService.sendProtocolMessage(
-            node,
-            operationId,
-            message,
-            NETWORK_MESSAGE_TYPES.REQUESTS.PROTOCOL_REQUEST,
-            NETWORK_MESSAGE_TIMEOUT_MILLS.PUBLISH.REQUEST,
-        );
-
-        if (response.header.messageType !== NETWORK_MESSAGE_TYPES.RESPONSES.ACK) {
-            const preRetryRecord = await this.operationIdService.getOperationIdRecord(operationId);
-            if (preRetryRecord?.minAcksReached) return;
-
-            this.logger.info(
-                `[REPLICATION] Peer ${node.id} NACK for operationId: ${operationId}: ` +
-                    `${response.data?.errorMessage || 'unknown reason'}, retrying...`,
-            );
-            response = await this.messagingService.sendProtocolMessage(
+    async sendAndHandleMessage(node, operationId, message, command) {
+        try {
+            let response = await this.messagingService.sendProtocolMessage(
                 node,
                 operationId,
                 message,
                 NETWORK_MESSAGE_TYPES.REQUESTS.PROTOCOL_REQUEST,
                 NETWORK_MESSAGE_TIMEOUT_MILLS.PUBLISH.REQUEST,
             );
-        }
 
-        const responseData = response.data;
-        if (response.header.messageType === NETWORK_MESSAGE_TYPES.RESPONSES.ACK) {
-            await this.signatureService.addSignatureToStorage(
-                NETWORK_SIGNATURES_FOLDER,
-                operationId,
-                responseData.identityId,
-                responseData.v,
-                responseData.r,
-                responseData.s,
-                responseData.vs,
-            );
-            await this.operationService.processResponse(
-                command,
-                OPERATION_REQUEST_STATUS.COMPLETED,
-                responseData,
-            );
-        } else {
+            if (response.header.messageType !== NETWORK_MESSAGE_TYPES.RESPONSES.ACK) {
+                const preRetryRecord = await this.operationIdService.getOperationIdRecord(
+                    operationId,
+                );
+                if (preRetryRecord?.minAcksReached) return;
+
+                this.logger.info(
+                    `[REPLICATION] Peer ${node.id} NACK for operationId: ${operationId}: ` +
+                        `${response.data?.errorMessage || 'unknown reason'}, retrying...`,
+                );
+                response = await this.messagingService.sendProtocolMessage(
+                    node,
+                    operationId,
+                    message,
+                    NETWORK_MESSAGE_TYPES.REQUESTS.PROTOCOL_REQUEST,
+                    NETWORK_MESSAGE_TIMEOUT_MILLS.PUBLISH.REQUEST,
+                );
+            }
+
+            const responseData = response.data;
+            if (response.header.messageType === NETWORK_MESSAGE_TYPES.RESPONSES.ACK) {
+                await this.signatureService.addSignatureToStorage(
+                    NETWORK_SIGNATURES_FOLDER,
+                    operationId,
+                    responseData.identityId,
+                    responseData.v,
+                    responseData.r,
+                    responseData.s,
+                    responseData.vs,
+                );
+                await this.operationService.processResponse(
+                    command,
+                    OPERATION_REQUEST_STATUS.COMPLETED,
+                    responseData,
+                );
+            } else {
+                this.logger.warn(
+                    `[REPLICATION] Peer ${node.id} failed after retry for operationId: ${operationId}: ` +
+                        `${responseData?.errorMessage || 'unknown reason'}`,
+                );
+                await this.operationService.processResponse(
+                    command,
+                    OPERATION_REQUEST_STATUS.FAILED,
+                    responseData,
+                );
+            }
+        } catch (error) {
             this.logger.warn(
-                `[REPLICATION] Peer ${node.id} failed after retry for operationId: ${operationId}: ` +
-                    `${responseData?.errorMessage || 'unknown reason'}`,
+                `[REPLICATION] Peer ${node.id} error for operationId: ${operationId}: ${error.message}`,
             );
-            await this.operationService.processResponse(
-                command,
-                OPERATION_REQUEST_STATUS.FAILED,
-                responseData,
-            );
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.FAILED,
-                operationId,
-                blockchain,
-            );
+            await this.operationService.processResponse(command, OPERATION_REQUEST_STATUS.FAILED, {
+                errorMessage: error.message,
+            });
         }
     }
 
