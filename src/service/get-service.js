@@ -1,4 +1,3 @@
-import { Mutex } from 'async-mutex';
 import OperationService from './operation-service.js';
 import {
     OPERATION_ID_STATUS,
@@ -22,7 +21,6 @@ class GetService extends OperationService {
             OPERATION_ID_STATUS.GET.GET_END,
             OPERATION_ID_STATUS.COMPLETED,
         ];
-        this.operationMutex = new Mutex();
     }
 
     async processResponse(command, responseStatus, responseData) {

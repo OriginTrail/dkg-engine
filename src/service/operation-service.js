@@ -1,3 +1,4 @@
+import { Mutex } from 'async-mutex';
 import {
     OPERATION_ID_STATUS,
     OPERATION_REQUEST_STATUS,
@@ -10,6 +11,18 @@ class OperationService {
         this.repositoryModuleManager = ctx.repositoryModuleManager;
         this.operationIdService = ctx.operationIdService;
         this.commandExecutor = ctx.commandExecutor;
+        this._operationMutexes = new Map();
+    }
+
+    _getOperationMutex(operationId) {
+        if (!this._operationMutexes.has(operationId)) {
+            this._operationMutexes.set(operationId, new Mutex());
+        }
+        return this._operationMutexes.get(operationId);
+    }
+
+    _cleanupOperationMutex(operationId) {
+        this._operationMutexes.delete(operationId);
     }
 
     getOperationName() {
@@ -30,7 +43,8 @@ class OperationService {
     async getResponsesStatuses(responseStatus, errorMessage, operationId) {
         let responses = 0;
         const self = this;
-        await this.operationMutex.runExclusive(async () => {
+        const mutex = this._getOperationMutex(operationId);
+        await mutex.runExclusive(async () => {
             await self.repositoryModuleManager.createOperationResponseRecord(
                 responseStatus,
                 this.operationName,
@@ -65,6 +79,7 @@ class OperationService {
         endStatuses,
         options = {},
     ) {
+        this._cleanupOperationMutex(operationId);
         const { reuseExistingCache = false } = options;
         this.logger.info(`Finalizing ${this.operationName} for operationId: ${operationId}`);
 
@@ -98,6 +113,7 @@ class OperationService {
     }
 
     async markOperationAsFailed(operationId, blockchain, message, errorType) {
+        this._cleanupOperationMutex(operationId);
         this.logger.info(`${this.operationName} for operationId: ${operationId} failed.`);
 
         await this.operationIdService.removeOperationIdCache(operationId);
