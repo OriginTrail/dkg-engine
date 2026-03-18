@@ -715,6 +715,15 @@ export const EXPECTED_TRANSACTION_ERRORS = {
     NONCE_TOO_LOW: 'nonce too low',
     REPLACEMENT_UNDERPRICED: 'replacement transaction underpriced',
     ALREADY_KNOWN: 'already known',
+    EXECUTION_FAILED: 'transaction execution fails',
+    FEE_TOO_LOW: 'feetoolow',
+    SOCKET_HANG_UP: 'socket hang up',
+    ECONNRESET: 'econnreset',
+    ECONNREFUSED: 'econnrefused',
+    SERVER_ERROR: 'server error',
+    BAD_GATEWAY: '502',
+    SERVICE_UNAVAILABLE: '503',
+    EXPECT_BLOCK_NUMBER: 'expect block number from id',
 };
 
 /**
