@@ -1,0 +1,142 @@
+name: Codex PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: codex-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    name: Codex Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Skip fork PRs — they cannot access repository secrets
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout PR merge commit
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number }}/merge
+          fetch-depth: 0
+
+      - name: Generate PR diff
+        run: git diff ${{ github.event.pull_request.base.sha }}...HEAD > pr-diff.patch
+
+      - name: Run Codex review
+        id: codex
+        uses: openai/codex-action@f5c0ca71642badb34c1e66321d8d85685a0fa3dc # v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: .codex/review-prompt.md
+          output-schema-file: .codex/review-schema.json
+          effort: high
+          sandbox: read-only
+
+      - name: Post PR review with inline comments
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        env:
+          REVIEW_JSON: ${{ steps.codex.outputs.final-message }}
+        with:
+          script: |
+            let review;
+            try {
+              review = JSON.parse(process.env.REVIEW_JSON);
+            } catch (e) {
+              console.error('Failed to parse Codex output:', e.message);
+              console.error('Raw output:', process.env.REVIEW_JSON?.slice(0, 500));
+              await github.rest.pulls.createReview({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+                body: '⚠️ Codex review failed to produce valid JSON output. Check the [workflow logs](' +
+                  `${process.env.GITHUB_SERVER_URL}/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}) for details.`,
+                event: 'COMMENT',
+                comments: [],
+              });
+              return;
+            }
+
+            // Fetch all changed files (paginated for large PRs)
+            const files = await github.paginate(
+              github.rest.pulls.listFiles,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+                per_page: 100,
+              }
+            );
+
+            // Build set of valid (path:line) pairs from right-side diff hunk lines
+            // (added + context). This keeps comments bound to changed areas.
+            const validLines = new Set();
+            for (const file of files) {
+              // Skip binary/large/truncated files with no patch
+              if (!file.patch) continue;
+
+              const lines = file.patch.split('\n');
+              let currentLine = 0;
+              for (const line of lines) {
+                const hunkMatch = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)/);
+                if (hunkMatch) {
+                  currentLine = parseInt(hunkMatch[1], 10);
+                  continue;
+                }
+                // Added lines are valid comment targets
+                if (line.startsWith('+')) {
+                  validLines.add(`${file.filename}:${currentLine}`);
+                  currentLine++;
+                  continue;
+                }
+                // Deleted lines don't exist in the new file
+                if (line.startsWith('-')) continue;
+                // Ignore hunk metadata lines
+                if (line.startsWith('\\')) continue;
+                // Context lines on the right side are also valid targets
+                validLines.add(`${file.filename}:${currentLine}`);
+                currentLine++;
+              }
+            }
+
+            // Partition comments into valid (on right-side diff lines) and dropped
+            const comments = Array.isArray(review.comments) ? review.comments : [];
+            const validComments = [];
+            const droppedComments = [];
+
+            for (const comment of comments) {
+              const key = `${comment.path}:${comment.line}`;
+              if (validLines.has(key)) {
+                validComments.push({
+                  path: comment.path,
+                  line: comment.line,
+                  body: comment.body,
+                  side: 'RIGHT',
+                });
+              } else {
+                droppedComments.push(comment);
+              }
+            }
+
+            // Build review body from summary only.
+            // Intentionally do NOT publish out-of-diff comments.
+            let body = review.summary || 'Codex review complete.';
+
+            // Post the review
+            await github.rest.pulls.createReview({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              body,
+              event: 'COMMENT',
+              comments: validComments,
+            });
+
+            console.log(`Review posted: ${validComments.length} inline comments, ${droppedComments.length} dropped out-of-diff comments`);
