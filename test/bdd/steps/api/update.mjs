@@ -31,6 +31,7 @@ When(
             this.state.latestUpdateData = {
                 nodeId: node - 1,
                 status: 'FAILED',
+                errorType: error.statusCode ? `HTTP_${error.statusCode}` : 'FAILED',
             };
         }
     },
@@ -45,8 +46,8 @@ When('I wait for latest Update to finalize', { timeout: 120000 }, async function
 
     const { nodeId, operationId, status } = this.state.latestUpdateData;
 
-    if (status && ['COMPLETED', 'FAILED'].includes(status)) {
-        this.logger.log(`Update already finalized with status: ${status}`);
+    if (!operationId) {
+        this.logger.log(`No operationId to poll, using existing status: ${status}`);
         return;
     }
 

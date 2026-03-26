@@ -9,4 +9,5 @@ Feature: Update errors test
     And I wait for 15 seconds
 
     When I call Update directly on the node 1 with validUpdateRequestBody
-    Then Latest Update operation finished with status: FAILED
+    And I wait for latest Update to finalize
+    Then Latest Update operation finished with status: ValidateAssetError

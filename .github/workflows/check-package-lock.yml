@@ -42,15 +42,8 @@ jobs:
             exit 0
           fi
 
-          # Only flag when dependency-related fields changed (not scripts, config, etc.)
-          DEP_DIFF=$(git diff "$BASE_SHA" HEAD -- package.json | grep -E '^\+.*"(dependencies|devDependencies|peerDependencies|optionalDependencies|overrides|engines|resolutions)"' || true)
-          if [ -n "$DEP_DIFF" ]; then
-            echo "package_json_changed=true" >> "$GITHUB_OUTPUT"
-            echo "Dependency-related fields in package.json were changed"
-          else
-            echo "package_json_changed=false" >> "$GITHUB_OUTPUT"
-            echo "package.json changed but only non-dependency fields (scripts, etc.) -- skipping lock file check"
-          fi
+          echo "package_json_changed=true" >> "$GITHUB_OUTPUT"
+          echo "package.json was changed, will validate lock file"
 
       - name: Check if package-lock.json exists
         run: |

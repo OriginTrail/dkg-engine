@@ -9,4 +9,5 @@ Feature: Publish errors test
     And I wait for 15 seconds
 
     When I call Publish directly on the node 1 with validPublishRequestBody
-    Then Latest Publish operation finished with status: FAILED
+    And I wait for latest Publish to finalize
+    Then Latest Publish operation finished with status: ValidateAssetError

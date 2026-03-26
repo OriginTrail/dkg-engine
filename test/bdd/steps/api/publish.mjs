@@ -32,19 +32,13 @@ When(
                 assert.fail(`Error while trying to publish assertion. ${error}`);
             });
 
-        // dkg.js v8 SDK completes the full publish flow (submit → poll → blockchain tx)
-        // and nests the operation result under result.operation.publish.
-        // When the SDK exits its internal poll via the minAcksReached shortcut, the
-        // status may still be an intermediate value even though the blockchain tx
-        // succeeded. If a UAL was returned, the publish is definitively COMPLETED.
         const publishOp = result.operation?.publish ?? {};
-        const resolvedStatus = result.UAL ? 'COMPLETED' : (publishOp.status || 'PENDING');
         this.state.latestPublishData = {
             nodeId: node - 1,
             UAL: result.UAL,
             operationId: publishOp.operationId,
             assertion: assertions[assertionName],
-            status: resolvedStatus,
+            status: publishOp.status || 'PENDING',
             errorType: publishOp.errorType,
             result,
         };
@@ -75,6 +69,7 @@ When(
             this.state.latestPublishData = {
                 nodeId: node - 1,
                 status: 'FAILED',
+                errorType: error.statusCode ? `HTTP_${error.statusCode}` : 'FAILED',
             };
         }
     },
@@ -89,10 +84,8 @@ When('I wait for latest Publish to finalize', { timeout: 120000 }, async functio
 
     const { nodeId, operationId, status } = this.state.latestPublishData;
 
-    // The dkg.js SDK completes the full publish flow internally (submit → poll → blockchain tx).
-    // If the status is already terminal, no need to poll the HTTP API again.
-    if (status && ['COMPLETED', 'FAILED'].includes(status)) {
-        this.logger.log(`Publish already finalized with status: ${status}`);
+    if (!operationId) {
+        this.logger.log(`No operationId to poll, using existing status: ${status}`);
         return;
     }
 
