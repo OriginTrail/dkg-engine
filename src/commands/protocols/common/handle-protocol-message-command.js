@@ -126,13 +126,19 @@ class HandleProtocolMessageCommand extends Command {
             this.errorType,
         );
 
-        await this.networkModuleManager.sendMessageResponse(
-            protocol,
-            remotePeerId,
-            NETWORK_MESSAGE_TYPES.RESPONSES.NACK,
-            operationId,
-            { errorMessage },
-        );
+        try {
+            await this.networkModuleManager.sendMessageResponse(
+                protocol,
+                remotePeerId,
+                NETWORK_MESSAGE_TYPES.RESPONSES.NACK,
+                operationId,
+                { errorMessage },
+            );
+        } catch (sendErr) {
+            this.logger.debug(
+                `Failed to send NACK to ${remotePeerId} for operation ${operationId}: ${sendErr.message}`,
+            );
+        }
         this.networkModuleManager.removeCachedSession(operationId, remotePeerId);
     }
 }

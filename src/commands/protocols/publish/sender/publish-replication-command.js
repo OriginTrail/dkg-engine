@@ -1,3 +1,4 @@
+import { Semaphore } from 'async-mutex';
 import {
     OPERATION_ID_STATUS,
     ERROR_TYPE,
@@ -10,6 +11,8 @@ import {
 } from '../../../../constants/constants.js';
 import Command from '../../../command.js';
 
+const replicationSemaphore = new Semaphore(3);
+
 class PublishReplicationCommand extends Command {
     constructor(ctx) {
         super(ctx);
@@ -21,6 +24,7 @@ class PublishReplicationCommand extends Command {
         this.signatureService = ctx.signatureService;
         this.cryptoService = ctx.cryptoService;
         this.messagingService = ctx.messagingService;
+        this.pendingStorageService = ctx.pendingStorageService;
 
         this.errorType = ERROR_TYPE.LOCAL_STORE.LOCAL_STORE_ERROR;
     }
@@ -133,18 +137,59 @@ class PublishReplicationCommand extends Command {
                 return Command.empty();
             }
             const { dataset } = await this.operationIdService.getCachedOperationIdData(operationId);
+
+            await this.pendingStorageService.cacheDataset(
+                operationId,
+                datasetRoot,
+                dataset,
+                currentPeerId,
+            );
+
             const message = {
                 dataset: dataset.public,
                 datasetRoot,
                 blockchain,
             };
 
-            // Run all message sending operations in parallel
-            await Promise.all(
-                shardNodes.map((node) =>
-                    this.sendAndHandleMessage(node, operationId, message, command, blockchain),
-                ),
-            );
+            const replicationBatchSize = minAckResponses + 2;
+
+            await replicationSemaphore.runExclusive(async () => {
+                this.logger.info(
+                    `[REPLICATION] Starting for operationId: ${operationId}, ` +
+                        `shard: ${shardNodes.length} nodes, batch: ${replicationBatchSize}, min ACKs: ${minAckResponses}`,
+                );
+
+                for (let i = 0; i < shardNodes.length; i += replicationBatchSize) {
+                    if (i > 0) {
+                        // eslint-disable-next-line no-await-in-loop
+                        const record = await this.operationIdService.getOperationIdRecord(
+                            operationId,
+                        );
+                        if (record?.minAcksReached) {
+                            this.logger.info(
+                                `[REPLICATION] Minimum replication reached after ${i} nodes, ` +
+                                    `skipping remaining ${
+                                        shardNodes.length - i
+                                    } for operationId: ${operationId}`,
+                            );
+                            break;
+                        }
+                    }
+
+                    const batch = shardNodes.slice(i, i + replicationBatchSize);
+                    this.logger.debug(
+                        `Sending replication batch ${Math.floor(i / replicationBatchSize) + 1} ` +
+                            `(${batch.length} nodes) for operationId: ${operationId}`,
+                    );
+
+                    // eslint-disable-next-line no-await-in-loop
+                    await Promise.all(
+                        batch.map((node) =>
+                            this.sendAndHandleMessage(node, operationId, message, command),
+                        ),
+                    );
+                }
+            });
         } catch (e) {
             await this.handleError(operationId, blockchain, e.message, this.errorType, true);
             this.operationIdService.emitChangeEvent(
@@ -158,44 +203,69 @@ class PublishReplicationCommand extends Command {
         return Command.empty();
     }
 
-    async sendAndHandleMessage(node, operationId, message, command, blockchain) {
-        const response = await this.messagingService.sendProtocolMessage(
-            node,
-            operationId,
-            message,
-            NETWORK_MESSAGE_TYPES.REQUESTS.PROTOCOL_REQUEST,
-            NETWORK_MESSAGE_TIMEOUT_MILLS.PUBLISH.REQUEST,
-        );
-        const responseData = response.data;
-        if (response.header.messageType === NETWORK_MESSAGE_TYPES.RESPONSES.ACK) {
-            // eslint-disable-next-line no-await-in-loop
-            await this.signatureService.addSignatureToStorage(
-                NETWORK_SIGNATURES_FOLDER,
+    async sendAndHandleMessage(node, operationId, message, command) {
+        try {
+            let response = await this.messagingService.sendProtocolMessage(
+                node,
                 operationId,
-                responseData.identityId,
-                responseData.v,
-                responseData.r,
-                responseData.s,
-                responseData.vs,
+                message,
+                NETWORK_MESSAGE_TYPES.REQUESTS.PROTOCOL_REQUEST,
+                NETWORK_MESSAGE_TIMEOUT_MILLS.PUBLISH.REQUEST,
             );
-            // eslint-disable-next-line no-await-in-loop
-            await this.operationService.processResponse(
-                command,
-                OPERATION_REQUEST_STATUS.COMPLETED,
-                responseData,
+
+            if (response.header.messageType !== NETWORK_MESSAGE_TYPES.RESPONSES.ACK) {
+                const preRetryRecord = await this.operationIdService.getOperationIdRecord(
+                    operationId,
+                );
+                if (preRetryRecord?.minAcksReached) return;
+
+                this.logger.info(
+                    `[REPLICATION] Peer ${node.id} NACK for operationId: ${operationId}: ` +
+                        `${response.data?.errorMessage || 'unknown reason'}, retrying...`,
+                );
+                response = await this.messagingService.sendProtocolMessage(
+                    node,
+                    operationId,
+                    message,
+                    NETWORK_MESSAGE_TYPES.REQUESTS.PROTOCOL_REQUEST,
+                    NETWORK_MESSAGE_TIMEOUT_MILLS.PUBLISH.REQUEST,
+                );
+            }
+
+            const responseData = response.data;
+            if (response.header.messageType === NETWORK_MESSAGE_TYPES.RESPONSES.ACK) {
+                await this.signatureService.addSignatureToStorage(
+                    NETWORK_SIGNATURES_FOLDER,
+                    operationId,
+                    responseData.identityId,
+                    responseData.v,
+                    responseData.r,
+                    responseData.s,
+                    responseData.vs,
+                );
+                await this.operationService.processResponse(
+                    command,
+                    OPERATION_REQUEST_STATUS.COMPLETED,
+                    responseData,
+                );
+            } else {
+                this.logger.warn(
+                    `[REPLICATION] Peer ${node.id} failed after retry for operationId: ${operationId}: ` +
+                        `${responseData?.errorMessage || 'unknown reason'}`,
+                );
+                await this.operationService.processResponse(
+                    command,
+                    OPERATION_REQUEST_STATUS.FAILED,
+                    responseData,
+                );
+            }
+        } catch (error) {
+            this.logger.warn(
+                `[REPLICATION] Peer ${node.id} error for operationId: ${operationId}: ${error.message}`,
             );
-        } else {
-            // eslint-disable-next-line no-await-in-loop
-            await this.operationService.processResponse(
-                command,
-                OPERATION_REQUEST_STATUS.FAILED,
-                responseData,
-            );
-            this.operationIdService.emitChangeEvent(
-                OPERATION_ID_STATUS.FAILED,
-                operationId,
-                blockchain,
-            );
+            await this.operationService.processResponse(command, OPERATION_REQUEST_STATUS.FAILED, {
+                errorMessage: error.message,
+            });
         }
     }
 

@@ -467,6 +467,10 @@ class RepositoryModuleManager extends BaseModuleManager {
         return this.getRepository('finality_status').getFinalityAcksCount(ual, options);
     }
 
+    async getPublishOperationIdByUal(ual, options = {}) {
+        return this.getRepository('finality_status').getPublishOperationIdByUal(ual, options);
+    }
+
     async getLatestRandomSamplingChallengeRecordForBlockchainId(blockchainId, limit = 1) {
         return this.getRepository(
             'random_sampling_challenge',

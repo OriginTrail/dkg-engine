@@ -65,7 +65,13 @@ class BlockchainEventListenerCommand extends Command {
             );
 
         if (eventsMissed) {
-            // TODO: Add some logic for missed events in the future
+            const missedFrom = (lastCheckedBlockRecord?.lastCheckedBlock ?? 0) + 1;
+            this.logger.warn(
+                `[EVENT LISTENER] Blockchain events missed on ${blockchainId}! ` +
+                    `Gap too large: blocks ${missedFrom}–${currentBlock} ` +
+                    `(${currentBlock - missedFrom + 1} blocks). ` +
+                    `Publish finality for assets created during this window will not complete.`,
+            );
         }
 
         if (newEvents.length !== 0) {
