@@ -1,0 +1,35 @@
+{
+  "type": "object",
+  "properties": {
+    "summary": {
+      "type": "string",
+      "description": "Brief overall assessment of the PR (2-4 sentences)"
+    },
+    "comments": {
+      "type": "array",
+      "description": "Inline review comments on specific changed lines",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "File path relative to repository root"
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Line number in the new version of the file (must be within the diff)"
+          },
+          "body": {
+            "type": "string",
+            "description": "Review comment with severity prefix"
+          }
+        },
+        "required": ["path", "line", "body"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["summary", "comments"],
+  "additionalProperties": false
+}
