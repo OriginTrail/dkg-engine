@@ -31,7 +31,10 @@ jobs:
         run: git diff ${{ github.event.pull_request.base.sha }}...HEAD > pr-diff.patch
 
       - name: Allow unprivileged user namespaces for bubblewrap sandbox
-        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+        run: |
+          if sudo sysctl -n kernel.apparmor_restrict_unprivileged_userns 2>/dev/null; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
 
       - name: Run Codex review
         id: codex
