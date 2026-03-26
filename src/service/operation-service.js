@@ -85,10 +85,9 @@ class OperationService {
         });
 
         const operationIdStatuses = {};
-        for (const response of responses) {
-            if (!operationIdStatuses[operationId])
-                operationIdStatuses[operationId] = { failedNumber: 0, completedNumber: 0 };
+        operationIdStatuses[operationId] = { failedNumber: 0, completedNumber: 0 };
 
+        for (const response of responses) {
             if (response.status === OPERATION_REQUEST_STATUS.FAILED) {
                 operationIdStatuses[operationId].failedNumber += 1;
             } else {
