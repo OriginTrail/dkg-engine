@@ -263,47 +263,84 @@ class GetCommand extends Command {
         }
         this.logger.debug(`Could not find asset with UAL: ${ual} locally`);
 
-        try {
-            const latestMerkleRoot =
-                await this.blockchainModuleManager.getKnowledgeCollectionLatestMerkleRoot(
-                    blockchain,
-                    contract,
-                    knowledgeCollectionId,
-                );
-            if (latestMerkleRoot) {
-                const publishOpId =
-                    this.pendingStorageService.getOperationIdByMerkleRoot(latestMerkleRoot);
-                if (publishOpId) {
-                    const cachedAssertion = await this.pendingStorageService.getCachedDataset(
-                        publishOpId,
+        if (!knowledgeAssetId) {
+            try {
+                const latestMerkleRoot =
+                    await this.blockchainModuleManager.getKnowledgeCollectionLatestMerkleRoot(
+                        blockchain,
+                        contract,
+                        knowledgeCollectionId,
                     );
-                    if (
-                        cachedAssertion &&
-                        (cachedAssertion.public?.length || cachedAssertion.private?.length)
-                    ) {
-                        const cachedResponseData = { assertion: cachedAssertion };
+                if (latestMerkleRoot) {
+                    const publishOpId =
+                        this.pendingStorageService.getOperationIdByMerkleRoot(latestMerkleRoot);
+                    if (publishOpId) {
+                        const cachedAssertion = await this.pendingStorageService.getCachedDataset(
+                            publishOpId,
+                        );
+                        if (cachedAssertion) {
+                            const filteredAssertion = this._filterAssertionByContentType(
+                                cachedAssertion,
+                                contentType,
+                            );
 
-                        this.logger.info(
-                            `Serving asset ${ual} from pending storage cache (merkleRoot: ${latestMerkleRoot})`,
-                        );
-                        await this.operationService.markOperationAsCompleted(
-                            operationId,
-                            blockchain,
-                            cachedResponseData,
-                            [
-                                OPERATION_ID_STATUS.GET.GET_LOCAL_END,
-                                OPERATION_ID_STATUS.GET.GET_END,
-                                OPERATION_ID_STATUS.COMPLETED,
-                            ],
-                        );
-                        return Command.empty();
+                            if (
+                                filteredAssertion.public?.length ||
+                                filteredAssertion.private?.length
+                            ) {
+                                let cachePassed = true;
+                                if (
+                                    paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED
+                                ) {
+                                    if (Array.isArray(filteredAssertion.public)) {
+                                        const shouldHavePrivate = filteredAssertion.public.some(
+                                            (triple) =>
+                                                triple.includes(`${PRIVATE_ASSERTION_PREDICATE}`),
+                                        );
+                                        if (shouldHavePrivate) {
+                                            cachePassed = filteredAssertion.private?.length > 0;
+                                        }
+                                    } else {
+                                        cachePassed = false;
+                                    }
+                                }
+
+                                const cacheResponseData = { assertion: filteredAssertion };
+                                const cacheValid = await this.validateResponse(
+                                    cacheResponseData,
+                                    blockchain,
+                                    contract,
+                                    knowledgeCollectionId,
+                                    knowledgeAssetId,
+                                    paranetNodesAccessPolicy,
+                                    contentType,
+                                );
+
+                                if (cachePassed && cacheValid) {
+                                    this.logger.info(
+                                        `Serving asset ${ual} from pending storage cache (merkleRoot: ${latestMerkleRoot})`,
+                                    );
+                                    await this.operationService.markOperationAsCompleted(
+                                        operationId,
+                                        blockchain,
+                                        cacheResponseData,
+                                        [
+                                            OPERATION_ID_STATUS.GET.GET_LOCAL_END,
+                                            OPERATION_ID_STATUS.GET.GET_END,
+                                            OPERATION_ID_STATUS.COMPLETED,
+                                        ],
+                                    );
+                                    return Command.empty();
+                                }
+                            }
+                        }
                     }
                 }
+            } catch (cacheErr) {
+                this.logger.debug(
+                    `Pending storage cache fallback failed for ${ual}: ${cacheErr.message}`,
+                );
             }
-        } catch (cacheErr) {
-            this.logger.debug(
-                `Pending storage cache fallback failed for ${ual}: ${cacheErr.message}`,
-            );
         }
 
         await this.operationIdService.emitChangeEvent(
@@ -671,6 +708,19 @@ class GetCommand extends Command {
         }
 
         return false;
+    }
+
+    _filterAssertionByContentType(assertion, contentType) {
+        if (contentType === 'private') {
+            return { private: assertion.private ?? [] };
+        }
+        if (contentType === 'public') {
+            return { public: assertion.public ?? [] };
+        }
+        return {
+            public: assertion.public ?? [],
+            private: assertion.private ?? [],
+        };
     }
 
     /**
