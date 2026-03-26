@@ -64,7 +64,7 @@ class OperationService {
     }
 
     async getResponsesStatuses(responseStatus, errorMessage, operationId) {
-        let responses = 0;
+        let responses = [];
         const self = this;
         const mutex = this._getOperationMutex(operationId);
         await mutex.runExclusive(async () => {
