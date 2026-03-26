@@ -1,8 +1,12 @@
+import { Mutex } from 'async-mutex';
 import {
     OPERATION_ID_STATUS,
     OPERATION_REQUEST_STATUS,
     OPERATION_STATUS,
 } from '../constants/constants.js';
+
+const MUTEX_TTL_MS = 5 * 60 * 1000;
+const MUTEX_SWEEP_INTERVAL_MS = 5 * 60 * 1000;
 
 class OperationService {
     constructor(ctx) {
@@ -10,6 +14,38 @@ class OperationService {
         this.repositoryModuleManager = ctx.repositoryModuleManager;
         this.operationIdService = ctx.operationIdService;
         this.commandExecutor = ctx.commandExecutor;
+        this._operationMutexes = new Map();
+        this._terminalOperations = new Map();
+
+        this._sweepInterval = setInterval(() => this._sweepStaleMutexes(), MUTEX_SWEEP_INTERVAL_MS);
+        if (this._sweepInterval.unref) {
+            this._sweepInterval.unref();
+        }
+    }
+
+    _getOperationMutex(operationId) {
+        if (!this._operationMutexes.has(operationId)) {
+            this._operationMutexes.set(operationId, new Mutex());
+        }
+        return this._operationMutexes.get(operationId);
+    }
+
+    _markOperationTerminal(operationId) {
+        this._terminalOperations.set(operationId, Date.now());
+    }
+
+    _isOperationTerminal(operationId) {
+        return this._terminalOperations.has(operationId);
+    }
+
+    _sweepStaleMutexes() {
+        const now = Date.now();
+        for (const [operationId, terminatedAt] of this._terminalOperations) {
+            if (now - terminatedAt >= MUTEX_TTL_MS) {
+                this._operationMutexes.delete(operationId);
+                this._terminalOperations.delete(operationId);
+            }
+        }
     }
 
     getOperationName() {
@@ -28,9 +64,14 @@ class OperationService {
     }
 
     async getResponsesStatuses(responseStatus, errorMessage, operationId) {
-        let responses = 0;
+        let responses = [];
         const self = this;
-        await this.operationMutex.runExclusive(async () => {
+        const mutex = this._getOperationMutex(operationId);
+        await mutex.runExclusive(async () => {
+            if (self._isOperationTerminal(operationId)) {
+                self.logger.debug(`Skipping late response for terminal operation ${operationId}`);
+                return;
+            }
             await self.repositoryModuleManager.createOperationResponseRecord(
                 responseStatus,
                 this.operationName,
@@ -44,10 +85,9 @@ class OperationService {
         });
 
         const operationIdStatuses = {};
-        for (const response of responses) {
-            if (!operationIdStatuses[operationId])
-                operationIdStatuses[operationId] = { failedNumber: 0, completedNumber: 0 };
+        operationIdStatuses[operationId] = { failedNumber: 0, completedNumber: 0 };
 
+        for (const response of responses) {
             if (response.status === OPERATION_REQUEST_STATUS.FAILED) {
                 operationIdStatuses[operationId].failedNumber += 1;
             } else {
@@ -65,6 +105,7 @@ class OperationService {
         endStatuses,
         options = {},
     ) {
+        this._markOperationTerminal(operationId);
         const { reuseExistingCache = false } = options;
         this.logger.info(`Finalizing ${this.operationName} for operationId: ${operationId}`);
 
@@ -98,6 +139,7 @@ class OperationService {
     }
 
     async markOperationAsFailed(operationId, blockchain, message, errorType) {
+        this._markOperationTerminal(operationId);
         this.logger.info(`${this.operationName} for operationId: ${operationId} failed.`);
 
         await this.operationIdService.removeOperationIdCache(operationId);

@@ -55,22 +55,33 @@ class ResultController extends BaseController {
                     case 'update': {
                         const minAcksReached = handlerRecord.minAcksReached || false;
                         response.data = { ...response.data, minAcksReached };
-                        if (minAcksReached) {
-                            const publisherNodeSignature = (
-                                await this.signatureService.getSignaturesFromStorage(
-                                    PUBLISHER_NODE_SIGNATURES_FOLDER,
-                                    operationId,
-                                )
-                            )[0];
-                            const signatures = await this.signatureService.getSignaturesFromStorage(
-                                NETWORK_SIGNATURES_FOLDER,
-                                operationId,
-                            );
-                            response.data = {
-                                ...response.data,
-                                publisherNodeSignature,
-                                signatures,
-                            };
+                        const shouldIncludeSignatures =
+                            minAcksReached ||
+                            handlerRecord.status === OPERATION_ID_STATUS.COMPLETED;
+                        if (shouldIncludeSignatures) {
+                            try {
+                                const publisherNodeSignature = (
+                                    await this.signatureService.getSignaturesFromStorage(
+                                        PUBLISHER_NODE_SIGNATURES_FOLDER,
+                                        operationId,
+                                    )
+                                )[0];
+                                const signatures =
+                                    await this.signatureService.getSignaturesFromStorage(
+                                        NETWORK_SIGNATURES_FOLDER,
+                                        operationId,
+                                    );
+                                response.data = {
+                                    ...response.data,
+                                    minAcksReached: true,
+                                    publisherNodeSignature,
+                                    signatures,
+                                };
+                            } catch (e) {
+                                this.logger.warn(
+                                    `Failed to read signatures for operationId ${operationId}: ${e.message}`,
+                                );
+                            }
                         }
                         break;
                     }

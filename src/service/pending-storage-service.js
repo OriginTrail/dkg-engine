@@ -10,12 +10,15 @@ class PendingStorageService {
         this.fileService = ctx.fileService;
         this.repositoryModuleManager = ctx.repositoryModuleManager; // this is not used
         this.tripleStoreService = ctx.tripleStoreService; // this is not used
+        this._merkleRootIndex = new Map();
     }
 
     async cacheDataset(operationId, datasetRoot, dataset, remotePeerId) {
         this.logger.debug(
             `Caching ${datasetRoot} dataset root, operation id: ${operationId} in file in pending storage`,
         );
+
+        this._merkleRootIndex.set(datasetRoot, operationId);
 
         await this.fileService.writeContentsToFile(
             this.fileService.getPendingStorageCachePath(),
@@ -26,6 +29,10 @@ class PendingStorageService {
                 remotePeerId,
             }),
         );
+    }
+
+    getOperationIdByMerkleRoot(merkleRoot) {
+        return this._merkleRootIndex.get(merkleRoot) ?? null;
     }
 
     async getCachedDataset(operationId) {
@@ -94,6 +101,7 @@ class PendingStorageService {
 
                     const createdDate = fileStats.mtime;
                     if (createdDate.getTime() + expirationTimeMillis < now) {
+                        this._removeMerkleRootIndexEntry(file);
                         await this.fileService.removeFile(filePath);
                         this.logger.debug(`Deleted expired file: ${filePath}`);
                         return true;
@@ -155,6 +163,8 @@ class PendingStorageService {
             `Removing cached assertion for ual: ${ual} operation id: ${operationId} from file in ${repository} pending storage`,
         );
 
+        this._removeMerkleRootIndexEntry(operationId);
+
         const pendingAssertionPath = await this.fileService.getPendingStorageDocumentPath(
             operationId,
         );
@@ -174,6 +184,15 @@ class PendingStorageService {
                 `Assertions folder not found in ${repository} pending storage. ` +
                     `Error message: ${error.message}, ${error.stackTrace}`,
             );
+        }
+    }
+
+    _removeMerkleRootIndexEntry(operationId) {
+        for (const [root, opId] of this._merkleRootIndex) {
+            if (opId === operationId) {
+                this._merkleRootIndex.delete(root);
+                break;
+            }
         }
     }
 

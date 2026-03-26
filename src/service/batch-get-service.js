@@ -1,4 +1,3 @@
-import { Mutex } from 'async-mutex';
 import OperationService from './operation-service.js';
 import {
     OPERATION_ID_STATUS,
@@ -19,7 +18,6 @@ class BatchGetService extends OperationService {
             OPERATION_ID_STATUS.BATCH_GET.BATCH_GET_END,
             OPERATION_ID_STATUS.COMPLETED,
         ];
-        this.operationMutex = new Mutex();
     }
 }
 

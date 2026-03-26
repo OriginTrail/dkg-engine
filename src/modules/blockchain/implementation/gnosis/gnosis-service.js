@@ -44,14 +44,30 @@ class GnosisService extends Web3Service {
             );
             return this.defaultGasPrice;
         }
-        if (
-            gasPrice &&
-            ethers.utils.parseUnits(gasPrice.toString(), 'gwei').gt(this.defaultGasPrice)
-        ) {
+        if (gasPrice && gasPrice.gt && gasPrice.gt(this.defaultGasPrice)) {
             return gasPrice;
         }
 
         return this.defaultGasPrice;
+    }
+
+    buildTransactionGasParams(gasPrice) {
+        const minPriorityFee = ethers.BigNumber.from(2_000_000_000);
+
+        let maxPriorityFeePerGas = minPriorityFee;
+        if (ethers.BigNumber.isBigNumber(gasPrice)) {
+            const derived = gasPrice.div(5);
+            if (derived.gt(minPriorityFee)) {
+                maxPriorityFeePerGas = derived;
+            }
+        }
+
+        const maxFeePerGas =
+            ethers.BigNumber.isBigNumber(gasPrice) && gasPrice.gt(maxPriorityFeePerGas)
+                ? gasPrice
+                : maxPriorityFeePerGas.mul(2);
+
+        return { maxFeePerGas, maxPriorityFeePerGas };
     }
 
     async healthCheck() {

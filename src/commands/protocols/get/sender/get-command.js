@@ -30,6 +30,7 @@ class GetCommand extends Command {
         this.cryptoService = ctx.cryptoService;
         this.messagingService = ctx.messagingService;
         this.tripleStoreModuleManager = ctx.tripleStoreModuleManager;
+        this.pendingStorageService = ctx.pendingStorageService;
     }
 
     async handleError(operationId, blockchain, errorMessage, errorType) {
@@ -72,19 +73,67 @@ class GetCommand extends Command {
             OPERATION_ID_STATUS.GET.GET_VALIDATE_ASSET_START,
         );
 
-        const { isValid, errorMessage } = await this.validateUAL(
-            operationId,
-            blockchain,
-            contract,
-            knowledgeCollectionId,
-            ual,
-        );
+        const maxGetRetries = 3;
+        const getRetryDelayMs = 5_000;
+        let ualValidationPassed = false;
+        let ualValidationError = null;
 
-        if (!isValid) {
+        for (let attempt = 1; attempt <= maxGetRetries; attempt += 1) {
+            try {
+                // eslint-disable-next-line no-await-in-loop
+                const { isValid, errorMessage: valMsg } = await this.validateUAL(
+                    operationId,
+                    blockchain,
+                    contract,
+                    knowledgeCollectionId,
+                    ual,
+                );
+                if (isValid) {
+                    ualValidationPassed = true;
+                    break;
+                }
+                ualValidationError = valMsg;
+            } catch (err) {
+                ualValidationError = `UAL validation failed: ${err.message}`;
+            }
+
+            if (!ualValidationPassed) {
+                try {
+                    // eslint-disable-next-line no-await-in-loop
+                    const cachedResult = await this._tryCacheFallback(
+                        blockchain,
+                        contract,
+                        knowledgeCollectionId,
+                        knowledgeAssetId,
+                        ual,
+                        operationId,
+                        paranetNodesAccessPolicy,
+                        contentType,
+                    );
+                    if (cachedResult) {
+                        return cachedResult;
+                    }
+                } catch (_cacheErr) {
+                    // cache fallback also failed, will retry
+                }
+            }
+
+            if (attempt < maxGetRetries) {
+                this.logger.debug(
+                    `Get validation/cache attempt ${attempt}/${maxGetRetries} failed for ${ual}, retrying in ${getRetryDelayMs}ms`,
+                );
+                // eslint-disable-next-line no-await-in-loop
+                await new Promise((resolve) => {
+                    setTimeout(resolve, getRetryDelayMs);
+                });
+            }
+        }
+
+        if (!ualValidationPassed) {
             await this.handleError(
                 operationId,
                 blockchain,
-                errorMessage,
+                ualValidationError,
                 ERROR_TYPE.GET.GET_VALIDATE_ASSET_ERROR,
             );
             return Command.empty();
@@ -262,6 +311,26 @@ class GetCommand extends Command {
         }
         this.logger.debug(`Could not find asset with UAL: ${ual} locally`);
 
+        try {
+            const cachedResult = await this._tryCacheFallback(
+                blockchain,
+                contract,
+                knowledgeCollectionId,
+                knowledgeAssetId,
+                ual,
+                operationId,
+                paranetNodesAccessPolicy,
+                contentType,
+            );
+            if (cachedResult) {
+                return cachedResult;
+            }
+        } catch (cacheErr) {
+            this.logger.debug(
+                `Pending storage cache fallback failed for ${ual}: ${cacheErr.message}`,
+            );
+        }
+
         await this.operationIdService.emitChangeEvent(
             OPERATION_ID_STATUS.GET.GET_LOCAL_END,
             operationId,
@@ -389,6 +458,97 @@ class GetCommand extends Command {
         );
 
         return Command.empty();
+    }
+
+    async _tryCacheFallback(
+        blockchain,
+        contract,
+        knowledgeCollectionId,
+        knowledgeAssetId,
+        ual,
+        operationId,
+        paranetNodesAccessPolicy,
+        contentType,
+    ) {
+        if (knowledgeAssetId) return null;
+
+        const latestMerkleRoot =
+            await this.blockchainModuleManager.getKnowledgeCollectionLatestMerkleRoot(
+                blockchain,
+                contract,
+                knowledgeCollectionId,
+            );
+        if (!latestMerkleRoot) return null;
+
+        const publishOpId = this.pendingStorageService.getOperationIdByMerkleRoot(latestMerkleRoot);
+        if (!publishOpId) return null;
+
+        const cachedAssertion = await this.pendingStorageService.getCachedDataset(publishOpId);
+        if (
+            !cachedAssertion ||
+            (!cachedAssertion.public?.length && !cachedAssertion.private?.length)
+        ) {
+            return null;
+        }
+
+        const filteredAssertion = this._filterAssertionByContentType(cachedAssertion, contentType);
+        if (!filteredAssertion.public?.length && !filteredAssertion.private?.length) {
+            return null;
+        }
+
+        let cachePassed = true;
+        if (paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED) {
+            if (Array.isArray(filteredAssertion.public)) {
+                const shouldHavePrivate = filteredAssertion.public.some((triple) =>
+                    triple.includes(`${PRIVATE_ASSERTION_PREDICATE}`),
+                );
+                if (shouldHavePrivate) {
+                    cachePassed = filteredAssertion.private?.length > 0;
+                }
+            } else {
+                cachePassed = false;
+            }
+        }
+
+        if (!cachePassed) return null;
+
+        const cachedResponseData = { assertion: filteredAssertion };
+        const isValid = await this.validateResponse(
+            cachedResponseData,
+            blockchain,
+            contract,
+            knowledgeCollectionId,
+            knowledgeAssetId,
+            paranetNodesAccessPolicy,
+            contentType,
+        );
+        if (!isValid) return null;
+
+        this.logger.info(
+            `Serving asset ${ual} from pending storage cache (merkleRoot: ${latestMerkleRoot})`,
+        );
+        await this.operationService.markOperationAsCompleted(
+            operationId,
+            blockchain,
+            cachedResponseData,
+            [
+                OPERATION_ID_STATUS.GET.GET_LOCAL_END,
+                OPERATION_ID_STATUS.GET.GET_END,
+                OPERATION_ID_STATUS.COMPLETED,
+            ],
+        );
+        return Command.empty();
+    }
+
+    _filterAssertionByContentType(assertion, contentType) {
+        if (!contentType || contentType === 'all') return assertion;
+        if (contentType === 'public') {
+            return { public: assertion.public || [] };
+        }
+        if (contentType === 'private') {
+            return { private: assertion.private || [] };
+        }
+        return assertion;
     }
 
     async validateUAL(operationId, blockchain, contract, knowledgeCollectionId, ual) {
