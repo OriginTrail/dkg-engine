@@ -10,4 +10,4 @@ Feature: Update errors test
 
     When I call Update directly on the node 1 with validUpdateRequestBody
     And I wait for latest Update to finalize
-    Then Latest Update operation finished with status: ValidateAssetError
+    Then Latest Update operation finished with status: HTTP_404

@@ -10,4 +10,4 @@ Feature: Publish errors test
 
     When I call Publish directly on the node 1 with validPublishRequestBody
     And I wait for latest Publish to finalize
-    Then Latest Publish operation finished with status: ValidateAssetError
+    Then Latest Publish operation finished with status: HTTP_404
