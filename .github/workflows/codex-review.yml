@@ -38,6 +38,7 @@ jobs:
           prompt-file: .codex/review-prompt.md
           output-schema-file: .codex/review-schema.json
           effort: high
+          sandbox: full-auto
 
       - name: Post PR review with inline comments
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
