@@ -21,6 +21,7 @@ class PublishReplicationCommand extends Command {
         this.signatureService = ctx.signatureService;
         this.cryptoService = ctx.cryptoService;
         this.messagingService = ctx.messagingService;
+        this.pendingStorageService = ctx.pendingStorageService;
 
         this.errorType = ERROR_TYPE.LOCAL_STORE.LOCAL_STORE_ERROR;
     }
