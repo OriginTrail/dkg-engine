@@ -371,7 +371,7 @@ export const PARANET_NODES_ACCESS_POLICIES = ['OPEN', 'PERMISSIONED'];
 
 export const NETWORK_MESSAGE_TIMEOUT_MILLS = {
     PUBLISH: {
-        REQUEST: 15 * 1000,
+        REQUEST: 60 * 1000,
     },
     UPDATE: {
         REQUEST: 60 * 1000,
