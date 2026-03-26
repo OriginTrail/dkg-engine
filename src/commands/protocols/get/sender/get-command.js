@@ -104,9 +104,11 @@ class GetCommand extends Command {
                         blockchain,
                         contract,
                         knowledgeCollectionId,
+                        knowledgeAssetId,
                         ual,
                         operationId,
                         paranetNodesAccessPolicy,
+                        contentType,
                     );
                     if (cachedResult) {
                         return cachedResult;
@@ -314,9 +316,11 @@ class GetCommand extends Command {
                 blockchain,
                 contract,
                 knowledgeCollectionId,
+                knowledgeAssetId,
                 ual,
                 operationId,
                 paranetNodesAccessPolicy,
+                contentType,
             );
             if (cachedResult) {
                 return cachedResult;
@@ -460,10 +464,14 @@ class GetCommand extends Command {
         blockchain,
         contract,
         knowledgeCollectionId,
+        knowledgeAssetId,
         ual,
         operationId,
         paranetNodesAccessPolicy,
+        contentType,
     ) {
+        if (knowledgeAssetId) return null;
+
         const latestMerkleRoot =
             await this.blockchainModuleManager.getKnowledgeCollectionLatestMerkleRoot(
                 blockchain,
@@ -483,14 +491,19 @@ class GetCommand extends Command {
             return null;
         }
 
+        const filteredAssertion = this._filterAssertionByContentType(cachedAssertion, contentType);
+        if (!filteredAssertion.public?.length && !filteredAssertion.private?.length) {
+            return null;
+        }
+
         let cachePassed = true;
         if (paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED) {
-            if (Array.isArray(cachedAssertion.public)) {
-                const shouldHavePrivate = cachedAssertion.public.some((triple) =>
+            if (Array.isArray(filteredAssertion.public)) {
+                const shouldHavePrivate = filteredAssertion.public.some((triple) =>
                     triple.includes(`${PRIVATE_ASSERTION_PREDICATE}`),
                 );
                 if (shouldHavePrivate) {
-                    cachePassed = cachedAssertion.private?.length > 0;
+                    cachePassed = filteredAssertion.private?.length > 0;
                 }
             } else {
                 cachePassed = false;
@@ -499,7 +512,18 @@ class GetCommand extends Command {
 
         if (!cachePassed) return null;
 
-        const cachedResponseData = { assertion: cachedAssertion };
+        const cachedResponseData = { assertion: filteredAssertion };
+        const isValid = await this.validateResponse(
+            cachedResponseData,
+            blockchain,
+            contract,
+            knowledgeCollectionId,
+            knowledgeAssetId,
+            paranetNodesAccessPolicy,
+            contentType,
+        );
+        if (!isValid) return null;
+
         this.logger.info(
             `Serving asset ${ual} from pending storage cache (merkleRoot: ${latestMerkleRoot})`,
         );
@@ -514,6 +538,17 @@ class GetCommand extends Command {
             ],
         );
         return Command.empty();
+    }
+
+    _filterAssertionByContentType(assertion, contentType) {
+        if (!contentType || contentType === 'all') return assertion;
+        if (contentType === 'public') {
+            return { public: assertion.public || [] };
+        }
+        if (contentType === 'private') {
+            return { private: assertion.private || [] };
+        }
+        return assertion;
     }
 
     async validateUAL(operationId, blockchain, contract, knowledgeCollectionId, ual) {
