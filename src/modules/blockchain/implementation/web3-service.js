@@ -522,6 +522,10 @@ class Web3Service {
         }
     }
 
+    buildTransactionGasParams(gasPrice) {
+        return { gasPrice };
+    }
+
     async callContractFunction(contractInstance, functionName, args, contractName = null) {
         const maxNumberOfRetries = 3;
         const retryDelayInSec = 12;
@@ -567,11 +571,35 @@ class Web3Service {
         let retryCount = 0;
         const maxRetries = 3;
 
-        try {
-            /* eslint-disable no-await-in-loop */
-            gasLimit = await contractInstance.estimateGas[functionName](...args);
-        } catch (error) {
-            this._decodeEstimateGasError(contractInstance, functionName, error, args);
+        for (let estimateAttempt = 0; estimateAttempt < 3; estimateAttempt += 1) {
+            try {
+                /* eslint-disable no-await-in-loop */
+                gasLimit = await contractInstance.estimateGas[functionName](...args);
+                break;
+            } catch (error) {
+                const errMsg = error.message?.toLowerCase() ?? '';
+                const isTransient =
+                    errMsg.includes(EXPECTED_TRANSACTION_ERRORS.EXECUTION_FAILED.toLowerCase()) ||
+                    errMsg.includes(EXPECTED_TRANSACTION_ERRORS.FEE_TOO_LOW.toLowerCase()) ||
+                    errMsg.includes(EXPECTED_TRANSACTION_ERRORS.SOCKET_HANG_UP) ||
+                    errMsg.includes(EXPECTED_TRANSACTION_ERRORS.ECONNRESET) ||
+                    errMsg.includes(EXPECTED_TRANSACTION_ERRORS.ECONNREFUSED) ||
+                    errMsg.includes(EXPECTED_TRANSACTION_ERRORS.SERVER_ERROR) ||
+                    errMsg.includes(EXPECTED_TRANSACTION_ERRORS.BAD_GATEWAY) ||
+                    errMsg.includes(EXPECTED_TRANSACTION_ERRORS.SERVICE_UNAVAILABLE) ||
+                    errMsg.includes(EXPECTED_TRANSACTION_ERRORS.EXPECT_BLOCK_NUMBER);
+                if (isTransient && estimateAttempt < 2) {
+                    this.logger.warn(
+                        `Gas estimation for ${functionName} failed with transient error on ${this.getBlockchainId()}, ` +
+                            `retrying (${estimateAttempt + 1}/3): ${error.message}`,
+                    );
+                    await new Promise((r) => {
+                        setTimeout(r, 2000);
+                    });
+                    continue;
+                }
+                this._decodeEstimateGasError(contractInstance, functionName, error, args);
+            }
         }
 
         gasLimit = gasLimit ?? ethers.utils.parseUnits('900', 'kwei');
@@ -590,12 +618,12 @@ class Web3Service {
                         }${retryCount > 0 ? ` (retry ${retryCount})` : ''}`,
                 );
 
+                const txOverrides = this.buildTransactionGasParams(gasPrice);
+                txOverrides.gasLimit = gasLimit;
+
                 const tx = await contractInstance
                     .connect(operationalWallet)
-                    [functionName](...args, {
-                        gasPrice,
-                        gasLimit,
-                    });
+                    [functionName](...args, txOverrides);
 
                 try {
                     result = await this.provider.waitForTransaction(
@@ -608,38 +636,90 @@ class Web3Service {
                         await this.provider.call(tx, tx.blockNumber);
                     }
                 } catch (error) {
+                    if (
+                        error.message
+                            .toLowerCase()
+                            .includes(EXPECTED_TRANSACTION_ERRORS.TIMEOUT_EXCEEDED.toLowerCase())
+                    ) {
+                        const existingReceipt = await this.provider.getTransactionReceipt(tx.hash);
+                        if (existingReceipt) {
+                            this.logger.info(
+                                `Transaction ${functionName} (${tx.hash}) confirmed despite timeout. Block: ${existingReceipt.blockNumber}`,
+                            );
+                            if (existingReceipt.status === 0) {
+                                await this.provider.call(tx, existingReceipt.blockNumber);
+                            }
+                            return existingReceipt;
+                        }
+                        throw error;
+                    }
                     this._decodeWaitForTxError(contractInstance, functionName, error, args);
                 }
                 return result;
             } catch (error) {
                 const errorMessage = error.message.toLowerCase();
 
-                // Check for nonce-related errors
-                if (
+                const isNonceError =
                     errorMessage.includes(
                         EXPECTED_TRANSACTION_ERRORS.NONCE_TOO_LOW.toLowerCase(),
                     ) ||
                     errorMessage.includes(
                         EXPECTED_TRANSACTION_ERRORS.REPLACEMENT_UNDERPRICED.toLowerCase(),
                     ) ||
-                    errorMessage.includes(EXPECTED_TRANSACTION_ERRORS.ALREADY_KNOWN.toLowerCase())
-                ) {
+                    errorMessage.includes(EXPECTED_TRANSACTION_ERRORS.ALREADY_KNOWN.toLowerCase());
+
+                const isTimeoutError = errorMessage.includes(
+                    EXPECTED_TRANSACTION_ERRORS.TIMEOUT_EXCEEDED.toLowerCase(),
+                );
+
+                const isExecutionError =
+                    errorMessage.includes(
+                        EXPECTED_TRANSACTION_ERRORS.EXECUTION_FAILED.toLowerCase(),
+                    ) ||
+                    errorMessage.includes(EXPECTED_TRANSACTION_ERRORS.FEE_TOO_LOW.toLowerCase());
+
+                const isNetworkError =
+                    errorMessage.includes(EXPECTED_TRANSACTION_ERRORS.SOCKET_HANG_UP) ||
+                    errorMessage.includes(EXPECTED_TRANSACTION_ERRORS.ECONNRESET) ||
+                    errorMessage.includes(EXPECTED_TRANSACTION_ERRORS.ECONNREFUSED) ||
+                    errorMessage.includes(EXPECTED_TRANSACTION_ERRORS.SERVER_ERROR) ||
+                    errorMessage.includes(EXPECTED_TRANSACTION_ERRORS.BAD_GATEWAY) ||
+                    errorMessage.includes(EXPECTED_TRANSACTION_ERRORS.SERVICE_UNAVAILABLE) ||
+                    errorMessage.includes(EXPECTED_TRANSACTION_ERRORS.EXPECT_BLOCK_NUMBER);
+
+                if (isNonceError || isTimeoutError || isExecutionError || isNetworkError) {
                     retryCount += 1;
                     if (retryCount < maxRetries) {
-                        // Increase gas price by 20% for nonce errors
-                        gasPrice = Math.ceil(gasPrice * 1.2);
+                        const shouldBumpGas = isNonceError || isExecutionError;
+                        if (shouldBumpGas) {
+                            gasPrice = ethers.BigNumber.isBigNumber(gasPrice)
+                                ? gasPrice.mul(120).div(100)
+                                : Math.ceil(gasPrice * 1.2);
+                        }
+                        let errorType = 'Nonce';
+                        if (isTimeoutError) errorType = 'Timeout';
+                        else if (isExecutionError) errorType = 'Execution/fee';
+                        else if (isNetworkError) errorType = 'Network';
                         this.logger.warn(
-                            `Nonce error detected for ${functionName}. Retrying with increased gas price: ${gasPrice} (retry ${retryCount}/${maxRetries})`,
+                            `${errorType} error detected for ${functionName} on ${this.getBlockchainId()}. ` +
+                                `Retrying ${
+                                    shouldBumpGas
+                                        ? `with increased gas price: ${gasPrice}`
+                                        : 'with same gas price'
+                                } (retry ${retryCount}/${maxRetries})`,
                         );
                         continue;
-                    } else {
-                        this.logger.error(
-                            `Max retries (${maxRetries}) reached for nonce error in ${functionName}. Final gas price: ${gasPrice}`,
-                        );
                     }
+                    let errorType = 'nonce';
+                    if (isTimeoutError) errorType = 'timeout';
+                    else if (isExecutionError) errorType = 'execution/fee';
+                    else if (isNetworkError) errorType = 'network';
+                    this.logger.error(
+                        `Max retries (${maxRetries}) reached for ${errorType} error in ${functionName} on ${this.getBlockchainId()}. ` +
+                            `Final gas price: ${gasPrice}`,
+                    );
                 }
 
-                // If it's not a nonce error or we've exhausted retries, re-throw the error
                 throw error;
             }
         }
