@@ -371,7 +371,7 @@ export const PARANET_NODES_ACCESS_POLICIES = ['OPEN', 'PERMISSIONED'];
 
 export const NETWORK_MESSAGE_TIMEOUT_MILLS = {
     PUBLISH: {
-        REQUEST: 15 * 1000,
+        REQUEST: 60 * 1000,
     },
     UPDATE: {
         REQUEST: 60 * 1000,
@@ -715,6 +715,15 @@ export const EXPECTED_TRANSACTION_ERRORS = {
     NONCE_TOO_LOW: 'nonce too low',
     REPLACEMENT_UNDERPRICED: 'replacement transaction underpriced',
     ALREADY_KNOWN: 'already known',
+    EXECUTION_FAILED: 'transaction execution fails',
+    FEE_TOO_LOW: 'feetoolow',
+    SOCKET_HANG_UP: 'socket hang up',
+    ECONNRESET: 'econnreset',
+    ECONNREFUSED: 'econnrefused',
+    SERVER_ERROR: 'server error',
+    BAD_GATEWAY: '502',
+    SERVICE_UNAVAILABLE: '503',
+    EXPECT_BLOCK_NUMBER: 'expect block number from id',
 };
 
 /**
@@ -1067,8 +1076,8 @@ export const LOCAL_INSERT_FOR_ASSET_SYNC_RETRY_DELAY = 1000;
 export const LOCAL_INSERT_FOR_CURATED_PARANET_MAX_ATTEMPTS = 5;
 export const LOCAL_INSERT_FOR_CURATED_PARANET_RETRY_DELAY = 1000;
 
-export const MAX_RETRIES_READ_CACHED_PUBLISH_DATA = 10;
-export const RETRY_DELAY_READ_CACHED_PUBLISH_DATA = 10 * 1000;
+export const MAX_RETRIES_READ_CACHED_PUBLISH_DATA = 5;
+export const RETRY_DELAY_READ_CACHED_PUBLISH_DATA = 5 * 1000;
 
 export const TRIPLE_STORE_REPOSITORY = {
     DKG: 'dkg',
