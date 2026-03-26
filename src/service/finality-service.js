@@ -1,4 +1,3 @@
-import { Mutex } from 'async-mutex';
 import OperationService from './operation-service.js';
 import {
     OPERATION_ID_STATUS,
@@ -26,7 +25,6 @@ class FinalityService extends OperationService {
         this.repositoryModuleManager = ctx.repositoryModuleManager;
         this.blockchainModuleManager = ctx.blockchainModuleManager;
         this.paranetService = ctx.paranetService;
-        this.operationMutex = new Mutex();
     }
 
     async processResponse(operationId, blockchain, responseStatus, responseData) {
