@@ -73,19 +73,65 @@ class GetCommand extends Command {
             OPERATION_ID_STATUS.GET.GET_VALIDATE_ASSET_START,
         );
 
-        const { isValid, errorMessage } = await this.validateUAL(
-            operationId,
-            blockchain,
-            contract,
-            knowledgeCollectionId,
-            ual,
-        );
+        const maxGetRetries = 3;
+        const getRetryDelayMs = 5_000;
+        let ualValidationPassed = false;
+        let ualValidationError = null;
 
-        if (!isValid) {
+        for (let attempt = 1; attempt <= maxGetRetries; attempt += 1) {
+            try {
+                // eslint-disable-next-line no-await-in-loop
+                const { isValid, errorMessage: valMsg } = await this.validateUAL(
+                    operationId,
+                    blockchain,
+                    contract,
+                    knowledgeCollectionId,
+                    ual,
+                );
+                if (isValid) {
+                    ualValidationPassed = true;
+                    break;
+                }
+                ualValidationError = valMsg;
+            } catch (err) {
+                ualValidationError = `UAL validation failed: ${err.message}`;
+            }
+
+            if (!ualValidationPassed) {
+                try {
+                    // eslint-disable-next-line no-await-in-loop
+                    const cachedResult = await this._tryCacheFallback(
+                        blockchain,
+                        contract,
+                        knowledgeCollectionId,
+                        ual,
+                        operationId,
+                        paranetNodesAccessPolicy,
+                    );
+                    if (cachedResult) {
+                        return cachedResult;
+                    }
+                } catch (_cacheErr) {
+                    // cache fallback also failed, will retry
+                }
+            }
+
+            if (attempt < maxGetRetries) {
+                this.logger.debug(
+                    `Get validation/cache attempt ${attempt}/${maxGetRetries} failed for ${ual}, retrying in ${getRetryDelayMs}ms`,
+                );
+                // eslint-disable-next-line no-await-in-loop
+                await new Promise((resolve) => {
+                    setTimeout(resolve, getRetryDelayMs);
+                });
+            }
+        }
+
+        if (!ualValidationPassed) {
             await this.handleError(
                 operationId,
                 blockchain,
-                errorMessage,
+                ualValidationError,
                 ERROR_TYPE.GET.GET_VALIDATE_ASSET_ERROR,
             );
             return Command.empty();
@@ -263,84 +309,22 @@ class GetCommand extends Command {
         }
         this.logger.debug(`Could not find asset with UAL: ${ual} locally`);
 
-        if (!knowledgeAssetId) {
-            try {
-                const latestMerkleRoot =
-                    await this.blockchainModuleManager.getKnowledgeCollectionLatestMerkleRoot(
-                        blockchain,
-                        contract,
-                        knowledgeCollectionId,
-                    );
-                if (latestMerkleRoot) {
-                    const publishOpId =
-                        this.pendingStorageService.getOperationIdByMerkleRoot(latestMerkleRoot);
-                    if (publishOpId) {
-                        const cachedAssertion = await this.pendingStorageService.getCachedDataset(
-                            publishOpId,
-                        );
-                        if (cachedAssertion) {
-                            const filteredAssertion = this._filterAssertionByContentType(
-                                cachedAssertion,
-                                contentType,
-                            );
-
-                            if (
-                                filteredAssertion.public?.length ||
-                                filteredAssertion.private?.length
-                            ) {
-                                let cachePassed = true;
-                                if (
-                                    paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED
-                                ) {
-                                    if (Array.isArray(filteredAssertion.public)) {
-                                        const shouldHavePrivate = filteredAssertion.public.some(
-                                            (triple) =>
-                                                triple.includes(`${PRIVATE_ASSERTION_PREDICATE}`),
-                                        );
-                                        if (shouldHavePrivate) {
-                                            cachePassed = filteredAssertion.private?.length > 0;
-                                        }
-                                    } else {
-                                        cachePassed = false;
-                                    }
-                                }
-
-                                const cacheResponseData = { assertion: filteredAssertion };
-                                const cacheValid = await this.validateResponse(
-                                    cacheResponseData,
-                                    blockchain,
-                                    contract,
-                                    knowledgeCollectionId,
-                                    knowledgeAssetId,
-                                    paranetNodesAccessPolicy,
-                                    contentType,
-                                );
-
-                                if (cachePassed && cacheValid) {
-                                    this.logger.info(
-                                        `Serving asset ${ual} from pending storage cache (merkleRoot: ${latestMerkleRoot})`,
-                                    );
-                                    await this.operationService.markOperationAsCompleted(
-                                        operationId,
-                                        blockchain,
-                                        cacheResponseData,
-                                        [
-                                            OPERATION_ID_STATUS.GET.GET_LOCAL_END,
-                                            OPERATION_ID_STATUS.GET.GET_END,
-                                            OPERATION_ID_STATUS.COMPLETED,
-                                        ],
-                                    );
-                                    return Command.empty();
-                                }
-                            }
-                        }
-                    }
-                }
-            } catch (cacheErr) {
-                this.logger.debug(
-                    `Pending storage cache fallback failed for ${ual}: ${cacheErr.message}`,
-                );
+        try {
+            const cachedResult = await this._tryCacheFallback(
+                blockchain,
+                contract,
+                knowledgeCollectionId,
+                ual,
+                operationId,
+                paranetNodesAccessPolicy,
+            );
+            if (cachedResult) {
+                return cachedResult;
             }
+        } catch (cacheErr) {
+            this.logger.debug(
+                `Pending storage cache fallback failed for ${ual}: ${cacheErr.message}`,
+            );
         }
 
         await this.operationIdService.emitChangeEvent(
@@ -469,6 +453,66 @@ class GetCommand extends Command {
             ERROR_TYPE.FIND_SHARD.GET_ERROR,
         );
 
+        return Command.empty();
+    }
+
+    async _tryCacheFallback(
+        blockchain,
+        contract,
+        knowledgeCollectionId,
+        ual,
+        operationId,
+        paranetNodesAccessPolicy,
+    ) {
+        const latestMerkleRoot =
+            await this.blockchainModuleManager.getKnowledgeCollectionLatestMerkleRoot(
+                blockchain,
+                contract,
+                knowledgeCollectionId,
+            );
+        if (!latestMerkleRoot) return null;
+
+        const publishOpId = this.pendingStorageService.getOperationIdByMerkleRoot(latestMerkleRoot);
+        if (!publishOpId) return null;
+
+        const cachedAssertion = await this.pendingStorageService.getCachedDataset(publishOpId);
+        if (
+            !cachedAssertion ||
+            (!cachedAssertion.public?.length && !cachedAssertion.private?.length)
+        ) {
+            return null;
+        }
+
+        let cachePassed = true;
+        if (paranetNodesAccessPolicy === PARANET_ACCESS_POLICY.PERMISSIONED) {
+            if (Array.isArray(cachedAssertion.public)) {
+                const shouldHavePrivate = cachedAssertion.public.some((triple) =>
+                    triple.includes(`${PRIVATE_ASSERTION_PREDICATE}`),
+                );
+                if (shouldHavePrivate) {
+                    cachePassed = cachedAssertion.private?.length > 0;
+                }
+            } else {
+                cachePassed = false;
+            }
+        }
+
+        if (!cachePassed) return null;
+
+        const cachedResponseData = { assertion: cachedAssertion };
+        this.logger.info(
+            `Serving asset ${ual} from pending storage cache (merkleRoot: ${latestMerkleRoot})`,
+        );
+        await this.operationService.markOperationAsCompleted(
+            operationId,
+            blockchain,
+            cachedResponseData,
+            [
+                OPERATION_ID_STATUS.GET.GET_LOCAL_END,
+                OPERATION_ID_STATUS.GET.GET_END,
+                OPERATION_ID_STATUS.COMPLETED,
+            ],
+        );
         return Command.empty();
     }
 
@@ -708,19 +752,6 @@ class GetCommand extends Command {
         }
 
         return false;
-    }
-
-    _filterAssertionByContentType(assertion, contentType) {
-        if (contentType === 'private') {
-            return { private: assertion.private ?? [] };
-        }
-        if (contentType === 'public') {
-            return { public: assertion.public ?? [] };
-        }
-        return {
-            public: assertion.public ?? [],
-            private: assertion.private ?? [],
-        };
     }
 
     /**

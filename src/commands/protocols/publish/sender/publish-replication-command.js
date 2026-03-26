@@ -133,6 +133,14 @@ class PublishReplicationCommand extends Command {
                 return Command.empty();
             }
             const { dataset } = await this.operationIdService.getCachedOperationIdData(operationId);
+
+            await this.pendingStorageService.cacheDataset(
+                operationId,
+                datasetRoot,
+                dataset,
+                currentPeerId,
+            );
+
             const message = {
                 dataset: dataset.public,
                 datasetRoot,
