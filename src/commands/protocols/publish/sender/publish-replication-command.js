@@ -21,6 +21,7 @@ class PublishReplicationCommand extends Command {
         this.signatureService = ctx.signatureService;
         this.cryptoService = ctx.cryptoService;
         this.messagingService = ctx.messagingService;
+        this.pendingStorageService = ctx.pendingStorageService;
 
         this.errorType = ERROR_TYPE.LOCAL_STORE.LOCAL_STORE_ERROR;
     }
@@ -133,6 +134,14 @@ class PublishReplicationCommand extends Command {
                 return Command.empty();
             }
             const { dataset } = await this.operationIdService.getCachedOperationIdData(operationId);
+
+            await this.pendingStorageService.cacheDataset(
+                operationId,
+                datasetRoot,
+                dataset,
+                currentPeerId,
+            );
+
             const message = {
                 dataset: dataset.public,
                 datasetRoot,
