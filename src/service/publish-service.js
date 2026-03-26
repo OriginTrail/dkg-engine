@@ -1,4 +1,3 @@
-import { Mutex } from 'async-mutex';
 import OperationService from './operation-service.js';
 
 import {
@@ -23,7 +22,6 @@ class PublishService extends OperationService {
             OPERATION_ID_STATUS.PUBLISH.PUBLISH_END,
             OPERATION_ID_STATUS.COMPLETED,
         ];
-        this.operationMutex = new Mutex();
     }
 
     async processResponse(command, responseStatus, responseData, errorMessage = null) {
@@ -79,6 +77,7 @@ class PublishService extends OperationService {
                 `[PUBLISH] Minimum replication reached for operationId: ${operationId}, ` +
                     `datasetRoot: ${datasetRoot}, completed: ${completedNumber}/${minAckResponses}`,
             );
+            await this.repositoryModuleManager.updateMinAcksReached(operationId, true);
             const cachedData =
                 (await this.operationIdService.getCachedOperationIdData(operationId)) || null;
             await this.markOperationAsCompleted(
@@ -88,7 +87,6 @@ class PublishService extends OperationService {
                 this.completedStatuses,
                 { reuseExistingCache: true },
             );
-            await this.repositoryModuleManager.updateMinAcksReached(operationId, true);
             this.logResponsesSummary(completedNumber, failedNumber);
         }
         // 2.2 Otherwise, mark as failed

@@ -14,6 +14,15 @@ class FinalityStatusRepository {
     async saveFinalityAck(operationId, ual, peerId, options) {
         return this.model.upsert({ operationId, ual, peerId }, options);
     }
+
+    async getPublishOperationIdByUal(ual, options) {
+        const record = await this.model.findOne({
+            where: { ual },
+            attributes: ['operationId'],
+            ...options,
+        });
+        return record?.operationId ?? null;
+    }
 }
 
 export default FinalityStatusRepository;

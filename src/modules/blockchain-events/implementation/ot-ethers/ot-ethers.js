@@ -56,6 +56,38 @@ class OtEthers extends BlockchainEventsService {
         return blockchainProviders[randomIndex];
     }
 
+    _getShuffledProviders(blockchain) {
+        const blockchainProviders = this.providers[blockchain];
+        if (!blockchainProviders || blockchainProviders.length === 0) {
+            throw new Error(`No providers available for blockchain: ${blockchain}`);
+        }
+        const shuffled = [...blockchainProviders];
+        for (let i = shuffled.length - 1; i > 0; i -= 1) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
+
+    async _sendWithFailover(blockchain, method, params) {
+        const providers = this._getShuffledProviders(blockchain);
+        let lastError;
+        for (const provider of providers) {
+            try {
+                return await provider.send(method, params);
+            } catch (error) {
+                lastError = error;
+                this.logger.warn(
+                    `RPC provider failed for ${method} on ${blockchain}: ${error.message}. ` +
+                        `Trying next provider (${providers.indexOf(provider) + 1}/${
+                            providers.length
+                        })...`,
+                );
+            }
+        }
+        throw lastError;
+    }
+
     async _initializeContracts() {
         this.contracts = {};
 
@@ -156,8 +188,7 @@ class OtEthers extends BlockchainEventsService {
                 const toBlockParam = ethers.BigNumber.from(toBlock)
                     .toHexString()
                     .replace(/^0x0+/, '0x');
-                const provider = this._getRandomProvider(blockchain);
-                const newLogs = await provider.send('eth_getLogs', [
+                const newLogs = await this._sendWithFailover(blockchain, 'eth_getLogs', [
                     {
                         address: contractAddresses,
                         fromBlock: fromBlockParam,
