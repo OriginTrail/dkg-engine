@@ -30,6 +30,9 @@ jobs:
       - name: Generate PR diff
         run: git diff ${{ github.event.pull_request.base.sha }}...HEAD > pr-diff.patch
 
+      - name: Allow unprivileged user namespaces for bubblewrap sandbox
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
       - name: Run Codex review
         id: codex
         uses: openai/codex-action@f5c0ca71642badb34c1e66321d8d85685a0fa3dc # v1
@@ -38,7 +41,7 @@ jobs:
           prompt-file: .codex/review-prompt.md
           output-schema-file: .codex/review-schema.json
           effort: high
-          sandbox: danger-full-access
+          sandbox: read-only
 
       - name: Post PR review with inline comments
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
