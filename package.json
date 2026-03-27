@@ -81,7 +81,7 @@
         "async": "^3.2.4",
         "async-mutex": "^0.3.2",
         "awilix": "^7.0.3",
-        "axios": "^1.6.0",
+        "axios": "^1.13.5",
         "bullmq": "^5.56.1",
         "cors": "^2.8.5",
         "deep-extend": "^0.6.0",
