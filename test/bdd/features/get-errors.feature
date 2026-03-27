@@ -5,47 +5,21 @@ Feature: Get errors test
 
   @ignore
   Scenario: Getting non-existent UAL
-    Given I setup 4 nodes
-    And I wait for 5 seconds
+    # @ignore: A validly-formatted but non-existent UAL causes the node's get
+    # operation to stay IN_PROGRESS indefinitely while it searches the network.
+    # The operation never reaches a terminal status, so polling times out.
+    And I setup 1 additional node
+    And I wait for 15 seconds
 
     When I call Get directly on the node 1 with nonExistentUAL on blockchain hardhat1:31337
-    And I wait for latest resolve to finalize
-    Then Latest Get operation finished with status: GetRouteError
+    And I wait for latest Get to finalize
+    Then Latest Get operation finished with status: FAILED
 
-  @ignore
+  @get-error
   Scenario: Getting invalid UAL
-    Given I setup 4 nodes
-    And I wait for 5 seconds
+    And I setup 1 additional node
+    And I wait for 15 seconds
 
     When I call Get directly on the node 1 with invalidUAL on blockchain hardhat1:31337
-    And I wait for latest resolve to finalize
+    And I wait for latest Get to finalize
     Then Latest Get operation finished with status: GetRouteError
-
-  @ignore
-  Scenario: Getting non-existent state
-    Given I setup 4 nodes
-    And I set R0 to be 1 on blockchain hardhat1:31337
-    And I set R1 to be 2 on blockchain hardhat1:31337
-    And I set R0 to be 1 on blockchain hardhat2:31337
-    And I set R1 to be 2 on blockchain hardhat2:31337
-    And I wait for 5 seconds
-
-    When I call Publish on the node 1 with validAssertion on blockchain hardhat1:31337
-    And I wait for latest Publish to finalize
-    And I call Get directly on the node 1 with nonExistentState on blockchain hardhat1:31337
-    Then It should fail with status code 400
-
-  @ignore
-  Scenario: Getting invalid state hash
-    Given I setup 4 nodes
-    And I set R0 to be 1 on blockchain hardhat1:31337
-    And I set R1 to be 2 on blockchain hardhat1:31337
-    And I set R0 to be 1 on blockchain hardhat2:31337
-    And I set R1 to be 2 on blockchain hardhat2:31337
-    And I wait for 5 seconds
-
-    When I call Publish on the node 1 with validAssertion on blockchain hardhat1:31337
-    And I wait for latest Publish to finalize
-    And I call Get directly on the node 1 with invalidStateHash on blockchain hardhat1:31337
-    And I wait for latest resolve to finalize
-    Then Latest Get operation finished with status: GetAssertionIdError

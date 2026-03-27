@@ -45,11 +45,7 @@ When(
                 assert.fail(`Error while trying to get public assertion id. ${error}`);
             });
 
-        const sizeInBytes = await this.state.nodes[node - 1].client
-            .getSizeInBytes(assertion)
-            .catch((error) => {
-                assert.fail(`Error while trying to get  size in bytes. ${error}`);
-            });
+        const sizeInBytes = Buffer.byteLength(JSON.stringify(assertion));
 
         const options = {
             ...this.state.nodes[node - 1].clientBlockchainOptions[blockchain],
@@ -99,11 +95,7 @@ When(
                 assert.fail(`Error while trying to get public assertion id. ${error}`);
             });
 
-        const sizeInBytes = await this.state.nodes[node - 1].client
-            .getSizeInBytes(assertion)
-            .catch((error) => {
-                assert.fail(`Error while trying to get  size in bytes. ${error}`);
-            });
+        const sizeInBytes = Buffer.byteLength(JSON.stringify(assertion));
 
         const options = this.state.nodes[node - 1].clientBlockchainOptions[blockchain];
         let getBidSuggestionError;

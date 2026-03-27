@@ -3,12 +3,11 @@ Feature: Update errors test
     Given the blockchains are set up
     And 1 bootstrap is running
 
-  @ignore
+  @update-error
   Scenario: Update knowledge asset that was not previously published
-    Given I setup 1 node
-    And I wait for 5 seconds
+    And I setup 1 additional node
+    And I wait for 15 seconds
 
     When I call Update directly on the node 1 with validUpdateRequestBody
     And I wait for latest Update to finalize
-    Then Latest Update operation finished with status: ValidateAssetError
-
+    Then Latest Update operation finished with status: HTTP_404

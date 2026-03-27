@@ -139,3 +139,6 @@ ignition/deployments/chain-31337
 
 # Redis
 dump.rdb
+
+# Blazegraph journal files
+*.jnl

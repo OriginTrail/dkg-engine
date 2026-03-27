@@ -1,5 +1,5 @@
 export default {
     retry: 1,
-    failFast: true,
+    failFast: false,
     backtrace: true,
 };
