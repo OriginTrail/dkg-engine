@@ -1122,3 +1122,34 @@ export const MAX_TOKEN_ID_PER_GET_PAGE = 50;
 export const BLAZEGRAPH_HEALTH_INTERVAL = 60 * 1000;
 
 export const MAX_COMMAND_LIFETIME = 15 * 60 * 1000;
+
+// Telemetry constants
+export const TELEMETRY_CONNECTION_STATUS = {
+    CONNECTED: 'connected',
+    FAILED: 'failed',
+    DISCONNECTED: 'disconnected',
+    ERROR: 'error',
+    RECONNECTING: 'reconnecting',
+};
+
+export const TELEMETRY_INTERVALS = {
+    HEALTH_CHECK: 3 * 60 * 1000, // 3 minutes
+    CONNECTION_HEALTH: 30 * 1000, // 30 seconds
+    RETRY_QUEUE: 10 * 1000, // 10 seconds
+    BATCH_TIMEOUT: 5000, // 5 seconds
+    ERROR_LOG: 60000, // 1 minute
+};
+
+export const TELEMETRY_BATCH_CONFIG = {
+    BATCH_SIZE: 50,
+    MAX_BATCH_SIZE: 200,
+    MAX_PERSISTENT_QUEUE_SIZE: 10000,
+    MAX_RECENT_EVENTS: 50,
+    MAX_RETRY_ATTEMPTS: 5,
+    BASE_RETRY_DELAY: 1000, // 1 second
+    MAX_TIME_WITHOUT_SUCCESS: 5 * 60 * 1000, // 5 minutes
+};
+
+export const TELEMETRY_NULL_VALUE = 'NULL';
+
+export const TELEMETRY_MAX_LOG_OPERATION_IDS = 10;
