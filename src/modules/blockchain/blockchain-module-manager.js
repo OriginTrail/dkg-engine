@@ -343,6 +343,10 @@ class BlockchainModuleManager extends BaseModuleManager {
         ]);
     }
 
+    async getV81ReleaseEpoch(blockchain) {
+        return this.callImplementationFunction(blockchain, 'getV81ReleaseEpoch');
+    }
+
     async getAssetStorageContractsAddress(blockchain) {
         return this.callImplementationFunction(blockchain, 'getAssetStorageContractsAddress');
     }

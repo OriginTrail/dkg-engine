@@ -120,6 +120,9 @@ class ClaimRewardsService {
             // This means node never claimed and delegated before introduction of random sampling
             // If he staked or claimed before the value would have been set correctly
             const delegatorAddresses = lastClaimedEpochAddressesMap['0'];
+            const v81ReleaseEpoch = Number(
+                (await this.blockchainModuleManager.getV81ReleaseEpoch(blockchainId)).toString(),
+            );
             await Promise.all(
                 delegatorAddresses.map(async (delegatorAddress) => {
                     const hasEverDelegated = await this.blockchainModuleManager.hasEverDelegated(
@@ -129,12 +132,12 @@ class ClaimRewardsService {
                     );
                     // TODO: How will this impact mainnet where this function landed at same time as proofing
                     if (!hasEverDelegated) {
-                        if (lastClaimedEpochAddressesMap[`${currentEpoch - 1}`]) {
-                            lastClaimedEpochAddressesMap[`${currentEpoch - 1}`].push(
+                        if (lastClaimedEpochAddressesMap[`${v81ReleaseEpoch - 1}`]) {
+                            lastClaimedEpochAddressesMap[`${v81ReleaseEpoch - 1}`].push(
                                 ...delegatorAddresses,
                             );
                         } else {
-                            lastClaimedEpochAddressesMap[`${currentEpoch - 1}`] =
+                            lastClaimedEpochAddressesMap[`${v81ReleaseEpoch - 1}`] =
                                 delegatorAddresses;
                         }
                     }
