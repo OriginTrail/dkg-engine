@@ -4,19 +4,19 @@
 
 <br />
 <div align="center">
-  <a href="https://github.com/OriginTrail/ot-node">
+  <a href="https://github.com/OriginTrail/dkg-engine">
     <img src="images/banner.gif" alt="OriginTrail Node Banner">
   </a>
 
-  <h3 align="center"><b>OT-Node</b></h3>
+  <h3 align="center"><b>DKG Engine</b></h3>
 
   <p align="center">
     </br>
     <a href="https://docs.origintrail.io/">OriginTrail Docs</a>
     ·
-    <a href="https://github.com/OriginTrail/ot-node/issues">Report Bug</a>
+    <a href="https://github.com/OriginTrail/dkg-engine/issues">Report Bug</a>
     ·
-    <a href="https://github.com/OriginTrail/ot-node/issues">Request Feature</a>
+    <a href="https://github.com/OriginTrail/dkg-engine/issues">Request Feature</a>
   </p>
 </div>
 
@@ -178,8 +178,8 @@ By their nature, Knowledge Assets are semantic resources (following the W3C Sema
 First, clone the repo:
 
 ```bash
-git clone https://github.com/OriginTrail/ot-node.git
-cd ot-node
+git clone https://github.com/OriginTrail/dkg-engine.git
+cd dkg-engine
 ```
 
 Switch the branch to `v8/develop`:
@@ -194,7 +194,7 @@ Install dependencies using `npm`:
 npm install
 ```
 
-Create the .env file inside the "ot-node" directory:
+Create the .env file inside the "dkg-engine" directory:
 
 ```bash
 nano .env
