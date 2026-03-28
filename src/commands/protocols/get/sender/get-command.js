@@ -706,7 +706,7 @@ class GetCommand extends Command {
             return true;
         }
         if (responseData?.assertion?.public) {
-            // We can only validate whole collection not particular KA
+            // We can only validate whole collection not particular Knowledge Asset
             if (
                 !knowledgeAssetId ||
                 (typeof knowledgeAssetId === 'object' &&
